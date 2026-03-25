@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Audit-Ready Hub: S3 Evidence Locker and SNS Alerts'
+
+Resources:
+  # The "Evidence Locker" for SOC 2 logs
+  EvidenceLockerBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub 'audit-evidence-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # The "Alarm System" for Compliance Gaps
+  ComplianceAlertTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: 'SOC2-Compliance-Alerts'
+      TopicName: 'AuditReady-Alerts'
+
+Outputs:
+  BucketName:
+    Value: !Ref EvidenceLockerBucket
+  SNSTopicArn:
+    Value: !Ref ComplianceAlertTopic

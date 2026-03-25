@@ -1,0 +1,5 @@
+EventTime,User,EventName,Resource,Status,MFAUsed
+2026-03-25T10:00:00Z,Aayush,ConsoleLogin,iam.amazonaws.com,Success,Yes
+2026-03-25T10:05:22Z,Aayush,CreatePolicy,iam.amazonaws.com,Success,Yes
+2026-03-25T11:00:45Z,UnknownUser,PutObject,s3.amazonaws.com,Denied,No
+2026-03-25T11:01:00Z,System,InvokeLambda,lambda.amazonaws.com,Success,N/A

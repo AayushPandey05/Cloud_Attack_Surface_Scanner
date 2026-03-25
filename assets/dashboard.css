@@ -1,0 +1,405 @@
+/* =========================================
+   B2B SaaS Theme Variables
+========================================= */
+:root {
+  --bg-slate: #0f172a;
+  --bg-card: rgba(30, 41, 59, 0.6);
+  --cyan: #06b6d4;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-slate);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================
+   Background Accents
+========================================= */
+.background-glow {
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  filter: blur(160px);
+  z-index: -1;
+  opacity: 0.15;
+  pointer-events: none;
+}
+.blur-cyan {
+  top: -20%;
+  left: -10%;
+  background: var(--cyan);
+}
+.blur-blue {
+  bottom: -20%;
+  right: -10%;
+  background: var(--blue);
+}
+
+/* =========================================
+   Header Layout
+========================================= */
+.glass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2.5rem;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-glass);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+}
+
+.logo span {
+  background: linear-gradient(90deg, #fff, var(--cyan));
+  background-clip: text; /* standard */
+  -webkit-background-clip: text; /* chrome/safari */
+  -webkit-text-fill-color: transparent; /* IMPORTANT */
+}
+
+.region-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* =========================================
+   Dashboard Container
+========================================= */
+.dashboard-wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.hero-text {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.hero-text h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.02em;
+}
+.hero-text p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* =========================================
+   KPI Section
+========================================= */
+.kpi-section {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+.kpi-card {
+  flex: 1;
+  min-width: 300px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s ease;
+}
+.glass-glow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+.kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--cyan);
+}
+.kpi-info h3 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.kpi-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.text-green {
+  color: var(--green);
+}
+.text-cyan {
+  color: var(--cyan);
+}
+.text-blue {
+  color: var(--blue);
+}
+.text-green .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* =========================================
+   Main Grid Layout
+========================================= */
+.grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+@media (max-width: 900px) {
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.panel-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.15);
+}
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--blue);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* =========================================
+   Terminal Feed
+========================================= */
+.terminal-window {
+  padding: 1.5rem;
+  height: 320px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
+  scroll-behavior: smooth;
+  line-height: 1.6;
+}
+/* Custom Scrollbar for Terminal */
+.terminal-window::-webkit-scrollbar {
+  width: 6px;
+}
+.terminal-window::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.terminal-window::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.term-line {
+  margin-bottom: 0.4rem;
+  display: flex;
+  gap: 0.75rem;
+  word-break: break-word;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.term-time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.term-log {
+  flex: 1;
+}
+.term-log.info {
+  color: var(--cyan);
+}
+.term-log.success {
+  color: var(--green);
+}
+.term-log.warn {
+  color: #f59e0b;
+}
+
+/* =========================================
+   Audit Resources
+========================================= */
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-glass);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+  flex: 1;
+}
+.resource-item:last-child {
+  border-bottom: none;
+}
+.resource-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.res-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.res-info {
+  flex: 1;
+}
+.res-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.res-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.download-icon {
+  color: var(--text-muted);
+  transition: color 0.2s;
+  font-size: 20px;
+}
+.resource-item:hover .download-icon {
+  color: #fff;
+}
+
+/* =========================================
+   Admin Portal Button
+========================================= */
+.admin-portal {
+  text-align: center;
+}
+.btn-vault {
+  background: #f8fafc;
+  color: #020617;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.25);
+  background: #fff;
+}
