@@ -1,88 +1,127 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // 1. Terminal Feed Simulation
-  const terminal = document.getElementById("terminal-feed");
-  const initTimeElem = document.getElementById("init-time");
+// dashboard.js - UI Logic and Transitions
 
-  // Set initial time
-  if (initTimeElem) {
-    initTimeElem.innerText = `[${new Date().toISOString().replace("T", " ").substring(0, 19)}]`;
+document.addEventListener('DOMContentLoaded', () => {
+
+  const viewLogin = document.getElementById('view-login');
+  const viewMfa = document.getElementById('view-mfa');
+  const viewDashboard = document.getElementById('view-dashboard');
+
+  const loginForm = document.getElementById('login-form');
+  const googleBtn = document.getElementById('google-login');
+  const mfaForm = document.getElementById('mfa-form');
+  const totpInput = document.getElementById('totp-code');
+
+  const terminalFeed = document.getElementById('terminal-feed');
+
+  // Navigation logic
+  function switchView(hideView, showView, onShowCallback) {
+    if(!hideView || !showView) return;
+    
+    // Start fade out
+    hideView.classList.add('fade-out');
+    
+    setTimeout(() => {
+      // Hide old view, clean animation classes
+      hideView.classList.remove('active', 'fade-out');
+      hideView.classList.add('hidden');
+      
+      // Show new view
+      showView.classList.remove('hidden');
+      showView.classList.add('active');
+
+      if (onShowCallback) onShowCallback();
+      
+    }, 400); // 400ms match css animation duration
   }
 
-  const events = [
-    {
-      type: "success",
-      text: "Console Login Success for user: auditor@company.com",
-    },
-    { type: "info", text: "IAM Policy Verified: ReadOnlyAccess attached." },
-    {
-      type: "success",
-      text: 'S3 Bucket "audit-vault-26" encryption check: PASSED (AES-256)',
-    },
-    { type: "info", text: "API Gateway log export initiated..." },
-    {
-      type: "success",
-      text: "VPC Security Group rules validated. Public access blocked.",
-    },
-    {
-      type: "info",
-      text: "Assuming role: arn:aws:iam::123:role/CrossAccountAuditor",
-    },
-    { type: "info", text: "Control Matrix syncing with external CMDB..." },
-    {
-      type: "success",
-      text: "Auto-remediation script executing for IAM unrotated keys.",
-    },
-    {
-      type: "success",
-      text: "SOC 2 continuous compliance snapshot generated.",
-    },
+  // --- LOGIN PAGE LOGIC ---
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      switchView(viewLogin, viewMfa, () => {
+        // Auto-focus MFA input on load
+        if(totpInput) totpInput.focus();
+      });
+    });
+  }
+
+  if (googleBtn) {
+    googleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchView(viewLogin, viewMfa, () => {
+        if(totpInput) totpInput.focus();
+      });
+    });
+  }
+
+  // --- MFA PAGE LOGIC ---
+  if (mfaForm) {
+    mfaForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = totpInput.value;
+      if (code && code.length === 6) {
+        switchView(viewMfa, viewDashboard, () => {
+          startTerminalFeed();
+        });
+      }
+    });
+
+    // Auto focus format
+    totpInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+  }
+
+  // --- DASHBOARD TERMINAL LOGIC ---
+  const logs = [
+    { time: '19:30:01', html: '<span class="term-log info">[SYSTEM] Initializing Cross-Platform Audit...</span>' },
+    { time: '19:30:05', html: '<span class="term-log aws">[AWS] S3 Evidence Bucket "audit-ready-hub-mumbai" verified.</span>' },
+    { time: '19:30:08', html: '<span class="term-log slack">[SLACK] Scanning #general for PII/Sensitive Data...</span>' },
+    { time: '19:30:12', html: '<span class="term-log success">[SLACK] 0 Public file shares detected. SOC 2 Rule CC6.1 Pass.</span>' },
+    { time: '19:30:18', html: '<span class="term-log aws">[AWS] Checking IAM Policies for overly permissive roles...</span>' },
+    { time: '19:30:22', html: '<span class="term-log success">[AWS] IAM Audit OK. Principle of Least Privilege verified.</span>' },
+    { time: '19:30:27', html: '<span class="term-log info">[SYSTEM] Generating Unified Audit Trail...</span>' }
   ];
 
-  let index = 0;
-
-  function addLog() {
-    if (!terminal) return;
-
-    let eventIndex = index % events.length; // continually cycle through logs
-    const event = events[eventIndex];
-    index++;
-
-    const line = document.createElement("div");
-    line.className = "term-line";
-
-    const now = new Date();
-    const timeStr = now.toISOString().replace("T", " ").substring(0, 19);
-
-    line.innerHTML = `<span class="term-time">[${timeStr}]</span> <span class="term-log ${event.type}">${event.text}</span>`;
-    terminal.appendChild(line);
-    terminal.scrollTop = terminal.scrollHeight; // Auto-scroll
-
-    // Random timeout between 1s and 3.5s
-    const nextTime = Math.random() * 2500 + 1000;
-    setTimeout(addLog, nextTime);
+  function appendLog(logObj) {
+    const div = document.createElement('div');
+    div.className = 'term-line';
+    div.innerHTML = `<span class="term-time">${logObj.time}</span> ${logObj.html}`;
+    terminalFeed.appendChild(div);
+    // Scroll to bottom
+    terminalFeed.scrollTop = terminalFeed.scrollHeight;
   }
 
-  // Start terminal logs after 1.5 seconds
-  setTimeout(addLog, 1500);
+  let feedStarted = false;
+  function startTerminalFeed() {
+    if (feedStarted) return;
+    feedStarted = true;
+    
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < logs.length) {
+        appendLog(logs[index]);
+        index++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 1200);
+  }
 
-  // 2. High Contrast Vault Button interaction (mock)
-  const vaultBtn = document.querySelector(".btn-vault");
-  if (vaultBtn) {
-    vaultBtn.addEventListener("click", () => {
-      vaultBtn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">refresh</span> Processing MFA...`;
-      setTimeout(() => {
-        vaultBtn.innerHTML = `<span class="material-symbols-outlined">vpn_key</span> Access Secured Vault (MFA Required)`;
-        alert("MFA Prompt Triggered: Please check your Authenticator App.");
-      }, 1500);
+  // --- VIEW TOGGLES (Cloud vs Slack) ---
+  const btnCloud = document.getElementById('btn-cloud-view');
+  const btnSlack = document.getElementById('btn-slack-view');
+  
+  if (btnCloud && btnSlack) {
+    btnCloud.addEventListener('click', () => {
+      btnCloud.classList.add('active');
+      btnSlack.classList.remove('active');
+      // Simulated filter logic (not fully implemented in HTML but visual change shown)
+    });
+
+    btnSlack.addEventListener('click', () => {
+      btnSlack.classList.add('active');
+      btnCloud.classList.remove('active');
     });
   }
 });
-
-// Add spinner animation rule to document
-const style = document.createElement("style");
-style.innerHTML = `
-@keyframes spin { 
-    100% { transform: rotate(360deg); } 
-}
-`;
-document.head.appendChild(style);
