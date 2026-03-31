@@ -1,862 +1,1194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cloud Attack Surface Demo</title>
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* -------------------------------------------------------------------------- */
-        /*                            CSS RESET & VARS                                */
-        /* -------------------------------------------------------------------------- */
-        :root {
-            --navy: #0A1128;
-            --slate: #101828;
-            --blue: #1841FF;
-            --blue-hover: #1030cc;
-            --border: rgba(255, 255, 255, 0.08);
-            --white: #ffffff;
-            --gray: #98A2B3;
-            --green: #12B76A;
-            --red: #F04438;
-            --red-bg: rgba(240, 68, 56, 0.1);
-            --terminal-bg: #050505;
-        }
+      /* -------------------------------------------------------------------------- */
+      /*                            CSS RESET & VARS                                */
+      /* -------------------------------------------------------------------------- */
+      :root {
+          --navy: #0A0D14;
+          --slate: #101828;
+          --blue: #1841FF;
+          --blue-hover: #1030cc;
+          --border: #1E293B;
+          --white: #ffffff;
+          --gray: #98A2B3;
+          --green: #12B76A;
+          --red: #F04438;
+          --red-bg: rgba(240, 68, 56, 0.1);
+          --terminal-bg: #050505;
+      }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background-color: var(--navy);
-            color: var(--white);
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* -------------------------------------------------------------------------- */
-        /*                             UTILITY CLASSES                                */
-        /* -------------------------------------------------------------------------- */
-        .hidden { display: none !important; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .items-center { align-items: center; }
-        .justify-center { justify-content: center; }
-        .justify-between { justify-content: space-between; }
-        .gap-1 { gap: 0.25rem; }
-        .gap-2 { gap: 0.5rem; }
-        .gap-3 { gap: 0.75rem; }
-        .gap-4 { gap: 1rem; }
-        .gap-6 { gap: 1.5rem; }
-        .w-full { width: 100%; }
-        .h-screen { height: 100vh; }
-        .text-center { text-align: center; }
-        
-        /* Typography */
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .text-xs { font-size: 0.75rem; }
-        .text-sm { font-size: 0.875rem; }
-        .text-base { font-size: 1rem; }
-        .text-lg { font-size: 1.125rem; }
-        .text-xl { font-size: 1.25rem; }
-        .font-medium { font-weight: 500; }
-        .font-semibold { font-weight: 600; }
-        .text-gray { color: var(--gray); }
-        .text-white { color: var(--white); }
-        .text-green { color: var(--green); }
-        .text-red { color: var(--red); }
-        
-        /* Surfaces */
-        .card {
-            background-color: var(--slate);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Inputs & Buttons */
-        .input-group { margin-bottom: 1.25rem; }
-        .input-label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--gray);
-            margin-bottom: 0.5rem;
-        }
-        .input-field {
-            width: 100%;
-            background-color: var(--navy);
-            border: 1px solid var(--border);
-            color: var(--white);
-            border-radius: 6px;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: var(--blue);
-        }
-        .input-mono {
-            font-family: 'JetBrains Mono', monospace;
-            text-align: center;
-            letter-spacing: 0.25rem;
-            font-size: 1.25rem;
-        }
+      body {
+          background-color: var(--navy);
+          color: var(--white);
+          font-family: 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          overflow-x: hidden;
+      }
 
-        .btn-primary {
-            width: 100%;
-            background-color: var(--blue);
-            color: var(--white);
-            border: none;
-            border-radius: 6px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .btn-primary:hover { background-color: var(--blue-hover); }
+      /* -------------------------------------------------------------------------- */
+      /*                             UTILITY CLASSES                                */
+      /* -------------------------------------------------------------------------- */
+      .hidden { display: none !important; }
+      .flex { display: flex; }
+      .flex-col { flex-direction: column; }
+      .items-center { align-items: center; }
+      .justify-center { justify-content: center; }
+      .justify-between { justify-content: space-between; }
+      .gap-1 { gap: 0.25rem; }
+      .gap-2 { gap: 0.5rem; }
+      .gap-3 { gap: 0.75rem; }
+      .gap-4 { gap: 1rem; }
+      .gap-6 { gap: 1.5rem; }
+      .w-full { width: 100%; }
+      .h-screen { height: 100vh; }
+      .text-center { text-align: center; }
 
-        .btn-secondary {
-            width: 100%;
-            background-color: transparent;
-            color: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .btn-secondary:hover { background-color: rgba(255,255,255,0.05); }
+      /* Typography */
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
+      .text-xs { font-size: 0.75rem; }
+      .text-sm { font-size: 0.875rem; }
+      .text-base { font-size: 1rem; }
+      .text-lg { font-size: 1.125rem; }
+      .text-xl { font-size: 1.25rem; }
+      .font-medium { font-weight: 500; }
+      .font-semibold { font-weight: 600; }
+      .text-gray { color: var(--gray); }
+      .text-white { color: var(--white); }
+      .text-green { color: var(--green); }
+      .text-red { color: var(--red); }
 
-        /* -------------------------------------------------------------------------- */
-        /*                            SPECIFIC COMPONENTS                             */
-        /* -------------------------------------------------------------------------- */
-        .auth-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-        .auth-card { width: 100%; max-width: 400px; }
-        
-        /* QR Code */
-        .qr-placeholder {
-            width: 150px; height: 150px;
-            background-color: var(--white);
-            border-radius: 8px;
-            margin: 0 auto 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .qr-placeholder img { width: 130px; height: 130px; opacity: 0.8; }
+      /* Surfaces */
+      .card {
+          background-color: var(--slate);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 2rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+      }
 
-        /* Dashboard specific */
-        .dash-container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            background-color: #0c111d;
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            min-height: calc(100vh - 4rem);
-        }
+      /* Inputs & Buttons */
+      .input-group { margin-bottom: 1.25rem; }
+      .input-label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--gray);
+          margin-bottom: 0.5rem;
+      }
+      .input-field {
+          width: 100%;
+          background-color: var(--navy);
+          border: 1px solid var(--border);
+          color: var(--white);
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+      }
+      .input-field:focus {
+          outline: none;
+          border-color: var(--blue);
+      }
+      .input-mono {
+          font-family: 'JetBrains Mono', monospace;
+          text-align: center;
+          letter-spacing: 0.25rem;
+          font-size: 1.25rem;
+      }
 
-        .dash-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: transparent;
-            border: none;
-            padding: 0;
-        }
+      .btn-primary {
+          width: 100%;
+          background-color: var(--blue);
+          color: var(--white);
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+      }
+      .btn-primary:hover { background-color: var(--blue-hover); }
 
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1rem;
-        }
+      .btn-secondary {
+          width: 100%;
+          background-color: transparent;
+          color: var(--white);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+      }
+      .btn-secondary:hover { background-color: rgba(255,255,255,0.05); }
 
-        .kpi-card {
-            background-color: var(--slate);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            flex-direction: column;
-        }
+      .btn-sso {
+          width: 100%;
+          background-color: #6366F1;
+          color: var(--white);
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+      }
+      .btn-sso:hover { background-color: #4F46E5; }
 
-        .kpi-h { 
-            font-size: 0.70rem; 
-            color: var(--gray); 
-            margin-bottom: 0.75rem; 
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-        }
-        
-        .kpi-v { 
-            font-size: 2rem; 
-            font-weight: 700; 
-            line-height: 1;
-            margin-bottom: 0.5rem;
-        }
+      .auth-divider {
+          display: flex;
+          align-items: center;
+          text-align: center;
+          margin: 1.5rem 0 0.5rem 0;
+          color: var(--gray);
+          font-size: 0.875rem;
+      }
+      .auth-divider::before, .auth-divider::after {
+          content: '';
+          flex: 1;
+          border-bottom: 1px solid var(--border);
+      }
+      .auth-divider::before { margin-right: 0.75rem; }
+      .auth-divider::after { margin-left: 0.75rem; }
 
-        .kpi-sub {
-            font-size: 0.75rem;
-            color: var(--gray);
-        }
+      .loader-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid var(--border);
+          border-top-color: var(--blue);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 1rem;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
 
-        .segmented-control {
-            background-color: #1A233A;
-            border-radius: 999px;
-            display: flex;
-            align-items: center;
-            padding: 0.35rem;
-            width: fit-content;
-            margin: 0 auto;
-        }
+      /* -------------------------------------------------------------------------- */
+      /*                            SPECIFIC COMPONENTS                             */
+      /* -------------------------------------------------------------------------- */
+      .auth-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          padding: 1rem;
+      }
+      .auth-card { width: 100%; max-width: 400px; }
 
-        .segment-btn {
-            background: transparent;
-            border: none;
-            color: var(--gray);
-            padding: 0.5rem 1.25rem;
-            border-radius: 999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+      .bg-light-gray { background-color: #F8F9FC; }
+      .light-card {
+          background-color: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+          border: 1px solid #E5E7EB;
+          color: #111827;
+          padding: 2.5rem 2rem;
+      }
+      .input-light {
+          background-color: #ffffff;
+          border: 1px solid #D1D5DB;
+          color: #111827;
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          width: 100%;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+      }
+      .input-light::placeholder { color: #9CA3AF; }
+      .input-light:focus { border-color: #6366F1; outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+      .btn-primary-purple {
+          background-color: #6366F1;
+          color: white;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          width: 100%;
+          border: none;
+          font-weight: 500;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+      }
+      .btn-primary-purple:hover { background-color: #4F46E5; }
+      .btn-outline-light {
+          background-color: #ffffff;
+          color: #111827;
+          border: 1px solid #D1D5DB;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          width: 100%;
+          font-weight: 500;
+          font-size: 0.95rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          transition: background-color 0.2s;
+          margin-bottom: 1.5rem;
+      }
+      .btn-outline-light:hover { background-color: #F3F4F6; }
+      .link-purple { color: #5A67D8; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+      .link-purple:hover { text-decoration: underline; }
+      .text-dark { color: #111827; }
+      .text-light-gray { color: #6B7280; font-size: 0.875rem;}
+      .divider-light { color: #9CA3AF; font-size: 0.875rem; display: flex; align-items: center; margin: 1.5rem 0; }
+      .divider-light::before, .divider-light::after { content: ''; flex: 1; border-bottom: 1px solid #E5E7EB; }
+      .divider-light::before { margin-right: 0.75rem; }
+      .divider-light::after { margin-left: 0.75rem; }
 
-        .segment-btn.active {
-            background-color: var(--blue);
-            color: var(--white);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+      /* QR Code */
+      .qr-placeholder {
+          width: 150px; height: 150px;
+          background-color: var(--white);
+          border-radius: 8px;
+          margin: 0 auto 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+      .qr-placeholder img { width: 130px; height: 130px; opacity: 0.8; }
 
-        .avatar {
-            width: 36px; height: 36px;
-            background-color: var(--blue);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
+      /* Dashboard specific */
+      .dash-container {
+          max-width: 1400px;
+          margin: 2rem auto;
+          background-color: #0c111d;
+          border-radius: 24px;
+          border: 1px solid var(--border);
+          padding: 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          min-height: calc(100vh - 4rem);
+      }
 
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.25rem 0.75rem;
-            background-color: rgba(18, 183, 106, 0.15);
-            border: 1px solid rgba(18, 183, 106, 0.3);
-            border-radius: 16px;
-            color: var(--green);
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--green); }
+      .dash-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: transparent;
+          border: none;
+          padding: 0;
+      }
 
-        .terminal-container {
-            background-color: #000000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            flex: 1;
-        }
+      .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 1rem;
+      }
 
-        .terminal-header {
-            background-color: #0A0A0A;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 0.75rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            color: #666;
-            font-family: 'JetBrains Mono', monospace;
-        }
+      .kpi-card {
+          background-color: var(--slate);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 1.25rem 1.5rem;
+          display: flex;
+          flex-direction: column;
+      }
 
-        .mac-dots {
-            display: flex;
-            gap: 0.4rem;
-        }
-        .mac-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot-red { background-color: #FF5F56; }
-        .dot-yellow { background-color: #FFBD2E; }
-        .dot-green { background-color: #27C93F; }
+      .kpi-h {
+          font-size: 0.70rem;
+          color: var(--gray);
+          margin-bottom: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 600;
+      }
 
-        .terminal-body {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex: 1;
-        }
-        
-        .log-entry { margin-bottom: 0.5rem; line-height: 1.6; font-size: 0.875rem; }
-        .log-time { color: #555; margin-right: 0.75rem; }
-        .log-tag.aws { color: #F79009; }
-        .log-tag.slack { color: #E0C1F4; }
-        .log-crit { color: var(--red); font-weight: 600; }
-        .log-alert { color: #F79009; font-weight: 600; }
-        .log-warn { color: #EAB308; font-weight: 600; }
-        .log-text { color: #D0D5DD; }
+      .kpi-v {
+          font-size: 2rem;
+          font-weight: 700;
+          line-height: 1;
+          margin-bottom: 0.5rem;
+      }
 
-        /* Profile Dropdown */
-        .profile-container { position: relative; }
-        .avatar-btn {
-            background: transparent; border: none; cursor: pointer; padding: 0; outline: none;
-            transition: transform 0.1s;
-        }
-        .avatar-btn:active { transform: scale(0.95); }
-        .profile-dropdown {
-            position: absolute;
-            top: calc(100% + 12px);
-            right: 0;
-            width: 240px;
-            background-color: var(--slate);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            z-index: 50;
-        }
-        .dropdown-header { padding: 1rem; }
-        .dropdown-divider { height: 1px; background-color: var(--border); }
-        .dropdown-item {
-            width: 100%; display: flex; align-items: center; gap: 0.5rem;
-            padding: 0.875rem 1rem; background: transparent; border: none;
-            color: var(--white); cursor: pointer; transition: all 0.15s;
-        }
-        .dropdown-item:hover { color: var(--red); background-color: rgba(255,255,255,0.03); }
+      .kpi-sub {
+          font-size: 0.75rem;
+          color: var(--gray);
+      }
 
-        /* Anim Utilities */
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .segmented-control {
+          background-color: #1A233A;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          padding: 0.35rem;
+          width: fit-content;
+          margin: 0 auto;
+      }
 
+      .segment-btn {
+          background: transparent;
+          border: none;
+          color: var(--gray);
+          padding: 0.5rem 1.25rem;
+          border-radius: 999px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+      }
+
+      .segment-btn.active {
+          background-color: var(--blue);
+          color: var(--white);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .avatar {
+          width: 36px; height: 36px;
+          background-color: var(--blue);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+      }
+
+      .status-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          padding: 0.25rem 0.75rem;
+          background-color: rgba(18, 183, 106, 0.15);
+          border: 1px solid rgba(18, 183, 106, 0.3);
+          border-radius: 16px;
+          color: var(--green);
+          font-size: 0.75rem;
+          font-weight: 500;
+      }
+      .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--green); }
+
+      .terminal-container {
+          background-color: #000000;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          height: 400px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          flex: none;
+          position: relative;
+      }
+
+      .terminal-container::after {
+          content: '';
+          position: absolute;
+          top: 41px;
+          left: 0;
+          right: 0;
+          height: 40px;
+          background: linear-gradient(to bottom, #000000, transparent);
+          pointer-events: none;
+          z-index: 10;
+      }
+
+      .terminal-header {
+          background-color: #0A0A0A;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 0.75rem 1.25rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.75rem;
+          color: #666;
+          font-family: 'JetBrains Mono', monospace;
+          position: sticky;
+          top: 0;
+          z-index: 20;
+      }
+
+      .mac-dots {
+          display: flex;
+          gap: 0.4rem;
+      }
+      .mac-dot { width: 10px; height: 10px; border-radius: 50%; }
+      .dot-red { background-color: #FF5F56; }
+      .dot-yellow { background-color: #FFBD2E; }
+      .dot-green { background-color: #27C93F; }
+
+      .terminal-body {
+          padding: 1.5rem;
+          padding-top: 2.5rem;
+          overflow-y: auto;
+          flex: 1;
+      }
+      
+      .terminal-body::-webkit-scrollbar { width: 6px; }
+      .terminal-body::-webkit-scrollbar-track { background: transparent; }
+      .terminal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+      .log-entry { margin-bottom: 0.5rem; line-height: 1.6; font-size: 0.875rem; }
+      .log-time { color: #555; margin-right: 0.75rem; }
+      .log-tag.aws { color: #F79009; }
+      .log-tag.slack { color: #E0C1F4; }
+      .log-crit { color: var(--red); font-weight: 600; }
+      .log-alert { color: #F79009; font-weight: 600; }
+      .log-warn { color: #EAB308; font-weight: 600; }
+      .log-text { color: #D0D5DD; }
+
+      /* Profile Dropdown */
+      .profile-container { position: relative; }
+      .avatar-btn {
+          background: transparent; border: none; cursor: pointer; padding: 0; outline: none;
+          transition: transform 0.1s;
+      }
+      .avatar-btn:active { transform: scale(0.95); }
+      .profile-dropdown {
+          position: absolute;
+          top: calc(100% + 12px);
+          right: 0;
+          width: 240px;
+          background-color: var(--slate);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+          z-index: 50;
+      }
+      .dropdown-header { padding: 1rem; }
+      .dropdown-divider { height: 1px; background-color: var(--border); }
+      .dropdown-item {
+          width: 100%; display: flex; align-items: center; gap: 0.5rem;
+          padding: 0.875rem 1rem; background: transparent; border: none;
+          color: var(--white); cursor: pointer; transition: all 0.15s;
+      }
+      .dropdown-item:hover { color: var(--red); background-color: rgba(255,255,255,0.03); }
+
+      /* Anim Utilities */
+      .fade-in { animation: fadeIn 0.3s ease-in; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <!-- STATE 1: IDENTITY GATEWAY -->
-    <div id="state-login" class="auth-wrapper fade-in">
-        <div class="card auth-card">
-            <!-- LOGIN BLOCK -->
-            <div id="login-block" class="fade-in">
-                <div class="flex flex-col items-center mb-6">
-                    <!-- Okta style logo placeholder -->
-                    <div style="width: 48px; height: 48px; background: var(--blue); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
-                        <i data-lucide="shield" color="white"></i>
-                    </div>
-                    <h1 class="text-xl font-semibold">Access Security Vault</h1>
-                </div>
-
-                <form id="login-form">
-                    <div class="input-group">
-                        <label class="input-label" for="email">Work Email</label>
-                        <input type="email" id="email" class="input-field" placeholder="aayush@company.com" required>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label" for="password">Password</label>
-                        <input type="password" id="password" class="input-field" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Sign In</button>
-                </form>
-
-                <button type="button" class="btn-secondary" id="google-sso">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l2.85-2.22.83-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    Continue with Google
-                </button>
-
-                <div class="text-center mt-6">
-                    <a href="#" id="toggle-signup" class="text-sm font-medium" style="color: var(--blue); text-decoration: none;">New to SecurityVault? Create an account</a>
-                </div>
+    <div id="state-login" class="auth-wrapper bg-light-gray fade-in">
+      <div class="light-card auth-card">
+        <!-- LOGIN BLOCK -->
+        <div id="login-block" class="fade-in">
+          <div class="flex flex-col items-center mb-8">
+            <div class="flex items-center gap-2 mb-3">
+              <i
+                data-lucide="door-open"
+                color="#6366F1"
+                width="32"
+                height="32"
+              ></i>
+              <span
+                class="text-2xl font-bold text-dark"
+                style="letter-spacing: -0.5px;"
+                >Security Vault</span
+              >
             </div>
+            <h1 class="text-xl font-semibold text-dark">
+              Sign in to your account
+            </h1>
+            <br />
+          </div>
 
-            <!-- SIGNUP BLOCK -->
-            <div id="signup-block" class="fade-in hidden">
-                <div class="flex flex-col items-center mb-6">
-                    <div style="width: 48px; height: 48px; background: var(--blue); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
-                        <i data-lucide="user-plus" color="white"></i>
-                    </div>
-                    <h1 class="text-xl font-semibold">Create your Vault</h1>
-                    <p class="text-sm text-gray mt-1 text-center">Start securing your enterprise identity.</p>
-                </div>
-
-                <form id="signup-form">
-                    <div class="input-group" style="margin-bottom:1rem;">
-                        <label class="input-label" for="reg-name">Full Name</label>
-                        <input type="text" id="reg-name" class="input-field" placeholder="Aayush Pandey" required>
-                    </div>
-                    <div class="input-group" style="margin-bottom:1rem;">
-                        <label class="input-label" for="reg-email">Work Email</label>
-                        <input type="email" id="reg-email" class="input-field" placeholder="aayush@company.com" required>
-                    </div>
-                    <div class="input-group" style="margin-bottom:1rem;">
-                        <label class="input-label" for="reg-company">Company Name</label>
-                        <input type="text" id="reg-company" class="input-field" placeholder="Keygraph" required>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label" for="reg-password">Password</label>
-                        <input type="password" id="reg-password" class="input-field" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">Create Vault Account</button>
-                </form>
-
-                <div class="text-center mt-6">
-                    <a href="#" id="toggle-login" class="text-sm font-medium" style="color: var(--blue); text-decoration: none;">Already have an account? Sign in</a>
-                </div>
+          <form id="login-form">
+            <div style="margin-bottom: 1.25rem;">
+              <input
+                type="email"
+                id="login-email"
+                name="username"
+                autocomplete="username"
+                class="input-light"
+                placeholder="Email"
+                required
+              />
             </div>
+            <div style="margin-bottom: 0.75rem;">
+              <input
+                type="password"
+                id="login-password"
+                name="password"
+                autocomplete="current-password"
+                class="input-light"
+                placeholder="Password"
+                required
+              />
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+              <a href="#" class="link-purple" style="font-size: 0.9rem;"
+                >Forgot password?</a
+              >
+            </div>
+            <button type="submit" class="btn-primary-purple">Sign in</button>
+
+            <button
+              type="button"
+              class="btn-primary-purple"
+              id="corp-sso"
+              style="background-color: transparent; border: 1px solid #6366F1; color: #6366F1; margin-top: 0; transition: background-color 0.2s;"
+              onmouseover="this.style.backgroundColor='#F0F2FF'"
+              onmouseout="this.style.backgroundColor='transparent'"
+            >
+              <i data-lucide="lock" width="16" height="16"></i> Single Sign-On
+            </button>
+          </form>
+
+          <div class="text-center mb-2 mt-4">
+            <span class="text-light-gray" style="font-size: 0.9rem;"
+              >Not account? </span
+            ><a
+              href="#"
+              id="toggle-signup"
+              class="link-purple"
+              style="font-size: 0.9rem;"
+              >Create account</a
+            >
+          </div>
+
+          <div class="divider-light">or</div>
+
+          <button type="button" class="btn-outline-light" id="google-sso">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l2.85-2.22.83-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <p class="text-light-gray text-center" style="font-size: 0.75rem;">
+            By continuing, you agree to the
+            <span class="text-dark">Terms of Use</span> and
+            <span class="text-dark">Privacy Policy</span>.
+          </p>
         </div>
+
+        <!-- SIGNUP BLOCK -->
+        <div id="signup-block" class="fade-in hidden">
+          <div class="flex flex-col items-center mb-8">
+            <div class="flex items-center gap-2 mb-3">
+              <i
+                data-lucide="door-open"
+                color="#6366F1"
+                width="32"
+                height="32"
+              ></i>
+              <span
+                class="text-2xl font-bold text-dark"
+                style="letter-spacing: -0.5px;"
+                >Security Vault</span
+              >
+            </div>
+            <h1 class="text-xl font-semibold text-dark">Create your account</h1>
+            <br />
+          </div>
+
+          <form id="signup-form">
+            <div style="margin-bottom: 1rem;">
+              <input
+                type="text"
+                id="reg-name"
+                name="name"
+                autocomplete="name"
+                class="input-light"
+                placeholder="Full Name"
+                required
+              />
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <input
+                type="email"
+                id="reg-email"
+                name="email"
+                autocomplete="email"
+                class="input-light"
+                placeholder="Work Email"
+                required
+              />
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <input
+                type="tel"
+                id="reg-phone"
+                name="tel"
+                autocomplete="tel"
+                class="input-light"
+                placeholder="Phone Number"
+                required
+              />
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+              <input
+                type="password"
+                id="reg-password"
+                name="password"
+                autocomplete="new-password"
+                class="input-light"
+                placeholder="Create Password"
+                required
+              />
+            </div>
+
+            <button type="submit" class="btn-primary-purple">
+              Create Account
+            </button>
+          </form>
+
+          <div class="text-center mt-4">
+            <span class="text-light-gray">Already have an account? </span
+            ><a href="#" id="toggle-login" class="link-purple">Sign in</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE: LOADING OVERLAY -->
+    <div id="state-loading" class="auth-wrapper bg-light-gray fade-in hidden">
+      <div class="text-center">
+        <div
+          class="loader-spinner"
+          style="border-top-color: #6366F1; border-color: #E5E7EB; border-top-color: #6366F1;"
+        ></div>
+        <h2 class="text-lg font-medium text-dark">Encrypting Session...</h2>
+        <p class="text-sm text-light-gray mt-2">
+          Establishing secure gateway connection
+        </p>
+      </div>
     </div>
 
     <!-- STATE 2: MFA CHALLENGE -->
-    <div id="state-mfa" class="auth-wrapper fade-in hidden">
-        <div class="card auth-card">
-            <div class="text-center mb-6">
-                <h2 class="text-xl font-semibold mb-2">Security Verification</h2>
-                <p class="text-sm text-gray" id="mfa-instructions">Enter your 6-digit authenticator code.</p>
-            </div>
-
-            <!-- Conditional QR Block via JS -->
-            <div id="qr-block" class="hidden text-center">
-                <p class="text-xs text-gray mb-3">First time login detected. Scan to enroll:</p>
-                <div class="qr-placeholder">
-                    <!-- Placeholder SVG for QR -->
-                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                </div>
-            </div>
-
-            <form id="mfa-form">
-                <div class="input-group">
-                    <input type="text" id="totp" class="input-field input-mono" maxlength="6" placeholder="000000" autocomplete="off" required>
-                </div>
-                <button type="submit" class="btn-primary">Verify</button>
-            </form>
-            <div class="text-center mt-4">
-                <a href="#" id="back-to-login" class="text-sm text-gray hover:text-white" style="text-decoration: none;">Cancel</a>
-            </div>
+    <div id="state-mfa" class="auth-wrapper bg-light-gray fade-in hidden">
+      <div class="light-card auth-card">
+        <div class="text-center mb-6">
+          <h2 class="text-xl font-semibold mb-2 text-dark">
+            Security Verification
+          </h2>
+          <p class="text-sm text-light-gray" id="mfa-instructions">
+            Enter your 6-digit authenticator code.
+          </p>
         </div>
+
+        <!-- Conditional QR Block via JS -->
+        <div id="qr-block" class="hidden text-center">
+          <p class="text-xs text-light-gray mb-3">
+            First time login detected. Scan to enroll:
+          </p>
+          <div class="qr-placeholder" style="border: 1px solid #E5E7EB;">
+            <!-- Placeholder SVG for QR -->
+            <svg
+              width="100"
+              height="100"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#111827"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <form id="mfa-form">
+          <div class="input-group">
+            <input
+              type="text"
+              id="totp"
+              class="input-light input-mono"
+              maxlength="6"
+              placeholder="000000"
+              autocomplete="off"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-primary-purple">Verify</button>
+        </form>
+        <div class="text-center mt-4">
+          <a
+            href="#"
+            id="back-to-login"
+            class="text-sm text-light-gray hover:text-dark"
+            style="text-decoration: none;"
+            >Cancel</a
+          >
+        </div>
+      </div>
     </div>
 
     <!-- STATE 3: DASHBOARD -->
     <div id="state-dashboard" class="fade-in hidden w-full p-4">
-        <div class="dash-container">
-            
-            <!-- Top Nav -->
-            <header class="dash-header">
-                <div class="flex items-center gap-3">
-                    <div style="width: 38px; height: 38px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i data-lucide="box" color="white" width="20" height="20"></i>
-                    </div>
-                    <h2 class="text-lg font-semibold">Unified Security Hub</h2>
-                </div>
-                
-                <!-- Right Profile/Status -->
-                <div class="flex items-center gap-6">
-                    <div class="status-badge">
-                        <div class="status-dot"></div>
-                        Status: Operational
-                    </div>
-                    <div class="profile-container">
-                        <button class="avatar-btn" id="avatar-toggle">
-                            <div class="avatar" style="border: 2px solid #2e3b52;">A</div>
-                        </button>
-                        <!-- Dropdown Menu -->
-                        <div id="profile-dropdown" class="profile-dropdown hidden fade-in">
-                            <div class="dropdown-header">
-                                <div class="font-medium text-white" style="margin-bottom:0.15rem;">Aayush Pandey</div>
-                                <div class="text-xs text-gray">security@heyitsaayush.me</div>
-                            </div>
-                            <div class="dropdown-divider"></div>
-                            <button id="logout-btn" class="dropdown-item">
-                                <i data-lucide="log-out" width="16" height="16"></i>
-                                <span class="text-sm font-medium">Sign Out</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- KPI Cards -->
-            <div class="kpi-grid" id="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-h">Open Attack Paths</div>
-                    <div class="kpi-v text-red" id="kpi-1-val">3</div>
-                    <div class="kpi-sub" id="kpi-1-sub">↑ 1 since last scan</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-h" id="kpi-2-title">IAM Vulnerabilities</div>
-                    <div class="kpi-v" style="color: #F79009;" id="kpi-2-val">1</div>
-                    <div class="kpi-sub" id="kpi-2-sub">Wildcard policy active</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-h" id="kpi-3-title">MFA Enforced</div>
-                    <div class="kpi-v text-green" id="kpi-3-val">98%</div>
-                    <div class="kpi-sub" id="kpi-3-sub">2 users non-compliant</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-h" id="kpi-4-title">Exposed Secrets</div>
-                    <div class="kpi-v text-red" id="kpi-4-val">2</div>
-                    <div class="kpi-sub" id="kpi-4-sub">Critical severity</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-h" id="kpi-5-title">Controls Passing</div>
-                    <div class="kpi-v" style="color: #3B82F6;" id="kpi-5-val">84%</div>
-                    <div class="kpi-sub" id="kpi-5-sub">SOC 2 Type II progress</div>
-                </div>
+      <div class="dash-container">
+        <!-- Top Nav -->
+        <header class="dash-header">
+          <div class="flex items-center gap-3">
+            <div
+              style="width: 38px; height: 38px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center;"
+            >
+              <i data-lucide="box" color="white" width="20" height="20"></i>
             </div>
+            <h2 class="text-lg font-semibold">Unified Security Hub</h2>
+          </div>
 
-            <!-- Segmented Control -->
-            <div class="segmented-control">
-                <button class="segment-btn active" data-view="aws">
-                    <i data-lucide="cloud" width="16" height="16"></i>
-                    AWS Infrastructure
+          <!-- Right Profile/Status -->
+          <div class="flex items-center gap-6">
+            <div class="status-badge">
+              <div class="status-dot"></div>
+              Status: Operational
+            </div>
+            <div class="profile-container">
+              <button class="avatar-btn" id="avatar-toggle">
+                <div class="avatar" style="border: 2px solid #2e3b52;">A</div>
+              </button>
+              <!-- Dropdown Menu -->
+              <div
+                id="profile-dropdown"
+                class="profile-dropdown hidden fade-in"
+              >
+                <div class="dropdown-header">
+                  <div
+                    class="font-medium text-white"
+                    style="margin-bottom:0.15rem;"
+                  >
+                    Aayush Pandey
+                  </div>
+                  <div class="text-xs text-gray">security@heyitsaayush.me</div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <button id="logout-btn" class="dropdown-item">
+                  <i data-lucide="log-out" width="16" height="16"></i>
+                  <span class="text-sm font-medium">Sign Out</span>
                 </button>
-                <button class="segment-btn" data-view="slack">
-                    <div style="width:8px; height:8px; border-radius:50%; background:white;"></div>
-                    Slack Workspace
-                </button>
+              </div>
             </div>
+          </div>
+        </header>
 
-            <!-- Terminal Feed -->
-            <div class="terminal-container">
-                <div class="terminal-header">
-                    <div class="mac-dots">
-                        <div class="mac-dot dot-red"></div>
-                        <div class="mac-dot dot-yellow"></div>
-                        <div class="mac-dot dot-green"></div>
-                    </div>
-                    <div id="terminal-title">security-telemetry — AWS Infrastructure</div>
-                    <div class="flex items-center gap-1" style="color: var(--green);">
-                        <div class="status-dot"></div> LIVE
-                    </div>
-                </div>
-                <div class="terminal-body font-mono" id="terminal-feed">
-                    <!-- Logs -> JS -->
-                </div>
-            </div>
+        <!-- KPI Cards -->
+        <div class="kpi-grid" id="kpi-container">
+          <div class="kpi-card">
+            <div class="kpi-h">Open Attack Paths</div>
+            <div class="kpi-v text-red" id="kpi-1-val">3</div>
+            <div class="kpi-sub" id="kpi-1-sub">↑ 1 since last scan</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-h" id="kpi-2-title">IAM Vulnerabilities</div>
+            <div class="kpi-v" style="color: #F79009;" id="kpi-2-val">1</div>
+            <div class="kpi-sub" id="kpi-2-sub">Wildcard policy active</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-h" id="kpi-3-title">MFA Enforced</div>
+            <div class="kpi-v text-green" id="kpi-3-val">98%</div>
+            <div class="kpi-sub" id="kpi-3-sub">2 users non-compliant</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-h" id="kpi-4-title">Exposed Secrets</div>
+            <div class="kpi-v text-red" id="kpi-4-val">2</div>
+            <div class="kpi-sub" id="kpi-4-sub">Critical severity</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-h" id="kpi-5-title">Controls Passing</div>
+            <div class="kpi-v" style="color: #3B82F6;" id="kpi-5-val">84%</div>
+            <div class="kpi-sub" id="kpi-5-sub">SOC 2 Type II progress</div>
+          </div>
         </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+          <button class="segment-btn active" data-view="aws">
+            <i data-lucide="cloud" width="16" height="16"></i>
+            AWS Infrastructure
+          </button>
+          <button class="segment-btn" data-view="slack">
+            <div
+              style="width:8px; height:8px; border-radius:50%; background:white;"
+            ></div>
+            Slack Workspace
+          </button>
+        </div>
+
+        <!-- Terminal Feed -->
+        <div class="terminal-container">
+          <div class="terminal-header">
+            <div class="mac-dots">
+              <div class="mac-dot dot-red"></div>
+              <div class="mac-dot dot-yellow"></div>
+              <div class="mac-dot dot-green"></div>
+            </div>
+            <div id="terminal-title">
+              security-telemetry — AWS Infrastructure
+            </div>
+            <div class="flex items-center gap-1" style="color: var(--green);">
+              <div class="status-dot"></div>
+              LIVE
+            </div>
+          </div>
+          <div class="terminal-body font-mono" id="terminal-feed">
+            <!-- Logs -> JS -->
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- -------------------------------------------------------------------------- -->
     <!--                               JAVASCRIPT LOGIC                             -->
     <!-- -------------------------------------------------------------------------- -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+      document.addEventListener('DOMContentLoaded', () => {
+          lucide.createIcons();
 
-            // DOM References
-            const stateLogin = document.getElementById('state-login');
-            const stateMfa = document.getElementById('state-mfa');
-            const stateDashboard = document.getElementById('state-dashboard');
+          // DOM References
+          const stateLogin = document.getElementById('state-login');
+          const stateLoading = document.getElementById('state-loading');
+          const stateMfa = document.getElementById('state-mfa');
+          const stateDashboard = document.getElementById('state-dashboard');
 
-            const loginBlock = document.getElementById('login-block');
-            const signupBlock = document.getElementById('signup-block');
-            const loginForm = document.getElementById('login-form');
-            const signupForm = document.getElementById('signup-form');
-            const toggleSignup = document.getElementById('toggle-signup');
-            const toggleLogin = document.getElementById('toggle-login');
-            
-            const mfaForm = document.getElementById('mfa-form');
-            const googleSso = document.getElementById('google-sso');
-            const backToLogin = document.getElementById('back-to-login');
+          const loginBlock = document.getElementById('login-block');
+          const signupBlock = document.getElementById('signup-block');
+          const loginForm = document.getElementById('login-form');
+          const signupForm = document.getElementById('signup-form');
+          const toggleSignup = document.getElementById('toggle-signup');
+          const toggleLogin = document.getElementById('toggle-login');
 
-            const segmentBtns = document.querySelectorAll('.segment-btn');
-            const terminalFeed = document.getElementById('terminal-feed');
+          const mfaForm = document.getElementById('mfa-form');
+          const googleSso = document.getElementById('google-sso');
+          const corpSso = document.getElementById('corp-sso');
+          const backToLogin = document.getElementById('back-to-login');
 
-            const avatarToggle = document.getElementById('avatar-toggle');
-            const profileDropdown = document.getElementById('profile-dropdown');
-            const logoutBtn = document.getElementById('logout-btn');
+          const segmentBtns = document.querySelectorAll('.segment-btn');
+          const terminalFeed = document.getElementById('terminal-feed');
 
-            // Internal Logic Settings
-            let isFirstTimeUser = true; // Set to true to mock QR enrollment
-            let currentEnv = 'aws';
-            let terminalInterval;
+          const avatarToggle = document.getElementById('avatar-toggle');
+          const profileDropdown = document.getElementById('profile-dropdown');
+          const logoutBtn = document.getElementById('logout-btn');
 
-            // -- Navigation --
-            function showState(target) {
-                [stateLogin, stateMfa, stateDashboard].forEach(el => el.classList.add('hidden'));
-                target.classList.remove('hidden');
+          // Internal Logic Settings
+          let isFirstTimeUser = true; // Set to true to mock QR enrollment
+          let currentEnv = 'aws';
+          let terminalInterval;
 
-                if (target === stateMfa) {
-                    setupMfaScreen();
-                } else if (target === stateDashboard) {
-                    initDashboard();
-                } else {
-                    stopTerminal();
-                }
-            }
+          // -- Navigation --
+          function showState(target) {
+              [stateLogin, stateLoading, stateMfa, stateDashboard].forEach(el => el.classList.add('hidden'));
+              target.classList.remove('hidden');
 
-            function setupMfaScreen() {
-                const qrBlock = document.getElementById('qr-block');
-                const mfaInst = document.getElementById('mfa-instructions');
-                
-                if (isFirstTimeUser) {
-                    qrBlock.classList.remove('hidden');
-                    mfaInst.innerText = "Setup your 2FA application.";
-                } else {
-                    qrBlock.classList.add('hidden');
-                    mfaInst.innerText = "Enter your 6-digit authenticator code.";
-                }
-                setTimeout(() => document.getElementById('totp').focus(), 100);
-            }
+              if (target === stateMfa) {
+                  setupMfaScreen();
+              } else if (target === stateDashboard) {
+                  initDashboard();
+              } else {
+                  stopTerminal();
+              }
+          }
 
-            // -- Event Listeners --
-            toggleSignup.addEventListener('click', (e) => {
-                e.preventDefault();
-                loginBlock.classList.add('hidden');
-                signupBlock.classList.remove('hidden');
-            });
-            toggleLogin.addEventListener('click', (e) => {
-                e.preventDefault();
-                signupBlock.classList.add('hidden');
-                loginBlock.classList.remove('hidden');
-            });
+          function setupMfaScreen() {
+              const qrBlock = document.getElementById('qr-block');
+              const mfaInst = document.getElementById('mfa-instructions');
 
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                showState(stateMfa);
-            });
-            signupForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                showState(stateMfa);
-            });
-            googleSso.addEventListener('click', () => {
-                showState(stateMfa);
-            });
-            backToLogin.addEventListener('click', (e) => {
-                e.preventDefault();
-                showState(stateLogin);
-            });
-            mfaForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const code = document.getElementById('totp').value;
-                if (code.length === 6) {
-                    // Update mock state for next loop to simulate persistence
-                    isFirstTimeUser = false; 
-                    showState(stateDashboard);
-                }
-            });
+              if (isFirstTimeUser) {
+                  qrBlock.classList.remove('hidden');
+                  mfaInst.innerText = "Setup your 2FA application.";
+              } else {
+                  qrBlock.classList.add('hidden');
+                  mfaInst.innerText = "Enter your 6-digit authenticator code.";
+              }
+              setTimeout(() => document.getElementById('totp').focus(), 100);
+          }
 
-            // -- Dropdown & Logout Logic --
-            avatarToggle.addEventListener('click', () => {
-                profileDropdown.classList.toggle('hidden');
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
-                    profileDropdown.classList.add('hidden');
-                }
-            });
+          // -- Event Listeners --
+          toggleSignup.addEventListener('click', (e) => {
+              e.preventDefault();
+              loginBlock.classList.add('hidden');
+              signupBlock.classList.remove('hidden');
+          });
+          toggleLogin.addEventListener('click', (e) => {
+              e.preventDefault();
+              signupBlock.classList.add('hidden');
+              loginBlock.classList.remove('hidden');
+          });
 
-            logoutBtn.addEventListener('click', () => {
-                profileDropdown.classList.add('hidden');
-                loginForm.reset();
-                document.getElementById('totp').value = '';
-                showState(stateLogin);
-            });
+          function processAuthSuccess() {
+              showState(stateLoading);
+              setTimeout(() => {
+                  showState(stateMfa);
+              }, 1000);
+          }
 
-            // -- Dashboard Logic --
-            function initDashboard() {
-                updateDashboardContext();
-                startTerminal();
-            }
+          loginForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              processAuthSuccess();
+          });
+          signupForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const emailVal = document.getElementById('reg-email').value;
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(emailVal)) {
+                  alert('Please enter a valid work email.');
+                  return;
+              }
+              processAuthSuccess();
+          });
+          googleSso.addEventListener('click', () => {
+              processAuthSuccess();
+          });
+          corpSso.addEventListener('click', () => {
+              processAuthSuccess();
+          });
+          backToLogin.addEventListener('click', (e) => {
+              e.preventDefault();
+              showState(stateLogin);
+          });
+          mfaForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const code = document.getElementById('totp').value;
+              if (code.length === 6) {
+                  // Update mock state for next loop to simulate persistence
+                  isFirstTimeUser = false;
+                  showState(stateDashboard);
+              }
+          });
 
-            segmentBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const view = e.target.dataset.view;
-                    if (currentEnv === view) return;
-                    
-                    segmentBtns.forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    
-                    currentEnv = view;
-                    updateDashboardContext();
-                    
-                    // Clear terminal and log context shift
-                    terminalFeed.innerHTML = '';
-                    addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
-                });
-            });
+          // -- Dropdown & Logout Logic --
+          avatarToggle.addEventListener('click', () => {
+              profileDropdown.classList.toggle('hidden');
+          });
 
-            function updateDashboardContext() {
-                const titleTerm = document.getElementById('terminal-title');
-                if (currentEnv === 'aws') {
-                    // KPI 1
-                    document.getElementById('kpi-1-val').innerText = '3';
-                    document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
-                    // KPI 2
-                    document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
-                    document.getElementById('kpi-2-val').innerText = '1';
-                    document.getElementById('kpi-2-val').style.color = '#F79009';
-                    document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
-                    // KPI 3
-                    document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                    document.getElementById('kpi-3-val').innerText = '98%';
-                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                    document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
-                    // KPI 4
-                    document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
-                    document.getElementById('kpi-4-val').innerText = '2';
-                    document.getElementById('kpi-4-val').style.color = 'var(--red)';
-                    document.getElementById('kpi-4-sub').innerText = 'Critical severity';
-                    // KPI 5
-                    document.getElementById('kpi-5-title').innerText = 'Controls Passing';
-                    document.getElementById('kpi-5-val').innerText = '84%';
-                    document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                    document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
-                    
-                    titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
-                } else {
-                    document.getElementById('kpi-1-val').innerText = '1';
-                    document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
-                    document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
-                    document.getElementById('kpi-2-val').innerText = '2';
-                    document.getElementById('kpi-2-val').style.color = 'var(--red)';
-                    document.getElementById('kpi-2-sub').innerText = 'In public channels';
-                    document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
-                    document.getElementById('kpi-3-val').innerText = '100%';
-                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                    document.getElementById('kpi-3-sub').innerText = 'No guest violations';
-                    document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
-                    document.getElementById('kpi-4-val').innerText = '0';
-                    document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                    document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
-                    document.getElementById('kpi-5-title').innerText = 'Workspace Health';
-                    document.getElementById('kpi-5-val').innerText = '95%';
-                    document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                    document.getElementById('kpi-5-sub').innerText = 'All core policies met';
-                    
-                    titleTerm.innerText = 'security-telemetry — Slack Workspace';
-                }
-            }
+          document.addEventListener('click', (e) => {
+              if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+                  profileDropdown.classList.add('hidden');
+              }
+          });
 
-            // -- Attack Path Terminal Engine --
-            const attackLogs = {
-                aws: [
-                    { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
-                    { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
-                    { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
-                    { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
-                ],
-                slack: [
-                    { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
-                    { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
-                    { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
-                ]
-            };
+          logoutBtn.addEventListener('click', () => {
+              profileDropdown.classList.add('hidden');
+              loginForm.reset();
+              document.getElementById('totp').value = '';
+              showState(stateLogin);
+          });
 
-            function startTerminal() {
-                if (terminalInterval) clearInterval(terminalInterval);
-                terminalFeed.innerHTML = '';
+          // -- Dashboard Logic --
+          function initDashboard() {
+              updateDashboardContext();
+              startTerminal();
+          }
 
-                // Seed logs
-                const pool = attackLogs[currentEnv];
-                for (let i = 0; i < pool.length; i++) {
-                    const item = pool[i];
-                    addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-                }
+          segmentBtns.forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                  const view = e.target.dataset.view;
+                  if (currentEnv === view) return;
 
-                terminalInterval = setInterval(() => {
-                    const item = pool[Math.floor(Math.random() * pool.length)];
-                    addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-                }, 3500);
-            }
+                  segmentBtns.forEach(b => b.classList.remove('active'));
+                  e.target.classList.add('active');
 
-            function stopTerminal() {
-                if (terminalInterval) {
-                    clearInterval(terminalInterval);
-                    terminalInterval = null;
-                }
-            }
+                  currentEnv = view;
+                  updateDashboardContext();
 
-            function addLog(tag, content, level, pathHighlight, pathTarget) {
-                const entry = document.createElement('div');
-                entry.className = 'log-entry fade-in';
-                
-                const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
-                const tagClass = tag.toLowerCase(); 
-                
-                let levelHTML = '';
-                if (level === 'CRITICAL') {
-                    levelHTML = `<span class="log-crit">${level}:</span> `;
-                } else if (level === 'ALERT') {
-                    levelHTML = `<span class="log-alert">${level}:</span> `;
-                } else if (level === 'WARN') {
-                    levelHTML = `<span class="log-warn">${level}:</span> `;
-                } else {
-                    levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
-                }
+                  // Clear terminal and log context shift
+                  terminalFeed.innerHTML = '';
+                  addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
+              });
+          });
 
-                entry.innerHTML = `
-                    <div>
-                        <span class="log-time">${timeStr}</span>
-                        <span class="log-tag ${tagClass}">[${tag}]</span>
-                        ${levelHTML}<span class="log-text">${content}</span>
-                    </div>
-                `;
-                
-                if (pathHighlight && pathTarget) {
-                    const pathLine = document.createElement('div');
-                    pathLine.style.paddingLeft = '6.5rem';
-                    pathLine.style.marginTop = '0.1rem';
-                    pathLine.style.marginBottom = '0.4rem';
-                    pathLine.innerHTML = `
-                        <span style="color:#666;">&#x21B3; Attack Path:</span> 
-                        <span style="color:#A855F7;">${pathHighlight}</span> 
-                        <span style="color:#666;">&rarr;</span> 
-                        <span style="color:#818CF8;">${pathTarget}</span>
-                    `;
-                    entry.appendChild(pathLine);
-                }
-                
-                terminalFeed.appendChild(entry);
-                terminalFeed.scrollTop = terminalFeed.scrollHeight;
+          function updateDashboardContext() {
+              const titleTerm = document.getElementById('terminal-title');
+              if (currentEnv === 'aws') {
+                  // KPI 1
+                  document.getElementById('kpi-1-val').innerText = '3';
+                  document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
+                  // KPI 2
+                  document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
+                  document.getElementById('kpi-2-val').innerText = '1';
+                  document.getElementById('kpi-2-val').style.color = '#F79009';
+                  document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
+                  // KPI 3
+                  document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                  document.getElementById('kpi-3-val').innerText = '98%';
+                  document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                  document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
+                  // KPI 4
+                  document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
+                  document.getElementById('kpi-4-val').innerText = '2';
+                  document.getElementById('kpi-4-val').style.color = 'var(--red)';
+                  document.getElementById('kpi-4-sub').innerText = 'Critical severity';
+                  // KPI 5
+                  document.getElementById('kpi-5-title').innerText = 'Controls Passing';
+                  document.getElementById('kpi-5-val').innerText = '84%';
+                  document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                  document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
 
-                if (terminalFeed.childElementCount > 20) {
-                    terminalFeed.removeChild(terminalFeed.firstChild);
-                }
-            }
-        });
+                  titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
+              } else {
+                  document.getElementById('kpi-1-val').innerText = '1';
+                  document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
+                  document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
+                  document.getElementById('kpi-2-val').innerText = '2';
+                  document.getElementById('kpi-2-val').style.color = 'var(--red)';
+                  document.getElementById('kpi-2-sub').innerText = 'In public channels';
+                  document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
+                  document.getElementById('kpi-3-val').innerText = '100%';
+                  document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                  document.getElementById('kpi-3-sub').innerText = 'No guest violations';
+                  document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
+                  document.getElementById('kpi-4-val').innerText = '0';
+                  document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                  document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
+                  document.getElementById('kpi-5-title').innerText = 'Workspace Health';
+                  document.getElementById('kpi-5-val').innerText = '95%';
+                  document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                  document.getElementById('kpi-5-sub').innerText = 'All core policies met';
+
+                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
+              }
+          }
+
+          // -- Attack Path Terminal Engine --
+          const attackLogs = {
+              aws: [
+                  { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
+                  { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
+                  { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
+                  { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
+              ],
+              slack: [
+                  { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
+                  { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
+                  { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
+              ]
+          };
+
+          function startTerminal() {
+              if (terminalInterval) clearInterval(terminalInterval);
+              terminalFeed.innerHTML = '';
+
+              // Seed logs
+              const pool = attackLogs[currentEnv];
+              for (let i = 0; i < pool.length; i++) {
+                  const item = pool[i];
+                  addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+              }
+
+              terminalInterval = setInterval(() => {
+                  const item = pool[Math.floor(Math.random() * pool.length)];
+                  addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+              }, 3500);
+          }
+
+          function stopTerminal() {
+              if (terminalInterval) {
+                  clearInterval(terminalInterval);
+                  terminalInterval = null;
+              }
+          }
+
+          function addLog(tag, content, level, pathHighlight, pathTarget) {
+              const entry = document.createElement('div');
+              entry.className = 'log-entry fade-in';
+
+              const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
+              const tagClass = tag.toLowerCase();
+
+              let levelHTML = '';
+              if (level === 'CRITICAL') {
+                  levelHTML = `<span class="log-crit">${level}:</span> `;
+              } else if (level === 'ALERT') {
+                  levelHTML = `<span class="log-alert">${level}:</span> `;
+              } else if (level === 'WARN') {
+                  levelHTML = `<span class="log-warn">${level}:</span> `;
+              } else {
+                  levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
+              }
+
+              entry.innerHTML = `
+                  <div>
+                      <span class="log-time">${timeStr}</span>
+                      <span class="log-tag ${tagClass}">[${tag}]</span>
+                      ${levelHTML}<span class="log-text">${content}</span>
+                  </div>
+              `;
+
+              if (pathHighlight && pathTarget) {
+                  const pathLine = document.createElement('div');
+                  pathLine.style.paddingLeft = '6.5rem';
+                  pathLine.style.marginTop = '0.1rem';
+                  pathLine.style.marginBottom = '0.4rem';
+                  pathLine.innerHTML = `
+                      <span style="color:#666;">&#x21B3; Attack Path:</span>
+                      <span style="color:#A855F7;">${pathHighlight}</span>
+                      <span style="color:#666;">&rarr;</span>
+                      <span style="color:#818CF8;">${pathTarget}</span>
+                  `;
+                  entry.appendChild(pathLine);
+              }
+
+              terminalFeed.appendChild(entry);
+              terminalFeed.scrollTop = terminalFeed.scrollHeight;
+
+              if (terminalFeed.childElementCount > 20) {
+                  terminalFeed.removeChild(terminalFeed.firstChild);
+              }
+          }
+      });
     </script>
-</body>
+  </body>
 </html>
