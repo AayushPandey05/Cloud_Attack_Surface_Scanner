@@ -176,37 +176,93 @@
         .qr-placeholder img { width: 130px; height: 130px; opacity: 0.8; }
 
         /* Dashboard specific */
+        .dash-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            background-color: #0c111d;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-height: calc(100vh - 4rem);
+        }
+
         .dash-header {
-            background-color: var(--slate);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background-color: var(--slate);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kpi-h { 
+            font-size: 0.70rem; 
+            color: var(--gray); 
+            margin-bottom: 0.75rem; 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
         
-        .segmented-control {
-            background-color: var(--navy);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            display: flex;
-            padding: 0.25rem;
+        .kpi-v { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            line-height: 1;
+            margin-bottom: 0.5rem;
         }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .segmented-control {
+            background-color: #1A233A;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            padding: 0.35rem;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
         .segment-btn {
             background: transparent;
             border: none;
             color: var(--gray);
             padding: 0.5rem 1.25rem;
-            border-radius: 4px;
+            border-radius: 999px;
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
+
         .segment-btn.active {
-            background-color: var(--slate);
+            background-color: var(--blue);
             color: var(--white);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .avatar {
@@ -224,8 +280,8 @@
             align-items: center;
             gap: 0.375rem;
             padding: 0.25rem 0.75rem;
-            background-color: rgba(18, 183, 106, 0.1);
-            border: 1px solid rgba(18, 183, 106, 0.2);
+            background-color: rgba(18, 183, 106, 0.15);
+            border: 1px solid rgba(18, 183, 106, 0.3);
             border-radius: 16px;
             color: var(--green);
             font-size: 0.75rem;
@@ -233,54 +289,52 @@
         }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--green); }
 
-        .dash-content {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .kpi-h { font-size: 0.875rem; color: var(--gray); margin-bottom: 0.5rem; }
-        .kpi-v { font-size: 1.75rem; font-weight: 600; }
-
         .terminal-container {
-            background-color: var(--terminal-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            height: 400px;
+            background-color: #000000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            min-height: 400px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            flex: 1;
         }
+
         .terminal-header {
-            background-color: var(--slate);
-            border-bottom: 1px solid var(--border);
-            padding: 0.75rem 1rem;
+            background-color: #0A0A0A;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 1.25rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--gray);
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #666;
+            font-family: 'JetBrains Mono', monospace;
         }
+
+        .mac-dots {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .mac-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-red { background-color: #FF5F56; }
+        .dot-yellow { background-color: #FFBD2E; }
+        .dot-green { background-color: #27C93F; }
+
         .terminal-body {
-            padding: 1rem;
+            padding: 1.5rem;
             overflow-y: auto;
             flex: 1;
         }
         
-        .log-entry { margin-bottom: 0.5rem; line-height: 1.5; font-size: 0.875rem; }
-        .log-time { color: var(--gray); margin-right: 0.5rem; }
+        .log-entry { margin-bottom: 0.5rem; line-height: 1.6; font-size: 0.875rem; }
+        .log-time { color: #555; margin-right: 0.75rem; }
         .log-tag.aws { color: #F79009; }
         .log-tag.slack { color: #E0C1F4; }
         .log-crit { color: var(--red); font-weight: 600; }
+        .log-alert { color: #F79009; font-weight: 600; }
+        .log-warn { color: #EAB308; font-weight: 600; }
         .log-text { color: #D0D5DD; }
-        .log-attack { color: var(--white); background-color: var(--red-bg); padding: 0 4px; border-radius: 3px; font-weight: 500;}
 
         /* Profile Dropdown */
         .profile-container { position: relative; }
@@ -424,77 +478,103 @@
     </div>
 
     <!-- STATE 3: DASHBOARD -->
-    <div id="state-dashboard" class="fade-in hidden flex-col w-full h-screen">
-        <!-- Top Nav -->
-        <header class="dash-header">
-            <div class="flex items-center gap-3">
-                <div style="width: 32px; height: 32px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="box" color="white" width="18" height="18"></i>
-                </div>
-                <h2 class="text-base font-semibold">Unified Security Hub</h2>
-            </div>
+    <div id="state-dashboard" class="fade-in hidden w-full p-4">
+        <div class="dash-container">
             
-            <!-- Segmented Control -->
-            <div class="segmented-control">
-                <button class="segment-btn active" data-view="aws">AWS Infrastructure</button>
-                <button class="segment-btn" data-view="slack">Slack Workspace</button>
-            </div>
-
-            <!-- Right Profile/Status -->
-            <div class="flex items-center gap-4">
-                <div class="status-badge">
-                    <div class="status-dot"></div>
-                    Status: Operational
+            <!-- Top Nav -->
+            <header class="dash-header">
+                <div class="flex items-center gap-3">
+                    <div style="width: 38px; height: 38px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="box" color="white" width="20" height="20"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold">Unified Security Hub</h2>
                 </div>
-                <div class="profile-container">
-                    <button class="avatar-btn" id="avatar-toggle">
-                        <div class="avatar">A</div>
-                    </button>
-                    <!-- Dropdown Menu -->
-                    <div id="profile-dropdown" class="profile-dropdown hidden fade-in">
-                        <div class="dropdown-header">
-                            <div class="font-medium text-white" style="margin-bottom:0.15rem;">Aayush Pandey</div>
-                            <div class="text-xs text-gray">security@heyitsaayush.me</div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <button id="logout-btn" class="dropdown-item">
-                            <i data-lucide="log-out" width="16" height="16"></i>
-                            <span class="text-sm font-medium">Sign Out</span>
+                
+                <!-- Right Profile/Status -->
+                <div class="flex items-center gap-6">
+                    <div class="status-badge">
+                        <div class="status-dot"></div>
+                        Status: Operational
+                    </div>
+                    <div class="profile-container">
+                        <button class="avatar-btn" id="avatar-toggle">
+                            <div class="avatar" style="border: 2px solid #2e3b52;">A</div>
                         </button>
+                        <!-- Dropdown Menu -->
+                        <div id="profile-dropdown" class="profile-dropdown hidden fade-in">
+                            <div class="dropdown-header">
+                                <div class="font-medium text-white" style="margin-bottom:0.15rem;">Aayush Pandey</div>
+                                <div class="text-xs text-gray">security@heyitsaayush.me</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button id="logout-btn" class="dropdown-item">
+                                <i data-lucide="log-out" width="16" height="16"></i>
+                                <span class="text-sm font-medium">Sign Out</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Main Content -->
-        <main class="dash-content">
             <!-- KPI Cards -->
             <div class="kpi-grid" id="kpi-container">
-                <div class="card p-4">
+                <div class="kpi-card">
                     <div class="kpi-h">Open Attack Paths</div>
-                    <div class="kpi-v text-red" id="kpi-open">3</div>
+                    <div class="kpi-v text-red" id="kpi-1-val">3</div>
+                    <div class="kpi-sub" id="kpi-1-sub">↑ 1 since last scan</div>
                 </div>
-                <div class="card p-4">
-                    <div class="kpi-h" id="kpi-vuln-title">IAM Vulnerabilities</div>
-                    <div class="kpi-v" id="kpi-vuln">1</div>
+                <div class="kpi-card">
+                    <div class="kpi-h" id="kpi-2-title">IAM Vulnerabilities</div>
+                    <div class="kpi-v" style="color: #F79009;" id="kpi-2-val">1</div>
+                    <div class="kpi-sub" id="kpi-2-sub">Wildcard policy active</div>
                 </div>
-                <div class="card p-4">
-                    <div class="kpi-h" id="kpi-policy-title">MFA Enforced</div>
-                    <div class="kpi-v text-green" id="kpi-policy">98%</div>
+                <div class="kpi-card">
+                    <div class="kpi-h" id="kpi-3-title">MFA Enforced</div>
+                    <div class="kpi-v text-green" id="kpi-3-val">98%</div>
+                    <div class="kpi-sub" id="kpi-3-sub">2 users non-compliant</div>
                 </div>
+                <div class="kpi-card">
+                    <div class="kpi-h" id="kpi-4-title">Exposed Secrets</div>
+                    <div class="kpi-v text-red" id="kpi-4-val">2</div>
+                    <div class="kpi-sub" id="kpi-4-sub">Critical severity</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-h" id="kpi-5-title">Controls Passing</div>
+                    <div class="kpi-v" style="color: #3B82F6;" id="kpi-5-val">84%</div>
+                    <div class="kpi-sub" id="kpi-5-sub">SOC 2 Type II progress</div>
+                </div>
+            </div>
+
+            <!-- Segmented Control -->
+            <div class="segmented-control">
+                <button class="segment-btn active" data-view="aws">
+                    <i data-lucide="cloud" width="16" height="16"></i>
+                    AWS Infrastructure
+                </button>
+                <button class="segment-btn" data-view="slack">
+                    <div style="width:8px; height:8px; border-radius:50%; background:white;"></div>
+                    Slack Workspace
+                </button>
             </div>
 
             <!-- Terminal Feed -->
             <div class="terminal-container">
                 <div class="terminal-header">
-                    <i data-lucide="terminal" width="16" height="16"></i>
-                    <span>Attack Surface Telemetry</span>
+                    <div class="mac-dots">
+                        <div class="mac-dot dot-red"></div>
+                        <div class="mac-dot dot-yellow"></div>
+                        <div class="mac-dot dot-green"></div>
+                    </div>
+                    <div id="terminal-title">security-telemetry — AWS Infrastructure</div>
+                    <div class="flex items-center gap-1" style="color: var(--green);">
+                        <div class="status-dot"></div> LIVE
+                    </div>
                 </div>
                 <div class="terminal-body font-mono" id="terminal-feed">
                     <!-- Logs -> JS -->
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <!-- -------------------------------------------------------------------------- -->
@@ -639,59 +719,87 @@
             });
 
             function updateDashboardContext() {
-                const vulnTitle = document.getElementById('kpi-vuln-title');
-                const vulnVal = document.getElementById('kpi-vuln');
-                const policyTitle = document.getElementById('kpi-policy-title');
-                const policyVal = document.getElementById('kpi-policy');
-
+                const titleTerm = document.getElementById('terminal-title');
                 if (currentEnv === 'aws') {
-                    document.getElementById('kpi-open').innerText = '3';
-                    vulnTitle.innerText = 'IAM Vulnerabilities';
-                    vulnVal.innerText = '1';
-                    policyTitle.innerText = 'MFA Enforced';
-                    policyVal.innerText = '98%';
+                    // KPI 1
+                    document.getElementById('kpi-1-val').innerText = '3';
+                    document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
+                    // KPI 2
+                    document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
+                    document.getElementById('kpi-2-val').innerText = '1';
+                    document.getElementById('kpi-2-val').style.color = '#F79009';
+                    document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
+                    // KPI 3
+                    document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                    document.getElementById('kpi-3-val').innerText = '98%';
+                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                    document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
+                    // KPI 4
+                    document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
+                    document.getElementById('kpi-4-val').innerText = '2';
+                    document.getElementById('kpi-4-val').style.color = 'var(--red)';
+                    document.getElementById('kpi-4-sub').innerText = 'Critical severity';
+                    // KPI 5
+                    document.getElementById('kpi-5-title').innerText = 'Controls Passing';
+                    document.getElementById('kpi-5-val').innerText = '84%';
+                    document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                    document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
+                    
+                    titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                 } else {
-                    document.getElementById('kpi-open').innerText = '1';
-                    vulnTitle.innerText = 'Exposed Tokens';
-                    vulnVal.innerText = '2';
-                    policyTitle.innerText = 'Channel Privacy';
-                    policyVal.innerText = 'Healthy';
+                    document.getElementById('kpi-1-val').innerText = '1';
+                    document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
+                    document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
+                    document.getElementById('kpi-2-val').innerText = '2';
+                    document.getElementById('kpi-2-val').style.color = 'var(--red)';
+                    document.getElementById('kpi-2-sub').innerText = 'In public channels';
+                    document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
+                    document.getElementById('kpi-3-val').innerText = '100%';
+                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                    document.getElementById('kpi-3-sub').innerText = 'No guest violations';
+                    document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
+                    document.getElementById('kpi-4-val').innerText = '0';
+                    document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                    document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
+                    document.getElementById('kpi-5-title').innerText = 'Workspace Health';
+                    document.getElementById('kpi-5-val').innerText = '95%';
+                    document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                    document.getElementById('kpi-5-sub').innerText = 'All core policies met';
+                    
+                    titleTerm.innerText = 'security-telemetry — Slack Workspace';
                 }
             }
 
             // -- Attack Path Terminal Engine --
             const attackLogs = {
                 aws: [
-                    { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' is public.", path: "Data Exfiltration." },
-                    { t: 'AWS', level: 'WARN', msg: "Over-permissive role assumed.", path: "Privilege Escalation." },
-                    { t: 'AWS', level: 'INFO', msg: "CloudTrail logging validated.", path: null },
-                    { t: 'AWS', level: 'CRITICAL', msg: "Access Key exposed in public repo.", path: "Initial Access." },
-                    { t: 'SYSTEM', level: 'INFO', msg: "Continuous compliance scan running.", path: null }
+                    { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
+                    { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
+                    { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
+                    { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
                 ],
                 slack: [
-                    { t: 'SLACK', level: 'ALERT', msg: "API Key detected in #general.", path: "Unauthorized Workspace Access." },
-                    { t: 'SLACK', level: 'WARN', msg: "External guest added to private channel.", path: "Lateral Movement." },
-                    { t: 'SLACK', level: 'INFO', msg: "Workspace retention policies verified.", path: null },
-                    { t: 'SLACK', level: 'ALERT', msg: "Bulk file download triggered by bot.", path: "Data Exfiltration." },
-                    { t: 'SYSTEM', level: 'INFO', msg: "DLP policy check initialized.", path: null }
+                    { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
+                    { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
+                    { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
                 ]
             };
 
             function startTerminal() {
                 if (terminalInterval) clearInterval(terminalInterval);
                 terminalFeed.innerHTML = '';
-                addLog('SYSTEM', 'Initializing Unified Evidence Engine...');
+
+                // Seed logs
+                const pool = attackLogs[currentEnv];
+                for (let i = 0; i < pool.length; i++) {
+                    const item = pool[i];
+                    addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+                }
 
                 terminalInterval = setInterval(() => {
-                    const pool = attackLogs[currentEnv];
                     const item = pool[Math.floor(Math.random() * pool.length)];
-                    
-                    let logStr = item.msg;
-                    if (item.path) {
-                        logStr += ` <span class="log-attack">Attack Path: ${item.path}</span>`;
-                    }
-                    addLog(item.t, logStr, item.level);
-                }, 2500);
+                    addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+                }, 3500);
             }
 
             function stopTerminal() {
@@ -701,30 +809,50 @@
                 }
             }
 
-            function addLog(tag, contentHTML, level = 'INFO') {
+            function addLog(tag, content, level, pathHighlight, pathTarget) {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry fade-in';
                 
                 const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
-                const tagClass = tag.toLowerCase(); // 'aws' or 'slack'
+                const tagClass = tag.toLowerCase(); 
                 
                 let levelHTML = '';
-                if (level === 'CRITICAL' || level === 'ALERT') {
-                    levelHTML = `<span class="log-crit">[${level}]</span> `;
+                if (level === 'CRITICAL') {
+                    levelHTML = `<span class="log-crit">${level}:</span> `;
+                } else if (level === 'ALERT') {
+                    levelHTML = `<span class="log-alert">${level}:</span> `;
                 } else if (level === 'WARN') {
-                    levelHTML = `<span style="color:#F79009">[${level}]</span> `;
+                    levelHTML = `<span class="log-warn">${level}:</span> `;
+                } else {
+                    levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
                 }
 
                 entry.innerHTML = `
-                    <span class="log-time">[${timeStr}]</span>
-                    <span class="log-tag ${tagClass}">[${tag}]</span>
-                    ${levelHTML}<span class="log-text">${contentHTML}</span>
+                    <div>
+                        <span class="log-time">${timeStr}</span>
+                        <span class="log-tag ${tagClass}">[${tag}]</span>
+                        ${levelHTML}<span class="log-text">${content}</span>
+                    </div>
                 `;
+                
+                if (pathHighlight && pathTarget) {
+                    const pathLine = document.createElement('div');
+                    pathLine.style.paddingLeft = '6.5rem';
+                    pathLine.style.marginTop = '0.1rem';
+                    pathLine.style.marginBottom = '0.4rem';
+                    pathLine.innerHTML = `
+                        <span style="color:#666;">&#x21B3; Attack Path:</span> 
+                        <span style="color:#A855F7;">${pathHighlight}</span> 
+                        <span style="color:#666;">&rarr;</span> 
+                        <span style="color:#818CF8;">${pathTarget}</span>
+                    `;
+                    entry.appendChild(pathLine);
+                }
                 
                 terminalFeed.appendChild(entry);
                 terminalFeed.scrollTop = terminalFeed.scrollHeight;
 
-                if (terminalFeed.childElementCount > 30) {
+                if (terminalFeed.childElementCount > 20) {
                     terminalFeed.removeChild(terminalFeed.firstChild);
                 }
             }
