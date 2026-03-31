@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Compliance Hub</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="assets/dashboard.css">
+</head>
+<body>
+    <div id="app">
+        <!-- PAGE ONE: IDENTITY GATEWAY -->
+        <section id="login-page" class="page active">
+            <div class="background-orbs">
+                <div class="orb orb-cyan"></div>
+                <div class="orb orb-purple"></div>
+            </div>
+            
+            <div class="login-container glass-card">
+                <div class="login-header">
+                    <div class="logo-circle">
+                        <i data-lucide="shield-check" class="icon-cyan"></i>
+                    </div>
+                    <h1>Secure Your Infrastructure. Simplify Your Audit.</h1>
+                    <p>Enter your credentials to access the compliance hub.</p>
+                </div>
+
+                <div class="login-sections">
+                    <div class="manual-login">
+                        <form id="login-form">
+                            <div class="input-group">
+                                <label for="email">Work Email</label>
+                                <div class="input-wrapper">
+                                    <input type="email" id="email" placeholder="name@company.com" required autocomplete="username">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="password">Password</label>
+                                <div class="input-wrapper">
+                                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <span>Sign In to Vault</span>
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="login-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <div class="social-login">
+                        <button type="button" class="btn-secondary" id="google-login-btn">
+                            <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+                                    <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
+                                    <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
+                                    <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/>
+                                    <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
+                                </g>
+                            </svg>
+                            Continue with Google
+                        </button>
+                    </div>
+                </div>
+
+                <div class="login-footer">
+                    <a href="#">ISO 27001 Compliance</a>
+                    <span class="dot">•</span>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE TWO: MFA HANDSHAKE -->
+        <section id="mfa-page" class="page hidden">
+            <div class="background-orbs">
+                <div class="orb orb-green"></div>
+            </div>
+
+            <div class="mfa-container glass-card">
+                <button type="button" class="btn-back" id="back-to-login">
+                    <i data-lucide="arrow-left"></i>
+                    Back
+                </button>
+                
+                <div class="mfa-header">
+                    <div class="logo-circle pulsing-green">
+                        <i data-lucide="shield-alert" class="icon-green"></i>
+                    </div>
+                    <h2>Security Verification</h2>
+                    <p>Secure your account with Time-based One-Time Password (TOTP).</p>
+                </div>
+
+                <div class="mfa-body">
+                    <div class="qr-mockup">
+                        <i data-lucide="qr-code"></i>
+                        <div class="scan-line"></div>
+                    </div>
+                    <form id="mfa-form">
+                        <div class="mfa-input-group">
+                            <input type="text" id="totp" maxlength="6" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
+                        </div>
+                        <button type="submit" class="btn-primary glow-green">
+                            <span>Verify & Enter Vault</span>
+                            <i data-lucide="check-circle"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE THREE: UNIFIED COMPLIANCE DASHBOARD -->
+        <section id="dashboard-page" class="page hidden dashboard-layout">
+            
+            <header class="glass-header">
+                <div class="header-left">
+                    <i data-lucide="layers" class="icon-purple"></i>
+                    <h2>Unified Compliance Hub</h2>
+                </div>
+                <!-- View Switcher -->
+                <div class="view-switcher">
+                    <button class="view-btn active" data-view="cloud">Cloud View</button>
+                    <button class="view-btn" data-view="slack">Slack View</button>
+                </div>
+                <div class="header-right">
+                    <div class="region-badge">
+                        <span class="pulse-dot"></span>
+                        Mumbai Region
+                    </div>
+                    <button class="btn-icon" title="Notifications"><i data-lucide="bell"></i></button>
+                    <button class="btn-icon" id="logout-btn" title="Sign Out"><i data-lucide="log-out"></i></button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <!-- KPI ROW -->
+                <div class="kpi-grid transition-fade" id="kpi-container">
+                    <div class="kpi-card top-edge-glow-cyan" id="kpi-card-1">
+                        <div class="kpi-title">
+                            <i data-lucide="fingerprint" class="icon-cyan" id="kpi-icon-1"></i>
+                            <span id="kpi-title-1">Identity Security</span>
+                        </div>
+                        <div class="kpi-value" id="kpi-val-1">98%</div>
+                        <div class="kpi-trend positive" id="kpi-trend-1"><i data-lucide="trending-up"></i> +2.4%</div>
+                    </div>
+                    <div class="kpi-card top-edge-glow-green" id="kpi-card-2">
+                        <div class="kpi-title">
+                            <i data-lucide="database" class="icon-green" id="kpi-icon-2"></i>
+                            <span id="kpi-title-2">Data Protection</span>
+                        </div>
+                        <div class="kpi-value" id="kpi-val-2">100%</div>
+                        <div class="kpi-trend neutral" id="kpi-trend-2"><i data-lucide="minus"></i> No Change</div>
+                    </div>
+                    <div class="kpi-card top-edge-glow-purple" id="kpi-card-3">
+                        <div class="kpi-title">
+                            <i data-lucide="slack" class="icon-purple" id="kpi-icon-3"></i>
+                            <span id="kpi-title-3">Slack Workspace</span>
+                        </div>
+                        <div class="kpi-value" id="kpi-val-3">2 Alerts</div>
+                        <div class="kpi-trend negative" id="kpi-trend-3"><i data-lucide="alert-triangle"></i> Action Required</div>
+                    </div>
+                    <div class="kpi-card top-edge-glow-cyan" id="kpi-card-4">
+                        <div class="kpi-title">
+                            <i data-lucide="network" class="icon-cyan" id="kpi-icon-4"></i>
+                            <span id="kpi-title-4">Network Guard</span>
+                        </div>
+                        <div class="kpi-value" id="kpi-val-4">Active</div>
+                        <div class="kpi-trend positive" id="kpi-trend-4"><i data-lucide="shield-check"></i> 0 Breaches</div>
+                    </div>
+                </div>
+
+                <div class="main-columns">
+                    <!-- HERO SECTION: TERMINAL -->
+                    <div class="hero-section glass-card top-edge-glow-purple">
+                        <div class="section-header">
+                            <h3><i data-lucide="terminal"></i> Unified Evidence Feed</h3>
+                            <div class="terminal-controls">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                        </div>
+                        <div class="terminal-window">
+                            <div class="terminal-content" id="terminal-feed">
+                                <!-- Logs injected here -->
+                            </div>
+                            <!-- Scanning effect -->
+                            <div class="terminal-scanner"></div>
+                        </div>
+                    </div>
+
+                    <!-- SIDEBAR: RESOURCES -->
+                    <div class="sidebar-section">
+                        <div class="resource-card glass-card top-edge-glow-cyan">
+                            <i data-lucide="file-text" class="icon-cyan resource-icon"></i>
+                            <div class="resource-info">
+                                <h4>Unified-Audit-Trail.csv</h4>
+                                <p>Last fetched: 2 mins ago</p>
+                            </div>
+                            <button class="btn-download"><i data-lucide="download"></i></button>
+                        </div>
+
+                        <div class="resource-card glass-card top-edge-glow-green">
+                            <i data-lucide="file-check-2" class="icon-green resource-icon"></i>
+                            <div class="resource-info">
+                                <h4>SOC 2 Mapping Matrix</h4>
+                                <p>Coverage: 98.5%</p>
+                            </div>
+                            <button class="btn-download"><i data-lucide="download"></i></button>
+                        </div>
+                        
+                        <div class="resource-card glass-card top-edge-glow-purple">
+                            <i data-lucide="shield" class="icon-purple resource-icon"></i>
+                            <div class="resource-info">
+                                <h4>ISO 27001 Annex A</h4>
+                                <p>All controls mapped</p>
+                            </div>
+                            <button class="btn-download"><i data-lucide="download"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </section>
+    </div>
+
+    <!-- Initialization -->
+    <script src="assets/logic.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
