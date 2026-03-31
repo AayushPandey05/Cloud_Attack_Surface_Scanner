@@ -1,48 +1,46 @@
-# AWS Audit-Ready SOC 2 Hub 🛡️☁️
+# Cloud Attack Surface Scanner 🛡️⚡
 
-**Developed by:** Aayush Pandey  
-**Focus:** Cloud Security, IAM Automation, and GRC
+**Developed by:** Aayush Pandey  
+**Focus:** Cloud Security, Attack Surface Management, and Identity Threat Detection
 
 ---
 
 ## 📌 Project Overview
 
-The **AWS Audit-Ready SOC 2 Hub** is a specialized cloud infrastructure project designed to bridge the gap between being **compliant** and being **secure**.
+The **Cloud Attack Surface Scanner** is an enterprise-grade, serverless security tool designed to proactively discover and neutralize cloud misconfigurations before they can be exploited by threat actors.
 
-[cite_start]In the modern B2B SaaS landscape, manual compliance is slow and prone to human error[cite: 23, 25]. This hub automates the collection of **Real-Time Evidence** required for **SOC 2 and ISO 27001** audits.
+In the modern threat landscape, identity is the new perimeter. This tool automates the detection of high-risk IAM vulnerabilities, shadow admins, and exposed infrastructure, shifting cloud security from reactive logging to proactive threat containment.
 
-## 🚀 Key Features & SOC 2 Mapping
+## 🚀 Core Capabilities & Threat Detection
 
-- **Secure Authentication:** Amazon Cognito + MFA prevents unauthorized access.
-- **Identity Federation:** OIDC Integration regulates access through a unified framework.
-- [cite_start]**Role-Based Access (RBAC):** AWS IAM Groups/Policies ensures "Least Privilege"[cite: 31, 63].
-- [cite_start]**Continuous Monitoring:** AWS Config identifies potential vulnerabilities in real-time[cite: 38, 40].
-- [cite_start]**Automated Evidence:** CloudTrail + S3 maintains thorough audit trails[cite: 43, 51].
-- [cite_start]**Incident Response:** Lambda + SNS Alerts demonstrates response capabilities[cite: 69, 70].
+- **Identity Exploitation Prevention:** Enforces strict Role-Based Access Control (RBAC) and mandatory MFA to neutralize credential stuffing and privilege escalation vectors.
+- **Automated Threat Hunting:** Continuous monitoring pipelines identify potential vulnerabilities (like over-permissive identities and public S3 buckets) in real-time.
+- **Immutable Telemetry:** AWS CloudTrail + S3 establishes tamper-proof logs for incident response, preventing attackers from executing defense evasion techniques.
+- **Automated Threat Containment:** Event-driven architecture (AWS Lambda + SNS Alerts) triggers real-time notifications to disrupt attack chains instantly.
 
 ---
 
 ## 🏗️ System Architecture
 
-The hub operates on a **0-budget, Serverless Architecture**:
+Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing security without infrastructure overhead:
 
-- **The Gate:** Users authenticate via Cognito with mandatory MFA.
-- [cite_start]**The Watchman:** AWS Config monitors for risks like public S3 buckets[cite: 52, 54].
-- [cite_start]**The Automator:** AWS Lambda triggers "Leaver Workflows" to revoke access instantly[cite: 24, 93].
-- **The Evidence Locker:** Logs are streamed to an encrypted S3 bucket for audits.
-
----
-
-## 📂 Folder Structure
-
-- `/identity-auth`: Cognito & OIDC configuration.
-- `/access-control`: JSON IAM policies enforcing granular RBAC.
-- `/auto-remediation`: Lambda scripts for automated risk mitigation.
-- `/audit-evidence`: S3 & CloudTrail setups for "Audit Readiness".
-- `/compliance-dashboard`: A serverless S3-hosted UI for visibility.
+- **The Identity Gateway:** A custom B2B-styled SSO frontend interface utilizing robust session management and MFA challenge logic.
+- **The Detection Engine:** Python-based automation (`mfa_auditor.py`) that actively scans the cloud environment for critical access violations.
+- **The Telemetry Vault:** S3 buckets configured for immutable log storage to ensure complete visibility during security incidents.
+- **The Response Matrix:** Cloud infrastructure ready to execute automated containment workflows and alert security teams.
 
 ---
 
-## 🎯 Why This Project?
+## 📂 Repository Structure
 
-This project demonstrates a deep understanding of **B2B Identity-Aware** infrastructure. [cite_start]By automating the "scrambling for evidence" during audits, this hub builds stakeholder trust and increases organizational credibility[cite: 73, 102].
+- `/assets` - Core frontend logic (`logic.js`), UI styling, and AWS SDK configurations.
+- `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors (`vulnerability_vectors.md`) and sample threat telemetry.
+- `/backend-functions` - Python threat-hunting scripts and automated auditors.
+- `/iam-policies` - Hardened JSON policies enforcing the principle of "Least Privilege".
+- `/infrastructure` - Setup files and YAML templates for rapid, secure deployment.
+
+---
+
+## 🎯 Why I Built This
+
+This project demonstrates a deep, practical understanding of **Cloud Security Posture Management (CSPM)** and **AppSec engineering**. By building the tools to automatically detect and contain cloud attack paths, this project proves the ability to defend enterprise perimeters and reduce blast radius at scale.
