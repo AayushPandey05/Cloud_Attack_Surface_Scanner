@@ -3,239 +3,732 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unified Compliance Hub</title>
+    <title>Cloud Attack Surface Demo</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Styles -->
-    <link rel="stylesheet" href="assets/dashboard.css">
+
+    <style>
+        /* -------------------------------------------------------------------------- */
+        /*                            CSS RESET & VARS                                */
+        /* -------------------------------------------------------------------------- */
+        :root {
+            --navy: #0A1128;
+            --slate: #101828;
+            --blue: #1841FF;
+            --blue-hover: #1030cc;
+            --border: rgba(255, 255, 255, 0.08);
+            --white: #ffffff;
+            --gray: #98A2B3;
+            --green: #12B76A;
+            --red: #F04438;
+            --red-bg: rgba(240, 68, 56, 0.1);
+            --terminal-bg: #050505;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--navy);
+            color: var(--white);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /*                             UTILITY CLASSES                                */
+        /* -------------------------------------------------------------------------- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .w-full { width: 100%; }
+        .h-screen { height: 100vh; }
+        .text-center { text-align: center; }
+        
+        /* Typography */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .text-gray { color: var(--gray); }
+        .text-white { color: var(--white); }
+        .text-green { color: var(--green); }
+        .text-red { color: var(--red); }
+        
+        /* Surfaces */
+        .card {
+            background-color: var(--slate);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Inputs & Buttons */
+        .input-group { margin-bottom: 1.25rem; }
+        .input-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+        .input-field {
+            width: 100%;
+            background-color: var(--navy);
+            border: 1px solid var(--border);
+            color: var(--white);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        .input-mono {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            letter-spacing: 0.25rem;
+            font-size: 1.25rem;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background-color: var(--blue);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover { background-color: var(--blue-hover); }
+
+        .btn-secondary {
+            width: 100%;
+            background-color: transparent;
+            color: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .btn-secondary:hover { background-color: rgba(255,255,255,0.05); }
+
+        /* -------------------------------------------------------------------------- */
+        /*                            SPECIFIC COMPONENTS                             */
+        /* -------------------------------------------------------------------------- */
+        .auth-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .auth-card { width: 100%; max-width: 400px; }
+        
+        /* QR Code */
+        .qr-placeholder {
+            width: 150px; height: 150px;
+            background-color: var(--white);
+            border-radius: 8px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-placeholder img { width: 130px; height: 130px; opacity: 0.8; }
+
+        /* Dashboard specific */
+        .dash-header {
+            background-color: var(--slate);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .segmented-control {
+            background-color: var(--navy);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            padding: 0.25rem;
+        }
+        .segment-btn {
+            background: transparent;
+            border: none;
+            color: var(--gray);
+            padding: 0.5rem 1.25rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .segment-btn.active {
+            background-color: var(--slate);
+            color: var(--white);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .avatar {
+            width: 36px; height: 36px;
+            background-color: var(--blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            background-color: rgba(18, 183, 106, 0.1);
+            border: 1px solid rgba(18, 183, 106, 0.2);
+            border-radius: 16px;
+            color: var(--green);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--green); }
+
+        .dash-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .kpi-h { font-size: 0.875rem; color: var(--gray); margin-bottom: 0.5rem; }
+        .kpi-v { font-size: 1.75rem; font-weight: 600; }
+
+        .terminal-container {
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .terminal-header {
+            background-color: var(--slate);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+        .terminal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .log-entry { margin-bottom: 0.5rem; line-height: 1.5; font-size: 0.875rem; }
+        .log-time { color: var(--gray); margin-right: 0.5rem; }
+        .log-tag.aws { color: #F79009; }
+        .log-tag.slack { color: #E0C1F4; }
+        .log-crit { color: var(--red); font-weight: 600; }
+        .log-text { color: #D0D5DD; }
+        .log-attack { color: var(--white); background-color: var(--red-bg); padding: 0 4px; border-radius: 3px; font-weight: 500;}
+
+        /* Profile Dropdown */
+        .profile-container { position: relative; }
+        .avatar-btn {
+            background: transparent; border: none; cursor: pointer; padding: 0; outline: none;
+            transition: transform 0.1s;
+        }
+        .avatar-btn:active { transform: scale(0.95); }
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: 240px;
+            background-color: var(--slate);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+        .dropdown-header { padding: 1rem; }
+        .dropdown-divider { height: 1px; background-color: var(--border); }
+        .dropdown-item {
+            width: 100%; display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.875rem 1rem; background: transparent; border: none;
+            color: var(--white); cursor: pointer; transition: all 0.15s;
+        }
+        .dropdown-item:hover { color: var(--red); background-color: rgba(255,255,255,0.03); }
+
+        /* Anim Utilities */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- PAGE ONE: IDENTITY GATEWAY -->
-        <section id="login-page" class="page active">
-            <div class="background-orbs">
-                <div class="orb orb-cyan"></div>
-                <div class="orb orb-purple"></div>
-            </div>
-            
-            <div class="login-container glass-card">
-                <div class="login-header">
-                    <div class="logo-circle">
-                        <i data-lucide="shield-check" class="icon-cyan"></i>
+
+    <!-- STATE 1: IDENTITY GATEWAY -->
+    <div id="state-login" class="auth-wrapper fade-in">
+        <div class="card auth-card">
+            <!-- LOGIN BLOCK -->
+            <div id="login-block" class="fade-in">
+                <div class="flex flex-col items-center mb-6">
+                    <!-- Okta style logo placeholder -->
+                    <div style="width: 48px; height: 48px; background: var(--blue); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="shield" color="white"></i>
                     </div>
-                    <h1>Secure Your Infrastructure. Simplify Your Audit.</h1>
-                    <p>Enter your credentials to access the compliance hub.</p>
+                    <h1 class="text-xl font-semibold">Access Security Vault</h1>
                 </div>
 
-                <div class="login-sections">
-                    <div class="manual-login">
-                        <form id="login-form">
-                            <div class="input-group">
-                                <label for="email">Work Email</label>
-                                <div class="input-wrapper">
-                                    <input type="email" id="email" placeholder="name@company.com" required autocomplete="username">
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label for="password">Password</label>
-                                <div class="input-wrapper">
-                                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary">
-                                <span>Sign In to Vault</span>
-                                <i data-lucide="arrow-right"></i>
-                            </button>
-                        </form>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label class="input-label" for="email">Work Email</label>
+                        <input type="email" id="email" class="input-field" placeholder="aayush@company.com" required>
                     </div>
-
-                    <div class="login-divider">
-                        <span>OR</span>
+                    <div class="input-group">
+                        <label class="input-label" for="password">Password</label>
+                        <input type="password" id="password" class="input-field" placeholder="••••••••" required>
                     </div>
+                    <button type="submit" class="btn-primary">Sign In</button>
+                </form>
 
-                    <div class="social-login">
-                        <button type="button" class="btn-secondary" id="google-login-btn">
-                            <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                                <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
-                                    <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
-                                    <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
-                                    <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/>
-                                    <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
-                                </g>
-                            </svg>
-                            Continue with Google
-                        </button>
-                    </div>
-                </div>
-
-                <div class="login-footer">
-                    <a href="#">ISO 27001 Compliance</a>
-                    <span class="dot">•</span>
-                    <a href="#">Privacy Policy</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- PAGE TWO: MFA HANDSHAKE -->
-        <section id="mfa-page" class="page hidden">
-            <div class="background-orbs">
-                <div class="orb orb-green"></div>
-            </div>
-
-            <div class="mfa-container glass-card">
-                <button type="button" class="btn-back" id="back-to-login">
-                    <i data-lucide="arrow-left"></i>
-                    Back
+                <button type="button" class="btn-secondary" id="google-sso">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l2.85-2.22.83-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
                 </button>
-                
-                <div class="mfa-header">
-                    <div class="logo-circle pulsing-green">
-                        <i data-lucide="shield-alert" class="icon-green"></i>
-                    </div>
-                    <h2>Security Verification</h2>
-                    <p>Secure your account with Time-based One-Time Password (TOTP).</p>
-                </div>
 
-                <div class="mfa-body">
-                    <div class="qr-mockup">
-                        <i data-lucide="qr-code"></i>
-                        <div class="scan-line"></div>
-                    </div>
-                    <form id="mfa-form">
-                        <div class="mfa-input-group">
-                            <input type="text" id="totp" maxlength="6" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
-                        </div>
-                        <button type="submit" class="btn-primary glow-green">
-                            <span>Verify & Enter Vault</span>
-                            <i data-lucide="check-circle"></i>
-                        </button>
-                    </form>
+                <div class="text-center mt-6">
+                    <a href="#" id="toggle-signup" class="text-sm font-medium" style="color: var(--blue); text-decoration: none;">New to SecurityVault? Create an account</a>
                 </div>
             </div>
-        </section>
 
-        <!-- PAGE THREE: UNIFIED COMPLIANCE DASHBOARD -->
-        <section id="dashboard-page" class="page hidden dashboard-layout">
-            
-            <header class="glass-header">
-                <div class="header-left">
-                    <i data-lucide="layers" class="icon-purple"></i>
-                    <h2>Unified Compliance Hub</h2>
-                </div>
-                <!-- View Switcher -->
-                <div class="view-switcher">
-                    <button class="view-btn active" data-view="cloud">Cloud View</button>
-                    <button class="view-btn" data-view="slack">Slack View</button>
-                </div>
-                <div class="header-right">
-                    <div class="region-badge">
-                        <span class="pulse-dot"></span>
-                        Mumbai Region
+            <!-- SIGNUP BLOCK -->
+            <div id="signup-block" class="fade-in hidden">
+                <div class="flex flex-col items-center mb-6">
+                    <div style="width: 48px; height: 48px; background: var(--blue); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="user-plus" color="white"></i>
                     </div>
-                    <button class="btn-icon" title="Notifications"><i data-lucide="bell"></i></button>
-                    <button class="btn-icon" id="logout-btn" title="Sign Out"><i data-lucide="log-out"></i></button>
-                </div>
-            </header>
-
-            <main class="dashboard-content">
-                <!-- KPI ROW -->
-                <div class="kpi-grid transition-fade" id="kpi-container">
-                    <div class="kpi-card top-edge-glow-cyan" id="kpi-card-1">
-                        <div class="kpi-title">
-                            <i data-lucide="fingerprint" class="icon-cyan" id="kpi-icon-1"></i>
-                            <span id="kpi-title-1">Identity Security</span>
-                        </div>
-                        <div class="kpi-value" id="kpi-val-1">98%</div>
-                        <div class="kpi-trend positive" id="kpi-trend-1"><i data-lucide="trending-up"></i> +2.4%</div>
-                    </div>
-                    <div class="kpi-card top-edge-glow-green" id="kpi-card-2">
-                        <div class="kpi-title">
-                            <i data-lucide="database" class="icon-green" id="kpi-icon-2"></i>
-                            <span id="kpi-title-2">Data Protection</span>
-                        </div>
-                        <div class="kpi-value" id="kpi-val-2">100%</div>
-                        <div class="kpi-trend neutral" id="kpi-trend-2"><i data-lucide="minus"></i> No Change</div>
-                    </div>
-                    <div class="kpi-card top-edge-glow-purple" id="kpi-card-3">
-                        <div class="kpi-title">
-                            <i data-lucide="slack" class="icon-purple" id="kpi-icon-3"></i>
-                            <span id="kpi-title-3">Slack Workspace</span>
-                        </div>
-                        <div class="kpi-value" id="kpi-val-3">2 Alerts</div>
-                        <div class="kpi-trend negative" id="kpi-trend-3"><i data-lucide="alert-triangle"></i> Action Required</div>
-                    </div>
-                    <div class="kpi-card top-edge-glow-cyan" id="kpi-card-4">
-                        <div class="kpi-title">
-                            <i data-lucide="network" class="icon-cyan" id="kpi-icon-4"></i>
-                            <span id="kpi-title-4">Network Guard</span>
-                        </div>
-                        <div class="kpi-value" id="kpi-val-4">Active</div>
-                        <div class="kpi-trend positive" id="kpi-trend-4"><i data-lucide="shield-check"></i> 0 Breaches</div>
-                    </div>
+                    <h1 class="text-xl font-semibold">Create your Vault</h1>
+                    <p class="text-sm text-gray mt-1 text-center">Start securing your enterprise identity.</p>
                 </div>
 
-                <div class="main-columns">
-                    <!-- HERO SECTION: TERMINAL -->
-                    <div class="hero-section glass-card top-edge-glow-purple">
-                        <div class="section-header">
-                            <h3><i data-lucide="terminal"></i> Unified Evidence Feed</h3>
-                            <div class="terminal-controls">
-                                <span class="dot red"></span>
-                                <span class="dot yellow"></span>
-                                <span class="dot green"></span>
-                            </div>
-                        </div>
-                        <div class="terminal-window">
-                            <div class="terminal-content" id="terminal-feed">
-                                <!-- Logs injected here -->
-                            </div>
-                            <!-- Scanning effect -->
-                            <div class="terminal-scanner"></div>
-                        </div>
+                <form id="signup-form">
+                    <div class="input-group" style="margin-bottom:1rem;">
+                        <label class="input-label" for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" class="input-field" placeholder="Aayush Pandey" required>
                     </div>
-
-                    <!-- SIDEBAR: RESOURCES -->
-                    <div class="sidebar-section">
-                        <div class="resource-card glass-card top-edge-glow-cyan">
-                            <i data-lucide="file-text" class="icon-cyan resource-icon"></i>
-                            <div class="resource-info">
-                                <h4>Unified-Audit-Trail.csv</h4>
-                                <p>Last fetched: 2 mins ago</p>
-                            </div>
-                            <button class="btn-download"><i data-lucide="download"></i></button>
-                        </div>
-
-                        <div class="resource-card glass-card top-edge-glow-green">
-                            <i data-lucide="file-check-2" class="icon-green resource-icon"></i>
-                            <div class="resource-info">
-                                <h4>SOC 2 Mapping Matrix</h4>
-                                <p>Coverage: 98.5%</p>
-                            </div>
-                            <button class="btn-download"><i data-lucide="download"></i></button>
-                        </div>
-                        
-                        <div class="resource-card glass-card top-edge-glow-purple">
-                            <i data-lucide="shield" class="icon-purple resource-icon"></i>
-                            <div class="resource-info">
-                                <h4>ISO 27001 Annex A</h4>
-                                <p>All controls mapped</p>
-                            </div>
-                            <button class="btn-download"><i data-lucide="download"></i></button>
-                        </div>
+                    <div class="input-group" style="margin-bottom:1rem;">
+                        <label class="input-label" for="reg-email">Work Email</label>
+                        <input type="email" id="reg-email" class="input-field" placeholder="aayush@company.com" required>
                     </div>
+                    <div class="input-group" style="margin-bottom:1rem;">
+                        <label class="input-label" for="reg-company">Company Name</label>
+                        <input type="text" id="reg-company" class="input-field" placeholder="Keygraph" required>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label" for="reg-password">Password</label>
+                        <input type="password" id="reg-password" class="input-field" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">Create Vault Account</button>
+                </form>
+
+                <div class="text-center mt-6">
+                    <a href="#" id="toggle-login" class="text-sm font-medium" style="color: var(--blue); text-decoration: none;">Already have an account? Sign in</a>
                 </div>
-            </main>
-        </section>
+            </div>
+        </div>
     </div>
 
-    <!-- Initialization -->
-    <script src="assets/logic.js"></script>
+    <!-- STATE 2: MFA CHALLENGE -->
+    <div id="state-mfa" class="auth-wrapper fade-in hidden">
+        <div class="card auth-card">
+            <div class="text-center mb-6">
+                <h2 class="text-xl font-semibold mb-2">Security Verification</h2>
+                <p class="text-sm text-gray" id="mfa-instructions">Enter your 6-digit authenticator code.</p>
+            </div>
+
+            <!-- Conditional QR Block via JS -->
+            <div id="qr-block" class="hidden text-center">
+                <p class="text-xs text-gray mb-3">First time login detected. Scan to enroll:</p>
+                <div class="qr-placeholder">
+                    <!-- Placeholder SVG for QR -->
+                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </div>
+            </div>
+
+            <form id="mfa-form">
+                <div class="input-group">
+                    <input type="text" id="totp" class="input-field input-mono" maxlength="6" placeholder="000000" autocomplete="off" required>
+                </div>
+                <button type="submit" class="btn-primary">Verify</button>
+            </form>
+            <div class="text-center mt-4">
+                <a href="#" id="back-to-login" class="text-sm text-gray hover:text-white" style="text-decoration: none;">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATE 3: DASHBOARD -->
+    <div id="state-dashboard" class="fade-in hidden flex-col w-full h-screen">
+        <!-- Top Nav -->
+        <header class="dash-header">
+            <div class="flex items-center gap-3">
+                <div style="width: 32px; height: 32px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="box" color="white" width="18" height="18"></i>
+                </div>
+                <h2 class="text-base font-semibold">Unified Security Hub</h2>
+            </div>
+            
+            <!-- Segmented Control -->
+            <div class="segmented-control">
+                <button class="segment-btn active" data-view="aws">AWS Infrastructure</button>
+                <button class="segment-btn" data-view="slack">Slack Workspace</button>
+            </div>
+
+            <!-- Right Profile/Status -->
+            <div class="flex items-center gap-4">
+                <div class="status-badge">
+                    <div class="status-dot"></div>
+                    Status: Operational
+                </div>
+                <div class="profile-container">
+                    <button class="avatar-btn" id="avatar-toggle">
+                        <div class="avatar">A</div>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="profile-dropdown" class="profile-dropdown hidden fade-in">
+                        <div class="dropdown-header">
+                            <div class="font-medium text-white" style="margin-bottom:0.15rem;">Aayush Pandey</div>
+                            <div class="text-xs text-gray">security@heyitsaayush.me</div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button id="logout-btn" class="dropdown-item">
+                            <i data-lucide="log-out" width="16" height="16"></i>
+                            <span class="text-sm font-medium">Sign Out</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dash-content">
+            <!-- KPI Cards -->
+            <div class="kpi-grid" id="kpi-container">
+                <div class="card p-4">
+                    <div class="kpi-h">Open Attack Paths</div>
+                    <div class="kpi-v text-red" id="kpi-open">3</div>
+                </div>
+                <div class="card p-4">
+                    <div class="kpi-h" id="kpi-vuln-title">IAM Vulnerabilities</div>
+                    <div class="kpi-v" id="kpi-vuln">1</div>
+                </div>
+                <div class="card p-4">
+                    <div class="kpi-h" id="kpi-policy-title">MFA Enforced</div>
+                    <div class="kpi-v text-green" id="kpi-policy">98%</div>
+                </div>
+            </div>
+
+            <!-- Terminal Feed -->
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <i data-lucide="terminal" width="16" height="16"></i>
+                    <span>Attack Surface Telemetry</span>
+                </div>
+                <div class="terminal-body font-mono" id="terminal-feed">
+                    <!-- Logs -> JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- -------------------------------------------------------------------------- -->
+    <!--                               JAVASCRIPT LOGIC                             -->
+    <!-- -------------------------------------------------------------------------- -->
     <script>
-        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // DOM References
+            const stateLogin = document.getElementById('state-login');
+            const stateMfa = document.getElementById('state-mfa');
+            const stateDashboard = document.getElementById('state-dashboard');
+
+            const loginBlock = document.getElementById('login-block');
+            const signupBlock = document.getElementById('signup-block');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const toggleSignup = document.getElementById('toggle-signup');
+            const toggleLogin = document.getElementById('toggle-login');
+            
+            const mfaForm = document.getElementById('mfa-form');
+            const googleSso = document.getElementById('google-sso');
+            const backToLogin = document.getElementById('back-to-login');
+
+            const segmentBtns = document.querySelectorAll('.segment-btn');
+            const terminalFeed = document.getElementById('terminal-feed');
+
+            const avatarToggle = document.getElementById('avatar-toggle');
+            const profileDropdown = document.getElementById('profile-dropdown');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            // Internal Logic Settings
+            let isFirstTimeUser = true; // Set to true to mock QR enrollment
+            let currentEnv = 'aws';
+            let terminalInterval;
+
+            // -- Navigation --
+            function showState(target) {
+                [stateLogin, stateMfa, stateDashboard].forEach(el => el.classList.add('hidden'));
+                target.classList.remove('hidden');
+
+                if (target === stateMfa) {
+                    setupMfaScreen();
+                } else if (target === stateDashboard) {
+                    initDashboard();
+                } else {
+                    stopTerminal();
+                }
+            }
+
+            function setupMfaScreen() {
+                const qrBlock = document.getElementById('qr-block');
+                const mfaInst = document.getElementById('mfa-instructions');
+                
+                if (isFirstTimeUser) {
+                    qrBlock.classList.remove('hidden');
+                    mfaInst.innerText = "Setup your 2FA application.";
+                } else {
+                    qrBlock.classList.add('hidden');
+                    mfaInst.innerText = "Enter your 6-digit authenticator code.";
+                }
+                setTimeout(() => document.getElementById('totp').focus(), 100);
+            }
+
+            // -- Event Listeners --
+            toggleSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginBlock.classList.add('hidden');
+                signupBlock.classList.remove('hidden');
+            });
+            toggleLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                signupBlock.classList.add('hidden');
+                loginBlock.classList.remove('hidden');
+            });
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showState(stateMfa);
+            });
+            signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showState(stateMfa);
+            });
+            googleSso.addEventListener('click', () => {
+                showState(stateMfa);
+            });
+            backToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                showState(stateLogin);
+            });
+            mfaForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const code = document.getElementById('totp').value;
+                if (code.length === 6) {
+                    // Update mock state for next loop to simulate persistence
+                    isFirstTimeUser = false; 
+                    showState(stateDashboard);
+                }
+            });
+
+            // -- Dropdown & Logout Logic --
+            avatarToggle.addEventListener('click', () => {
+                profileDropdown.classList.toggle('hidden');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.add('hidden');
+                }
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                profileDropdown.classList.add('hidden');
+                loginForm.reset();
+                document.getElementById('totp').value = '';
+                showState(stateLogin);
+            });
+
+            // -- Dashboard Logic --
+            function initDashboard() {
+                updateDashboardContext();
+                startTerminal();
+            }
+
+            segmentBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const view = e.target.dataset.view;
+                    if (currentEnv === view) return;
+                    
+                    segmentBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    currentEnv = view;
+                    updateDashboardContext();
+                    
+                    // Clear terminal and log context shift
+                    terminalFeed.innerHTML = '';
+                    addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
+                });
+            });
+
+            function updateDashboardContext() {
+                const vulnTitle = document.getElementById('kpi-vuln-title');
+                const vulnVal = document.getElementById('kpi-vuln');
+                const policyTitle = document.getElementById('kpi-policy-title');
+                const policyVal = document.getElementById('kpi-policy');
+
+                if (currentEnv === 'aws') {
+                    document.getElementById('kpi-open').innerText = '3';
+                    vulnTitle.innerText = 'IAM Vulnerabilities';
+                    vulnVal.innerText = '1';
+                    policyTitle.innerText = 'MFA Enforced';
+                    policyVal.innerText = '98%';
+                } else {
+                    document.getElementById('kpi-open').innerText = '1';
+                    vulnTitle.innerText = 'Exposed Tokens';
+                    vulnVal.innerText = '2';
+                    policyTitle.innerText = 'Channel Privacy';
+                    policyVal.innerText = 'Healthy';
+                }
+            }
+
+            // -- Attack Path Terminal Engine --
+            const attackLogs = {
+                aws: [
+                    { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' is public.", path: "Data Exfiltration." },
+                    { t: 'AWS', level: 'WARN', msg: "Over-permissive role assumed.", path: "Privilege Escalation." },
+                    { t: 'AWS', level: 'INFO', msg: "CloudTrail logging validated.", path: null },
+                    { t: 'AWS', level: 'CRITICAL', msg: "Access Key exposed in public repo.", path: "Initial Access." },
+                    { t: 'SYSTEM', level: 'INFO', msg: "Continuous compliance scan running.", path: null }
+                ],
+                slack: [
+                    { t: 'SLACK', level: 'ALERT', msg: "API Key detected in #general.", path: "Unauthorized Workspace Access." },
+                    { t: 'SLACK', level: 'WARN', msg: "External guest added to private channel.", path: "Lateral Movement." },
+                    { t: 'SLACK', level: 'INFO', msg: "Workspace retention policies verified.", path: null },
+                    { t: 'SLACK', level: 'ALERT', msg: "Bulk file download triggered by bot.", path: "Data Exfiltration." },
+                    { t: 'SYSTEM', level: 'INFO', msg: "DLP policy check initialized.", path: null }
+                ]
+            };
+
+            function startTerminal() {
+                if (terminalInterval) clearInterval(terminalInterval);
+                terminalFeed.innerHTML = '';
+                addLog('SYSTEM', 'Initializing Unified Evidence Engine...');
+
+                terminalInterval = setInterval(() => {
+                    const pool = attackLogs[currentEnv];
+                    const item = pool[Math.floor(Math.random() * pool.length)];
+                    
+                    let logStr = item.msg;
+                    if (item.path) {
+                        logStr += ` <span class="log-attack">Attack Path: ${item.path}</span>`;
+                    }
+                    addLog(item.t, logStr, item.level);
+                }, 2500);
+            }
+
+            function stopTerminal() {
+                if (terminalInterval) {
+                    clearInterval(terminalInterval);
+                    terminalInterval = null;
+                }
+            }
+
+            function addLog(tag, contentHTML, level = 'INFO') {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry fade-in';
+                
+                const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
+                const tagClass = tag.toLowerCase(); // 'aws' or 'slack'
+                
+                let levelHTML = '';
+                if (level === 'CRITICAL' || level === 'ALERT') {
+                    levelHTML = `<span class="log-crit">[${level}]</span> `;
+                } else if (level === 'WARN') {
+                    levelHTML = `<span style="color:#F79009">[${level}]</span> `;
+                }
+
+                entry.innerHTML = `
+                    <span class="log-time">[${timeStr}]</span>
+                    <span class="log-tag ${tagClass}">[${tag}]</span>
+                    ${levelHTML}<span class="log-text">${contentHTML}</span>
+                `;
+                
+                terminalFeed.appendChild(entry);
+                terminalFeed.scrollTop = terminalFeed.scrollHeight;
+
+                if (terminalFeed.childElementCount > 30) {
+                    terminalFeed.removeChild(terminalFeed.firstChild);
+                }
+            }
+        });
     </script>
 </body>
 </html>

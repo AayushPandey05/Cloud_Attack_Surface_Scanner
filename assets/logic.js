@@ -10,22 +10,31 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboard: document.getElementById('dashboard-page')
     };
 
+    // UI Elements
+    const authSlider = document.getElementById('auth-slider');
+    const goToSignup = document.getElementById('go-to-signup');
+    const goToLogin = document.getElementById('go-to-login');
+    const identityLoader = document.getElementById('identity-loader');
+    
     // Forms & Buttons
     const loginForm = document.getElementById('login-form');
-    const googleBtn = document.getElementById('google-login-btn');
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    const signupForm = document.getElementById('signup-form');
+    const googleSignupBtn = document.getElementById('google-signup-btn');
+    
     const mfaForm = document.getElementById('mfa-form');
-    const backToLoginBtn = document.getElementById('back-to-login');
-    const logoutBtn = document.getElementById('logout-btn');
+    const backToLoginFromMfa = document.getElementById('back-to-login-from-mfa');
+    
+    // Header & Profile Dropdown
+    const avatarBtn = document.getElementById('avatar-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const logoutBtn = document.getElementById('logout-btn'); // Found inside the dropdown
 
     // Terminal
     const terminalFeed = document.getElementById('terminal-feed');
     let terminalInterval = null;
     let currentView = 'cloud';
-
-    // KPIs container
     const kpiContainer = document.getElementById('kpi-container');
-
-    // View Switcher
     const viewBtns = document.querySelectorAll('.view-btn');
 
     // ---------------------------------------------------------------------- //
@@ -51,17 +60,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Manage Terminal Lifecycle
         if (pageName === 'dashboard') {
-            switchView('cloud'); // Ensure cloud is default when entering
+            switchView('cloud'); // Ensure cloud is default
             startTerminal();
         } else {
             stopTerminal();
         }
     }
 
+    function triggerLoaderAndNavigate(targetPage) {
+        identityLoader.classList.remove('hidden');
+        setTimeout(() => {
+            identityLoader.classList.add('hidden');
+            showPage(targetPage);
+            if (targetPage === 'mfa') {
+                setTimeout(() => document.getElementById('totp').focus(), 600);
+            }
+        }, 2000);
+    }
+
     // ---------------------------------------------------------------------- //
     //                              EVENT BINDINGS                            //
     // ---------------------------------------------------------------------- //
 
+    // -- Slider Toggles --
+    goToSignup.addEventListener('click', (e) => {
+        e.preventDefault();
+        authSlider.classList.add('show-signup');
+    });
+
+    goToLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        authSlider.classList.remove('show-signup');
+    });
+
+    // -- Auth Forms --
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
@@ -72,12 +104,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    googleBtn.addEventListener('click', () => {
+    googleLoginBtn.addEventListener('click', () => {
         showPage('mfa');
         setTimeout(() => document.getElementById('totp').focus(), 600);
     });
 
-    backToLoginBtn.addEventListener('click', () => {
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        triggerLoaderAndNavigate('mfa');
+    });
+
+    googleSignupBtn.addEventListener('click', () => {
+        triggerLoaderAndNavigate('mfa');
+    });
+
+    backToLoginFromMfa.addEventListener('click', () => {
         showPage('login');
     });
 
@@ -89,12 +130,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // -- Profile Dropdown & Logout --
+    avatarBtn.addEventListener('click', () => {
+        profileDropdown.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!avatarBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+            profileDropdown.classList.add('hidden');
+        }
+    });
+
     logoutBtn.addEventListener('click', () => {
+        profileDropdown.classList.add('hidden');
         loginForm.reset();
+        signupForm.reset();
         mfaForm.reset();
+        authSlider.classList.remove('show-signup');
         showPage('login');
     });
 
+    // -- View Switcher --
     viewBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const requestedView = e.target.dataset.view;
@@ -112,13 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchView(view) {
         currentView = view;
         
-        // 1. Fade out KPIs and Terminal
         kpiContainer.classList.add('fade-out');
         terminalFeed.style.opacity = '0';
         terminalFeed.style.transition = 'opacity 0.3s';
 
         setTimeout(() => {
-            // Update KPIs based on view
             if (view === 'cloud') {
                 document.getElementById('kpi-title-1').innerText = 'S3 Encryption';
                 document.getElementById('kpi-icon-1').setAttribute('data-lucide', 'lock');
@@ -152,18 +207,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('kpi-val-4').innerText = '0 Critical';
             }
 
-            // Re-render icons since we changed data-lucide attributes
             lucide.createIcons();
 
-            // Clear terminal & fetch new logs
             terminalFeed.innerHTML = '';
             addTerminalLog('SYSTEM', `Switched context to ${view.toUpperCase()} View. Establishing secure pipe...`);
 
-            // Fade back in
             kpiContainer.classList.remove('fade-out');
             terminalFeed.style.opacity = '1';
 
-        }, 300); // Wait for CSS transition
+        }, 300);
     }
 
     // ---------------------------------------------------------------------- //
@@ -195,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const logs = mockDb[currentView];
             const log = logs[Math.floor(Math.random() * logs.length)];
             addTerminalLog(log.source, log.msg);
-        }, 3500); // Slightly slower to account for typewriter effect
+        }, 3500);
     }
 
     function stopTerminal() {
@@ -212,7 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const time = new Date().toISOString().split('T')[1].slice(0, 8);
         const sourceClass = source.toLowerCase();
 
-        // Create base structure
         entry.innerHTML = `
             <span class="log-time">[${time}]</span>
             <span class="log-source ${sourceClass}">[${source}]</span>
@@ -223,9 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgSpan = entry.querySelector('.log-message');
         const cursor = entry.querySelector('.typewriter-cursor');
         
-        // Typewriter Effect Logic
         let i = 0;
-        const speed = 30; // ms per char
+        const speed = 30;
         
         function typeWriter() {
             if (i < msg.length) {
@@ -234,14 +284,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 terminalFeed.scrollTop = terminalFeed.scrollHeight;
                 setTimeout(typeWriter, speed);
             } else {
-                // Done typing, fade out cursor
                 cursor.style.display = 'none';
             }
         }
         
         typeWriter();
 
-        // Cleanup old logs
         if (terminalFeed.childElementCount > 25) {
             terminalFeed.removeChild(terminalFeed.firstChild);
         }
