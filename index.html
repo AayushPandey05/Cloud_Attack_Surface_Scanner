@@ -1319,6 +1319,20 @@
           };
 
           // ---------------------------------------------------------------- //
+          //                  UX FIX: "ENTER" KEY SUPPORT                     //
+          // ---------------------------------------------------------------- //
+          var otpCodeInput = document.getElementById('otp-code-input');
+          if (otpCodeInput) {
+              otpCodeInput.addEventListener('keypress', function(e) {
+                  if (e.key === 'Enter') {
+                      e.preventDefault(); // Stops the browser from doing anything weird
+                      verifyEmailOtp();   // Fires the exact same function as clicking the button
+                  }
+              });
+          }
+
+
+          // ---------------------------------------------------------------- //
           //                        NAVIGATION & AUTH                          //
           // ---------------------------------------------------------------- //
 
