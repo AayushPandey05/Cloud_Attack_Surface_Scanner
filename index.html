@@ -1256,10 +1256,21 @@
               var otpInput = document.getElementById('otp-code-input');
               if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
 
-              // Simulate email dispatch — alert fires after slight delay
-              setTimeout(function() {
-                  alert('\u{1F4E7} MOCK EMAIL RECEIVED\n\nTo: ' + (userEmail || 'user') + '\nSubject: Your Security Vault Verification Code\n\nYour one-time verification code is:\n\n' + currentSessionOtp + '\n\nThis code expires in 10 minutes. Do not share it.');
-              }, 800);
+              // 🚀 NEW EMAILJS ENGINE 🚀
+              const templateParams = {
+                  user_email: userEmail,
+                  otp_code: currentSessionOtp
+              };
+
+              console.log("Initiating secure OTP dispatch to EmailJS...");
+
+              emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
+                  .then(function(response) {
+                      console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                  }, function(error) {
+                      console.error('FAILED to send OTP...', error);
+                      alert("❌ Network Error: Failed to send security code. Please check your console.");
+                  });
           };
 
           // FUNCTION 2: Verify the submitted OTP
@@ -1282,7 +1293,7 @@
                           otpInput.style.boxShadow = '';
                       }, 1500);
                   }
-                  alert('\u26A0\uFE0F Invalid Code\n\nThe code you entered is incorrect. Please check the mock email alert and try again.');
+                  alert('\u26A0\uFE0F Invalid Code. Please check your email and try again.');
               }
           };
 
@@ -1295,14 +1306,16 @@
               showState(stateLogin);
           };
 
-          // Resend helper (re-triggers the same flow with same email)
+          // Resend helper
           window.resendEmailOtp = function() {
               var emailDisplay = document.getElementById('display-user-email');
               var email = emailDisplay ? emailDisplay.textContent : '';
-              currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
-              setTimeout(function() {
-                  alert('\u{1F4E7} MOCK EMAIL RECEIVED (Resent)\n\nYour new verification code is:\n\n' + currentSessionOtp);
-              }, 400);
+
+              if(email) {
+                 // Trigger the flow again quietly
+                 triggerEmailOtpFlow(email);
+                 console.log("Resending code...");
+              }
           };
 
           // ---------------------------------------------------------------- //
