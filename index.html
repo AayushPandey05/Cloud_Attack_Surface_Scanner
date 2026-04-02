@@ -1892,8 +1892,8 @@
                           return;
                       }
 
-                      // This ALWAYS opens the real Google account selector popup
-                      window._gsiTokenClient.requestToken();
+                      // requestAccessToken() always opens the real Google account selector popup
+                      window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
                   };
 
                   // Keep handleCredentialResponse on window for any future One-Tap use

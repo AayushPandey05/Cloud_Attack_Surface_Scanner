@@ -123,15 +123,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -- Slider Toggles --
-  goToSignup.addEventListener("click", (e) => {
-    e.preventDefault();
-    authSlider.classList.add("show-signup");
-  });
+  // Guard: go-to-signup / go-to-login IDs may not exist in all page versions
+  if (goToSignup) {
+    goToSignup.addEventListener("click", (e) => {
+      e.preventDefault();
+      authSlider.classList.add("show-signup");
+    });
+  }
 
-  goToLogin.addEventListener("click", (e) => {
-    e.preventDefault();
-    authSlider.classList.remove("show-signup");
-  });
+  if (goToLogin) {
+    goToLogin.addEventListener("click", (e) => {
+      e.preventDefault();
+      authSlider.classList.remove("show-signup");
+    });
+  }
 
   // ---------------------------------------------------------------------- //
   //                       EMAIL OTP MFA GATEWAY                            //
