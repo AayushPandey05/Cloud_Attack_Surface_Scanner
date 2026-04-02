@@ -414,6 +414,133 @@ a:hover {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                          MFA GATEWAY UPGRADES                              */
+/* -------------------------------------------------------------------------- */
+.hidden {
+  display: none !important;
+}
+
+.mfa-gateway {
+  position: relative;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mfa-step {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.otp-input-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.otp-field {
+  width: 100%;
+  background: transparent;
+  color: var(--white);
+  border: 1px solid var(--border);
+  text-align: center;
+  letter-spacing: 8px;
+  font-size: 1.5rem;
+  border-radius: 6px;
+  padding: 10px;
+  font-family: var(--font-mono);
+  transition: all var(--transition-speed);
+}
+
+.otp-field:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 10px rgba(24, 65, 255, 0.2);
+}
+
+.mfa-option-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+  background: #0A0D14 !important; /* Match dashboard navy */
+  border: 1px solid #1E293B !important; /* Subtle gray border */
+  border-radius: 8px !important;
+  color: var(--white) !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.mfa-option-btn:hover {
+  border-color: #1841FF !important; /* Primary blue accent */
+  background: rgba(24, 65, 255, 0.05) !important;
+  transform: translateY(-2px);
+}
+
+.mfa-option-btn .btn-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(24, 65, 255, 0.1);
+  color: #1841FF;
+}
+
+.mfa-option-btn .btn-text-container {
+  flex: 1;
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mfa-option-btn .btn-text-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.mfa-option-btn .btn-text-subtitle {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.mfa-option-btn .btn-arrow {
+  color: #4B5563;
+  font-size: 1.25rem;
+}
+
+.mfa-cancel-link {
+    display: block;
+    margin-top: 1.5rem;
+    color: #98A2B3;
+    font-size: 0.875rem;
+    text-align: center;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.mfa-cancel-link:hover {
+    color: var(--white);
+}
+
+.mfa-setup-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+}
+
+/* -------------------------------------------------------------------------- */
 /*                          PAGE 3: DASHBOARD                                 */
 /* -------------------------------------------------------------------------- */
 .dashboard-layout {

@@ -21,13 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const googleSignupBtn = document.getElementById("google-signup-btn");
 
-  const mfaForm = document.getElementById("mfa-form");
-  const backToLoginFromMfa = document.getElementById("back-to-login-from-mfa");
-
   // Header & Profile Dropdown
   const avatarBtn = document.getElementById("avatar-btn");
   const profileDropdown = document.getElementById("profile-dropdown");
-  const logoutBtn = document.getElementById("logout-btn"); // Found inside the dropdown
+  const logoutBtn = document.getElementById("logout-btn");
 
   // Terminal
   const terminalFeed = document.getElementById("terminal-feed");
@@ -37,9 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const viewBtns = document.querySelectorAll(".view-btn");
 
   // ---------------------------------------------------------------------- //
-  //                                NAVIGATION                              //
+  //                               NAVIGATION                               //
   // ---------------------------------------------------------------------- //
-  function showPage(pageName) {
+  window.showPage = function (pageName, pushHistory = true) {
     // Hide all
     Object.values(pages).forEach((page) => {
       page.classList.remove("active");
@@ -57,29 +54,73 @@ document.addEventListener("DOMContentLoaded", () => {
       targetPage.classList.add("active");
     }, 50);
 
+    // HISTORY API FIX: Tell the browser URL what page we are on
+    if (pushHistory) {
+      history.pushState({ view: pageName }, "", `#${pageName}`);
+    }
+
     // Manage Terminal Lifecycle
     if (pageName === "dashboard") {
-      switchView("cloud"); // Ensure cloud is default
+      switchView("cloud");
       startTerminal();
     } else {
       stopTerminal();
     }
-  }
+  };
 
-  function triggerLoaderAndNavigate(targetPage) {
+  // HISTORY API FIX: Listen for the Browser Back Button
+  window.addEventListener("popstate", (event) => {
+    if (event.state && event.state.view) {
+      showPage(event.state.view, false); // false = don't push state again
+    } else {
+      showPage("login", false); // Default back to login
+    }
+  });
+
+  window.triggerLoaderAndNavigate = function (targetPage) {
     identityLoader.classList.remove("hidden");
     setTimeout(() => {
       identityLoader.classList.add("hidden");
       showPage(targetPage);
-      if (targetPage === "mfa") {
-        setTimeout(() => document.getElementById("totp").focus(), 600);
-      }
     }, 2000);
-  }
+  };
 
   // ---------------------------------------------------------------------- //
   //                              EVENT BINDINGS                            //
   // ---------------------------------------------------------------------- //
+
+  // -- Phone Extension Custom Dropdown --
+  const extBtn = document.getElementById("reg-phone-ext-btn");
+  const extMenu = document.getElementById("reg-phone-ext-menu");
+  const extInput = document.getElementById("reg-phone-ext");
+  const extImg = document.getElementById("reg-phone-ext-img");
+  const extCodeSpan = document.getElementById("reg-phone-ext-code");
+
+  if (extBtn && extMenu) {
+    extBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      extMenu.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", () => {
+      extMenu.classList.add("hidden");
+    });
+
+    extMenu.querySelectorAll(".phone-ext-item").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const code = item.getAttribute("data-code");
+        const flag = item.getAttribute("data-flag");
+
+        extInput.value = code;
+        extImg.src = `https://flagcdn.com/w20/${flag}.png`;
+        extImg.alt = flag.toUpperCase();
+        extCodeSpan.innerText = code;
+
+        extMenu.classList.add("hidden");
+      });
+    });
+  }
 
   // -- Slider Toggles --
   goToSignup.addEventListener("click", (e) => {
@@ -92,41 +133,86 @@ document.addEventListener("DOMContentLoaded", () => {
     authSlider.classList.remove("show-signup");
   });
 
-  // -- Auth Forms --
+  // ---------------------------------------------------------------------- //
+  //                       EMAIL OTP MFA GATEWAY                            //
+  // ---------------------------------------------------------------------- //
+  let currentEmail = "";
+  let currentSessionOtp = "";
+
+  window.triggerEmailOtpFlow = function (userEmail) {
+    currentEmail = userEmail;
+
+    // Generate the random 6-digit code
+    currentSessionOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Parameters mapping to your EmailJS template variables
+    const templateParams = {
+      user_email: userEmail,
+      otp_code: currentSessionOtp,
+    };
+
+    console.log("Initiating secure OTP dispatch to EmailJS...");
+
+    // Trigger loader and show MFA UI
+    triggerLoaderAndNavigate("mfa");
+
+    const emailDisplay = document.getElementById("display-user-email");
+    if (emailDisplay) emailDisplay.innerText = userEmail;
+
+    // FIRE THE EMAILJS ENGINE
+    emailjs.send("service_mngqn1v", "template_9cva2to", templateParams).then(
+      function (response) {
+        console.log("SUCCESS! OTP Sent.", response.status, response.text);
+      },
+      function (error) {
+        console.error("FAILED to send OTP...", error);
+        alert(
+          "❌ Network Error: Failed to send security code. Please check your console.",
+        );
+      },
+    );
+  };
+
+  window.verifyEmailOtp = function () {
+    const enteredCode = document.getElementById("email-otp-input").value;
+
+    if (enteredCode === currentSessionOtp) {
+      // Success!
+      triggerLoaderAndNavigate("dashboard");
+      currentSessionOtp = "";
+      document.getElementById("email-otp-input").value = "";
+    } else {
+      alert("❌ Invalid code. Please try again.");
+    }
+  };
+
+  window.cancelMfa = function () {
+    currentSessionOtp = "";
+    document.getElementById("email-otp-input").value = "";
+    showPage("login");
+  };
+
+  // ---------------------------------------------------------------------- //
+  //                              AUTH FORMS                                //
+  // ---------------------------------------------------------------------- //
   loginForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    if (email && password) {
-      showPage("mfa");
-      setTimeout(() => document.getElementById("totp").focus(), 600);
-    }
+    const email = document.getElementById("login-email").value;
+    if (email) triggerEmailOtpFlow(email);
   });
 
   googleLoginBtn.addEventListener("click", () => {
-    showPage("mfa");
-    setTimeout(() => document.getElementById("totp").focus(), 600);
+    triggerEmailOtpFlow("google-user@demo.com");
   });
 
   signupForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    triggerLoaderAndNavigate("mfa");
+    const email = document.getElementById("reg-email").value;
+    if (email) triggerEmailOtpFlow(email);
   });
 
   googleSignupBtn.addEventListener("click", () => {
-    triggerLoaderAndNavigate("mfa");
-  });
-
-  backToLoginFromMfa.addEventListener("click", () => {
-    showPage("login");
-  });
-
-  mfaForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const totp = document.getElementById("totp").value;
-    if (totp.length === 6) {
-      showPage("dashboard");
-    }
+    triggerEmailOtpFlow("google-user@demo.com");
   });
 
   // -- Profile Dropdown & Logout --
@@ -134,7 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
     profileDropdown.classList.toggle("hidden");
   });
 
-  // Close dropdown when clicking outside
   document.addEventListener("click", (e) => {
     if (!avatarBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
       profileDropdown.classList.add("hidden");
@@ -145,7 +230,10 @@ document.addEventListener("DOMContentLoaded", () => {
     profileDropdown.classList.add("hidden");
     loginForm.reset();
     signupForm.reset();
-    mfaForm.reset();
+
+    const otpInput = document.getElementById("email-otp-input");
+    if (otpInput) otpInput.value = "";
+
     authSlider.classList.remove("show-signup");
     showPage("login");
   });
@@ -163,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------------------------------------------------------------------- //
-  //                                VIEW SWITCHER                           //
+  //                               VIEW SWITCHER                            //
   // ---------------------------------------------------------------------- //
   function switchView(view) {
     currentView = view;

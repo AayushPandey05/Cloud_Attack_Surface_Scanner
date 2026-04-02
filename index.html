@@ -12,8 +12,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- EMAIL OTP -->
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"
+    ></script>
+    <script type="text/javascript">
+      (function(){
+         emailjs.init("HO6PxNwvtKFZ7QzNP"); // <-- PASTE YOUR PUBLIC KEY HERE
+      })();
+    </script>
 
     <style>
       /* -------------------------------------------------------------------------- */
@@ -503,8 +515,177 @@
       /* Anim Utilities */
       .fade-in { animation: fadeIn 0.3s ease-in; }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+      /* Custom Phone Ext */
+      .phone-ext-selector { position: relative; flex-shrink: 0; width: 110px; }
+      .phone-ext-btn {
+          display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+          padding: 0.75rem 0.5rem; width: 100%; height: 100%;
+          background: #ffffff; border: 1px solid #D1D5DB; border-radius: 8px; cursor: pointer;
+          color: #111827; font-size: 1rem;
+      }
+      .phone-ext-btn:focus { border-color: #6366F1; outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+      .phone-ext-menu {
+          position: absolute; top: calc(100% + 4px); left: 0; width: 160px;
+          background: white; border: 1px solid #E5E7EB; border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 50; overflow: hidden;
+      }
+      .phone-ext-item {
+          display: flex; align-items: center; gap: 0.5rem; width: 100%;
+          padding: 0.75rem; background: transparent; border: none;
+          cursor: pointer; text-align: left; font-size: 0.875rem; color: #111827;
+      }
+      .phone-ext-item:hover { background-color: #F3F4F6; }
+      .phone-ext-item img { border-radius: 2px; }
+
+      /* --------------------------------------------------------------- */
+      /*                     EMAIL OTP MFA GATEWAY                        */
+      /* --------------------------------------------------------------- */
+      #mfa-gateway {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(2, 6, 23, 0.92);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          z-index: 200;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          animation: fadeIn 0.25s ease;
+      }
+      #mfa-gateway.active {
+          display: flex;
+      }
+      .otp-card {
+          background: #0D1117;
+          border: 1px solid #21262D;
+          border-radius: 16px;
+          padding: 2.5rem 2rem;
+          width: 100%;
+          max-width: 420px;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(99, 102, 241, 0.08);
+          position: relative;
+          overflow: hidden;
+      }
+      /* Subtle top-edge accent glow */
+      .otp-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 50%; transform: translateX(-50%);
+          width: 60%; height: 1px;
+          background: linear-gradient(90deg, transparent, #6366F1, transparent);
+          box-shadow: 0 0 14px 2px rgba(99, 102, 241, 0.4);
+      }
+      .otp-card-header {
+          text-align: center;
+          margin-bottom: 2rem;
+      }
+      .otp-card-icon {
+          width: 52px; height: 52px;
+          background: rgba(99, 102, 241, 0.12);
+          border: 1px solid rgba(99, 102, 241, 0.3);
+          border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto 1.25rem;
+      }
+      .otp-card-icon svg { color: #818CF8; }
+      .otp-card-title {
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: #F8FAFC;
+          margin-bottom: 0.5rem;
+          letter-spacing: -0.3px;
+      }
+      .otp-card-subtitle {
+          font-size: 0.875rem;
+          color: #64748B;
+          line-height: 1.5;
+          margin-bottom: 0.25rem;
+      }
+      #display-user-email {
+          font-size: 0.875rem;
+          color: #818CF8;
+          font-weight: 500;
+          margin-top: 0.15rem;
+      }
+      .otp-input-wrap {
+          margin-bottom: 1.5rem;
+      }
+      #otp-code-input {
+          width: 100%;
+          background: transparent;
+          border: 2px solid #21262D;
+          border-radius: 10px;
+          padding: 1rem 1.25rem;
+          color: #F8FAFC;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 2rem;
+          letter-spacing: 12px;
+          text-align: center;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          outline: none;
+          caret-color: #6366F1;
+      }
+      #otp-code-input::placeholder {
+          color: #2D3748;
+          letter-spacing: 10px;
+      }
+      #otp-code-input:focus {
+          border-color: #6366F1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+      }
+      .otp-resend-label {
+          text-align: center;
+          font-size: 0.78rem;
+          color: #4B5563;
+          margin-top: 0.75rem;
+      }
+      .otp-resend-label span {
+          color: #6366F1;
+          cursor: pointer;
+          font-weight: 500;
+      }
+      .otp-resend-label span:hover { text-decoration: underline; }
+      .btn-otp-verify {
+          width: 100%;
+          background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          padding: 0.875rem 1.5rem;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          transition: all 0.2s;
+          box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+          margin-bottom: 0.875rem;
+          letter-spacing: 0.01em;
+      }
+      .btn-otp-verify:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+      }
+      .btn-otp-verify:active { transform: translateY(0); }
+      .btn-otp-cancel {
+          width: 100%;
+          background: transparent;
+          color: #64748B;
+          border: none;
+          padding: 0.5rem;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: color 0.2s;
+          text-align: center;
+      }
+      .btn-otp-cancel:hover { color: #94A3B8; }
     </style>
   </head>
+
   <body>
     <!-- STATE 1: IDENTITY GATEWAY -->
     <div id="state-login" class="auth-wrapper bg-light-gray fade-in">
@@ -536,7 +717,7 @@
               <input
                 type="email"
                 id="login-email"
-                name="username"
+                name="email"
                 autocomplete="username"
                 class="input-light"
                 placeholder="Email"
@@ -659,19 +840,91 @@
                 type="email"
                 id="reg-email"
                 name="email"
-                autocomplete="email"
+                autocomplete="username"
                 class="input-light"
                 placeholder="Work Email"
                 required
               />
             </div>
-            <div style="margin-bottom: 1rem;">
+            <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+              <div class="phone-ext-selector">
+                <button
+                  type="button"
+                  class="phone-ext-btn"
+                  id="reg-phone-ext-btn"
+                >
+                  <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <img
+                      src="https://flagcdn.com/w20/in.png"
+                      width="20"
+                      alt="IN"
+                      id="reg-phone-ext-img"
+                    />
+                    <span id="reg-phone-ext-code">+91</span>
+                  </div>
+                  <i data-lucide="chevron-down" width="16" height="16"></i>
+                </button>
+                <div class="phone-ext-menu hidden" id="reg-phone-ext-menu">
+                  <button
+                    type="button"
+                    class="phone-ext-item"
+                    data-code="+91"
+                    data-flag="in"
+                  >
+                    <img src="https://flagcdn.com/w20/in.png" width="20" /> +91
+                    (IND)
+                  </button>
+                  <button
+                    type="button"
+                    class="phone-ext-item"
+                    data-code="+1"
+                    data-flag="us"
+                  >
+                    <img src="https://flagcdn.com/w20/us.png" width="20" /> +1
+                    (USA)
+                  </button>
+                  <button
+                    type="button"
+                    class="phone-ext-item"
+                    data-code="+44"
+                    data-flag="gb"
+                  >
+                    <img src="https://flagcdn.com/w20/gb.png" width="20" /> +44
+                    (UK)
+                  </button>
+                  <button
+                    type="button"
+                    class="phone-ext-item"
+                    data-code="+61"
+                    data-flag="au"
+                  >
+                    <img src="https://flagcdn.com/w20/au.png" width="20" /> +61
+                    (AUS)
+                  </button>
+                  <button
+                    type="button"
+                    class="phone-ext-item"
+                    data-code="+49"
+                    data-flag="de"
+                  >
+                    <img src="https://flagcdn.com/w20/de.png" width="20" /> +49
+                    (GER)
+                  </button>
+                </div>
+                <input
+                  type="hidden"
+                  id="reg-phone-ext"
+                  name="phone-ext"
+                  value="+91"
+                />
+              </div>
               <input
                 type="tel"
                 id="reg-phone"
                 name="tel"
                 autocomplete="tel"
                 class="input-light"
+                style="flex: 1;"
                 placeholder="Phone Number"
                 required
               />
@@ -715,66 +968,71 @@
       </div>
     </div>
 
-    <!-- STATE 2: MFA CHALLENGE -->
-    <div id="state-mfa" class="auth-wrapper bg-light-gray fade-in hidden">
-      <div class="light-card auth-card">
-        <div class="text-center mb-6">
-          <h2 class="text-xl font-semibold mb-2 text-dark">
-            Security Verification
-          </h2>
-          <p class="text-sm text-light-gray" id="mfa-instructions">
-            Enter your 6-digit authenticator code.
-          </p>
-        </div>
-
-        <!-- Conditional QR Block via JS -->
-        <div id="qr-block" class="hidden text-center">
-          <p class="text-xs text-light-gray mb-3">
-            First time login detected. Scan to enroll:
-          </p>
-          <div class="qr-placeholder" style="border: 1px solid #E5E7EB;">
-            <!-- Placeholder SVG for QR -->
+    <!-- MFA GATEWAY: Email OTP (global overlay, independent of state system) -->
+    <div id="mfa-gateway">
+      <div class="otp-card">
+        <!-- Header -->
+        <div class="otp-card-header">
+          <div class="otp-card-icon">
             <svg
-              width="100"
-              height="100"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#111827"
+              stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
+              <rect width="20" height="16" x="2" y="4" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
             </svg>
           </div>
+          <h2 class="otp-card-title">Security Verification</h2>
+          <p class="otp-card-subtitle">
+            A 6-digit verification code has been Sent to
+          </p>
+          <p id="display-user-email"></p>
         </div>
 
-        <form id="mfa-form">
-          <div class="input-group">
-            <input
-              type="text"
-              id="totp"
-              class="input-light input-mono"
-              maxlength="6"
-              placeholder="000000"
-              autocomplete="off"
-              required
-            />
-          </div>
-          <button type="submit" class="btn-primary-purple">Verify</button>
-        </form>
-        <div class="text-center mt-4">
-          <a
-            href="#"
-            id="back-to-login"
-            class="text-sm text-light-gray hover:text-dark"
-            style="text-decoration: none;"
-            >Cancel</a
-          >
+        <!-- OTP Input -->
+        <div class="otp-input-wrap">
+          <input
+            type="text"
+            id="otp-code-input"
+            maxlength="6"
+            placeholder="000000"
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            pattern="[0-9]*"
+          />
+          <p class="otp-resend-label">
+            Didn't receive it?
+            <span onclick="resendEmailOtp()">Resend code</span>
+          </p>
         </div>
+
+        <!-- Actions -->
+        <button class="btn-otp-verify" onclick="verifyEmailOtp()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Verify Code
+        </button>
+        <button class="btn-otp-cancel" onclick="cancelMfa()">
+          Cancel &amp; Return to Login
+        </button>
       </div>
     </div>
 
@@ -902,7 +1160,7 @@
           // DOM References
           const stateLogin = document.getElementById('state-login');
           const stateLoading = document.getElementById('state-loading');
-          const stateMfa = document.getElementById('state-mfa');
+          // #state-mfa has been removed — Email OTP gateway is now a global overlay
           const stateDashboard = document.getElementById('state-dashboard');
 
           const loginBlock = document.getElementById('login-block');
@@ -912,10 +1170,8 @@
           const toggleSignup = document.getElementById('toggle-signup');
           const toggleLogin = document.getElementById('toggle-login');
 
-          const mfaForm = document.getElementById('mfa-form');
           const googleSso = document.getElementById('google-sso');
           const corpSso = document.getElementById('corp-sso');
-          const backToLogin = document.getElementById('back-to-login');
 
           const segmentBtns = document.querySelectorAll('.segment-btn');
           const terminalFeed = document.getElementById('terminal-feed');
@@ -925,39 +1181,102 @@
           const logoutBtn = document.getElementById('logout-btn');
 
           // Internal Logic Settings
-          let isFirstTimeUser = true; // Set to true to mock QR enrollment
           let currentEnv = 'aws';
           let terminalInterval;
 
           // -- Navigation --
           function showState(target) {
-              [stateLogin, stateLoading, stateMfa, stateDashboard].forEach(el => el.classList.add('hidden'));
-              target.classList.remove('hidden');
+              // Filter nulls defensively (state-mfa was removed, its var is gone)
+              [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
+                  el.classList.add('hidden');
+              });
+              if (target) target.classList.remove('hidden');
 
-              if (target === stateMfa) {
-                  setupMfaScreen();
-              } else if (target === stateDashboard) {
+              if (target === stateDashboard) {
                   initDashboard();
               } else {
                   stopTerminal();
               }
           }
 
-          function setupMfaScreen() {
-              const qrBlock = document.getElementById('qr-block');
-              const mfaInst = document.getElementById('mfa-instructions');
+          // ---------------------------------------------------------------- //
+          //                  EMAIL OTP MFA — 3 GLOBAL FUNCTIONS              //
+          // ---------------------------------------------------------------- //
 
-              if (isFirstTimeUser) {
-                  qrBlock.classList.remove('hidden');
-                  mfaInst.innerText = "Setup your 2FA application.";
+          // Session variable — stores the active one-time code
+          var currentSessionOtp = '';
+
+          // FUNCTION 1: Trigger the Email OTP flow
+          window.triggerEmailOtpFlow = function(userEmail) {
+              // Generate a random 6-digit code and store it
+              currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
+
+              // Show the MFA gateway overlay
+              var gateway = document.getElementById('mfa-gateway');
+              gateway.classList.add('active');
+
+              // Inject user email into the display paragraph
+              var emailDisplay = document.getElementById('display-user-email');
+              if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
+
+              // Clear any prior input
+              var otpInput = document.getElementById('otp-code-input');
+              if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
+
+              // Simulate email dispatch — alert fires after slight delay
+              setTimeout(function() {
+                  alert('\u{1F4E7} MOCK EMAIL RECEIVED\n\nTo: ' + (userEmail || 'user') + '\nSubject: Your Security Vault Verification Code\n\nYour one-time verification code is:\n\n' + currentSessionOtp + '\n\nThis code expires in 10 minutes. Do not share it.');
+              }, 800);
+          };
+
+          // FUNCTION 2: Verify the submitted OTP
+          window.verifyEmailOtp = function() {
+              var otpInput = document.getElementById('otp-code-input');
+              var entered = otpInput ? otpInput.value.trim() : '';
+              if (entered === currentSessionOtp && currentSessionOtp !== '') {
+                  // Success — clear state and go to dashboard
+                  currentSessionOtp = '';
+                  if (otpInput) otpInput.value = '';
+                  document.getElementById('mfa-gateway').classList.remove('active');
+                  showState(stateDashboard);
               } else {
-                  qrBlock.classList.add('hidden');
-                  mfaInst.innerText = "Enter your 6-digit authenticator code.";
+                  // Shake the input then alert
+                  if (otpInput) {
+                      otpInput.style.borderColor = '#F04438';
+                      otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
+                      setTimeout(function() {
+                          otpInput.style.borderColor = '';
+                          otpInput.style.boxShadow = '';
+                      }, 1500);
+                  }
+                  alert('\u26A0\uFE0F Invalid Code\n\nThe code you entered is incorrect. Please check the mock email alert and try again.');
               }
-              setTimeout(() => document.getElementById('totp').focus(), 100);
-          }
+          };
 
-          // -- Event Listeners --
+          // FUNCTION 3: Cancel MFA and return to login
+          window.cancelMfa = function() {
+              currentSessionOtp = '';
+              var otpInput = document.getElementById('otp-code-input');
+              if (otpInput) otpInput.value = '';
+              document.getElementById('mfa-gateway').classList.remove('active');
+              showState(stateLogin);
+          };
+
+          // Resend helper (re-triggers the same flow with same email)
+          window.resendEmailOtp = function() {
+              var emailDisplay = document.getElementById('display-user-email');
+              var email = emailDisplay ? emailDisplay.textContent : '';
+              currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
+              setTimeout(function() {
+                  alert('\u{1F4E7} MOCK EMAIL RECEIVED (Resent)\n\nYour new verification code is:\n\n' + currentSessionOtp);
+              }, 400);
+          };
+
+          // ---------------------------------------------------------------- //
+          //                        NAVIGATION & AUTH                          //
+          // ---------------------------------------------------------------- //
+
+          // -- Slider Toggles --
           toggleSignup.addEventListener('click', (e) => {
               e.preventDefault();
               loginBlock.classList.add('hidden');
@@ -969,16 +1288,21 @@
               loginBlock.classList.remove('hidden');
           });
 
-          function processAuthSuccess() {
+          // processAuthSuccess: reads email from the active form, shows loader briefly, then triggers OTP
+          function processAuthSuccess(email) {
+              var userEmail = email || 'user@company.com';
               showState(stateLoading);
-              setTimeout(() => {
-                  showState(stateMfa);
-              }, 1000);
+              setTimeout(function() {
+                  // Hide loading state but do NOT show state-mfa (gateway is its own overlay)
+                  [stateLoading].forEach(function(el) { el.classList.add('hidden'); });
+                  triggerEmailOtpFlow(userEmail);
+              }, 950);
           }
 
           loginForm.addEventListener('submit', (e) => {
               e.preventDefault();
-              processAuthSuccess();
+              var email = document.getElementById('login-email').value;
+              processAuthSuccess(email);
           });
           signupForm.addEventListener('submit', (e) => {
               e.preventDefault();
@@ -988,26 +1312,13 @@
                   alert('Please enter a valid work email.');
                   return;
               }
-              processAuthSuccess();
+              processAuthSuccess(emailVal);
           });
           googleSso.addEventListener('click', () => {
-              processAuthSuccess();
+              processAuthSuccess('demo@google.com');
           });
           corpSso.addEventListener('click', () => {
-              processAuthSuccess();
-          });
-          backToLogin.addEventListener('click', (e) => {
-              e.preventDefault();
-              showState(stateLogin);
-          });
-          mfaForm.addEventListener('submit', (e) => {
-              e.preventDefault();
-              const code = document.getElementById('totp').value;
-              if (code.length === 6) {
-                  // Update mock state for next loop to simulate persistence
-                  isFirstTimeUser = false;
-                  showState(stateDashboard);
-              }
+              processAuthSuccess('sso-user@corp.com');
           });
 
           // -- Dropdown & Logout Logic --
@@ -1024,7 +1335,11 @@
           logoutBtn.addEventListener('click', () => {
               profileDropdown.classList.add('hidden');
               loginForm.reset();
-              document.getElementById('totp').value = '';
+              // Dismiss Email OTP gateway if active
+              currentSessionOtp = '';
+              var otpInput = document.getElementById('otp-code-input');
+              if (otpInput) otpInput.value = '';
+              document.getElementById('mfa-gateway').classList.remove('active');
               showState(stateLogin);
           });
 
