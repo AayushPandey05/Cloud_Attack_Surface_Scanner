@@ -1835,12 +1835,11 @@
                   // ---------------------------------------------------------------- //
                   //             GOOGLE IDENTITY SERVICES (GSI) — GLOBAL SCOPE        //
                   // ---------------------------------------------------------------- //
-                  // All functions assigned to window.* so they are reachable from:
+                  // All functions on window.* so they are reachable from:
                   //   (a) onclick="handleGoogleLogin(event)" in HTML
-                  //   (b) the GSI library invoking handleCredentialResponse asynchronously
+                  //   (b) the GSI library invoking handleCredentialResponse async
 
-                  // 1. GSI initialization — window.onload guarantees the async GSI
-                  //    script has fully executed before we call .initialize()
+                  // 1. Init — window.onload guarantees async GSI script is ready
                   window.onload = function () {
                       if (typeof google === 'undefined' || !google.accounts) {
                           console.warn('[GSI] Google Identity library not loaded — skipping init.');
@@ -1855,7 +1854,7 @@
                       console.log('[GSI] SDK Initialized — Google Identity Services ready.');
                   };
 
-                  // 2. Silent-init trigger — custom button stays, Google popup appears on top
+                  // 2. Force-popup trigger — custom CSS button stays, Google popup appears on top
                   window.handleGoogleLogin = function (e) {
                       if (e && e.preventDefault) e.preventDefault();
                       console.log('🚀 Custom Google Auth Triggered');
@@ -1866,16 +1865,36 @@
                           return;
                       }
 
-                      // Trigger the Google account selector popup.
-                      // No notification callback — we never call renderButton,
-                      // so our branded CSS button is NEVER replaced.
-                      google.accounts.id.prompt();
+                      // Primary prompt — notification callback surfaces suppression details
+                      google.accounts.id.prompt(function (notification) {
+
+                          if (notification.isNotDisplayed()) {
+                              // Blocked: 3P cookies off, browser policy, or domain not in
+                              // Google Cloud Console Authorized Origins — check Vercel URL
+                              const reason = notification.getNotDisplayedReason();
+                              console.warn('[GSI] Prompt suppressed. Reason:', reason, '— attempting secondary prompt...');
+                              // Secondary call clears transient flags; structural blocks
+                              // (invalid_client / cookies_blocked) will appear in Vercel logs
+                              setTimeout(function () {
+                                  google.accounts.id.prompt();
+                              }, 300);
+
+                          } else if (notification.isSkippedMoment()) {
+                              // GSI cooldown after recent user dismissal
+                              const reason = notification.getSkippedReason();
+                              console.warn('[GSI] Prompt skipped (cooldown). Reason:', reason, '— retrying...');
+                              setTimeout(function () {
+                                  google.accounts.id.prompt();
+                              }, 300);
+                          }
+                          // isDisplayed → working fine
+                          // isDismissedMoment → user closed the popup — no action needed
+                      });
                   };
 
                   // 3. Receive the signed Google JWT and route into the Email OTP flow
                   window.handleCredentialResponse = function (response) {
                       try {
-                          // Simple base64-URL decode — no external library needed
                           const payload = JSON.parse(atob(response.credential.split('.')[1]));
                           console.log('[GSI] Auth Success — Email:', payload.email, '| Name:', payload.name);
                           processAuthSuccess(payload.email);
@@ -1885,7 +1904,7 @@
                       }
                   };
 
-                  // 4. Lightweight UTF-8-safe JWT decoder (kept as window.* for testability)
+                  // 4. UTF-8-safe JWT decoder (on window for external testability)
                   window.decodeJwtResponse = function (token) {
                       const base64Url = token.split('.')[1];
                       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
