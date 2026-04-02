@@ -1217,13 +1217,22 @@
           let currentEnv = 'aws';
           let terminalInterval;
 
-          // -- Navigation --
-          function showState(target) {
-              // Filter nulls defensively (state-mfa was removed, its var is gone)
+
+           // -- Navigation & State Persistence --
+          function showState(target, pushHistory = true) {
               [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
                   el.classList.add('hidden');
               });
               if (target) target.classList.remove('hidden');
+
+              // Determine the string name for the URL
+              let stateName = 'login';
+              if (target === stateDashboard) stateName = 'dashboard';
+
+              // HISTORY API: Update the URL so the back button works
+              if (pushHistory && target !== stateLoading) {
+                  history.pushState({ view: stateName }, "", `#${stateName}`);
+              }
 
               if (target === stateDashboard) {
                   initDashboard();
@@ -1231,6 +1240,34 @@
                   stopTerminal();
               }
           }
+
+          // LISTEN FOR THE BACK BUTTON
+          window.addEventListener('popstate', function(event) {
+              const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+
+              if (event.state && event.state.view === 'dashboard' && isAuth) {
+                  showState(stateDashboard, false);
+              } else {
+                  showState(stateLogin, false);
+              }
+          });
+
+          // CHECK SESSION ON REFRESH
+          function initializeApp() {
+              const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+              const hash = window.location.hash.replace('#', '');
+
+              if (isAuth) {
+                  showState(stateDashboard, false);
+                  if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
+              } else {
+                  showState(stateLogin, false);
+                  history.replaceState({ view: 'login' }, "", "#login");
+              }
+          }
+
+          // Run initialization immediately on load
+          initializeApp();
 
           // ---------------------------------------------------------------- //
           //                  EMAIL OTP MFA — 3 GLOBAL FUNCTIONS              //
@@ -1282,8 +1319,12 @@
                   currentSessionOtp = '';
                   if (otpInput) otpInput.value = '';
                   document.getElementById('mfa-gateway').classList.remove('active');
+
+                  // 🚀 NEW: SAVE THE SESSION SO REFRESH WORKS
+                  sessionStorage.setItem('isVaultAuthenticated', 'true');
+
                   showState(stateDashboard);
-              } else {
+              }else {
                   // Shake the input then alert
                   if (otpInput) {
                       otpInput.style.borderColor = '#F04438';
@@ -1405,6 +1446,8 @@
               var otpInput = document.getElementById('otp-code-input');
               if (otpInput) otpInput.value = '';
               document.getElementById('mfa-gateway').classList.remove('active');
+
+              sessionStorage.removeItem('isVaultAuthenticated');
               showState(stateLogin);
           });
 
