@@ -1855,9 +1855,10 @@
                       console.log('[GSI] SDK Initialized — Google Identity Services ready.');
                   };
 
-                  // 2. Trigger One-Tap prompt; fall back to renderButton if suppressed
+                  // 2. Silent-init trigger — custom button stays, Google popup appears on top
                   window.handleGoogleLogin = function (e) {
                       if (e && e.preventDefault) e.preventDefault();
+                      console.log('🚀 Custom Google Auth Triggered');
 
                       if (typeof google === 'undefined' || !google.accounts) {
                           console.error('[GSI] Library unavailable — falling back to demo email flow.');
@@ -1865,24 +1866,10 @@
                           return;
                       }
 
-                      // Primary: One-Tap / sign-in prompt
-                      google.accounts.id.prompt(function (notification) {
-                          // If the prompt was skipped or blocked (e.g. ITP, cookie policy)
-                          // fall back to rendering a real Google button inside our element
-                          if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
-                              console.warn('[GSI] One-Tap suppressed (' + notification.getSkippedReason() + ') — rendering button fallback.');
-                              const btnEl = document.getElementById('google-sso');
-                              if (btnEl) {
-                                  btnEl.innerHTML = ''; // clear our styled button content
-                                  google.accounts.id.renderButton(btnEl, {
-                                      type: 'standard',
-                                      theme: 'filled_blue',
-                                      size: 'large',
-                                      width: btnEl.offsetWidth || 320
-                                  });
-                              }
-                          }
-                      });
+                      // Trigger the Google account selector popup.
+                      // No notification callback — we never call renderButton,
+                      // so our branded CSS button is NEVER replaced.
+                      google.accounts.id.prompt();
                   };
 
                   // 3. Receive the signed Google JWT and route into the Email OTP flow
