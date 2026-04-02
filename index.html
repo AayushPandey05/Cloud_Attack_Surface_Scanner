@@ -1517,13 +1517,19 @@
 
                       console.log("Initiating secure OTP dispatch to EmailJS...");
 
-                      emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
-                          .then(function(response) {
-                              console.log('SUCCESS! OTP Sent.', response.status, response.text);
-                          }, function(error) {
-                              console.error('FAILED to send OTP...', error);
-                              alert("❌ Network Error: Failed to send security code. Please check your console.");
-                          });
+                      // EmailJS dispatch — wrapped in try/catch so network errors don't freeze UI
+                      try {
+                          emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
+                              .then(function(response) {
+                                  console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                              })
+                              .catch(function(error) {
+                                  console.error('FAILED to send OTP:', error);
+                                  // Don't alert — user can still proceed if they see the code in console for testing
+                              });
+                      } catch(e) {
+                          console.error('[EmailJS] Exception during send:', e);
+                      }
                   };
 
                   // FUNCTION 2: Verify the submitted OTP
@@ -1605,13 +1611,22 @@
                       loginBlock.classList.remove('hidden');
                   });
 
-                  // processAuthSuccess: reads email from the active form, shows loader briefly, then triggers OTP
+                  // processAuthSuccess: single entry point for ALL login paths
+                  // Strategy: show the loading spinner ON TOP of login (no black screen gap),
+                  // then after 950ms hide the spinner and activate the MFA overlay.
                   function processAuthSuccess(email) {
                       var userEmail = email || 'user@company.com';
-                      showState(stateLoading);
+
+                      // Show the loader on top — DON'T hide state-login yet
+                      var loaderEl = document.getElementById('state-loading');
+                      if (loaderEl) loaderEl.classList.remove('hidden');
+
                       setTimeout(function() {
-                          // Hide loading state but do NOT show state-mfa (gateway is its own overlay)
-                          [stateLoading].forEach(function(el) { el.classList.add('hidden'); });
+                          // Hide the loader
+                          if (loaderEl) loaderEl.classList.add('hidden');
+                          // Show state-login as the background while MFA overlay is active
+                          if (stateLogin) stateLogin.classList.remove('hidden');
+                          // Trigger the OTP overlay (independent global overlay)
                           triggerEmailOtpFlow(userEmail);
                       }, 950);
                   }
@@ -1632,11 +1647,11 @@
                       processAuthSuccess(emailVal);
                   });
                   // google-sso button fires handleGoogleLogin() via inline onclick
-                  // googleSignupBtn falls back to processAuthSuccess if GSI is unavailable
+                  // googleSignupBtn uses the same OAuth2 token flow
                   if (googleSignupBtn) {
                       googleSignupBtn.addEventListener('click', () => {
-                          if (typeof google !== 'undefined' && google.accounts) {
-                              google.accounts.id.prompt();
+                          if (window._gsiTokenClient) {
+                              window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
                           } else {
                               processAuthSuccess('demo@google.com');
                           }
