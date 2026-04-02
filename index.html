@@ -1833,87 +1833,78 @@
                   }
 
                   // ---------------------------------------------------------------- //
-                  //             GOOGLE IDENTITY SERVICES (GSI) — GLOBAL SCOPE        //
+                  //        GOOGLE IDENTITY SERVICES — OAUTH2 POPUP FLOW             //
                   // ---------------------------------------------------------------- //
-                  // All functions on window.* so they are reachable from:
-                  //   (a) onclick="handleGoogleLogin(event)" in HTML
-                  //   (b) the GSI library invoking handleCredentialResponse async
+                  // WHY THIS APPROACH:
+                  // google.accounts.id.prompt() (One Tap / FedCM) is suppressed by
+                  // most browsers due to cookie policy, FedCM restrictions, and
+                  // GSI cooldowns. It does NOT show the popup on regular click.
+                  //
+                  // google.accounts.oauth2.initTokenClient() is the real popup flow
+                  // used by actual websites — it always shows the Google account
+                  // selector when .requestToken() is called from a user gesture.
 
-                  // 1. Init — window.onload guarantees async GSI script is ready
                   window.onload = function () {
                       if (typeof google === 'undefined' || !google.accounts) {
-                          console.warn('[GSI] Google Identity library not loaded — skipping init.');
+                          console.warn('[GSI] Google library not loaded.');
                           return;
                       }
-                      google.accounts.id.initialize({
+
+                      // Initialize the OAuth2 Token Client (popup flow)
+                      window._gsiTokenClient = google.accounts.oauth2.initTokenClient({
                           client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
-                          callback: window.handleCredentialResponse,
-                          auto_select: false,
-                          cancel_on_tap_outside: true
+                          scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                          prompt: 'select_account', // always show account chooser
+                          callback: function (tokenResponse) {
+                              if (tokenResponse.error) {
+                                  console.error('[GSI] Token error:', tokenResponse.error);
+                                  alert('Google sign-in failed. Please try again.');
+                                  return;
+                              }
+
+                              // Use the access token to fetch the user's email
+                              fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                  headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                              })
+                              .then(function (res) { return res.json(); })
+                              .then(function (userInfo) {
+                                  console.log('[GSI] Auth Success — Email:', userInfo.email, '| Name:', userInfo.name);
+                                  processAuthSuccess(userInfo.email);
+                              })
+                              .catch(function (err) {
+                                  console.error('[GSI] UserInfo fetch failed:', err);
+                                  alert('Could not retrieve Google account info. Please try again.');
+                              });
+                          }
                       });
-                      console.log('[GSI] SDK Initialized — Google Identity Services ready.');
+
+                      console.log('[GSI] SDK Initialized — OAuth2 Token Client ready.');
                   };
 
-                  // 2. Force-popup trigger — custom CSS button stays, Google popup appears on top
+                  // Called from onclick="handleGoogleLogin(event)" on the button
                   window.handleGoogleLogin = function (e) {
                       if (e && e.preventDefault) e.preventDefault();
                       console.log('🚀 Custom Google Auth Triggered');
 
-                      if (typeof google === 'undefined' || !google.accounts) {
-                          console.error('[GSI] Library unavailable — falling back to demo email flow.');
+                      if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
+                          console.error('[GSI] Not initialized — falling back to demo flow.');
                           processAuthSuccess('demo@google.com');
                           return;
                       }
 
-                      // Primary prompt — notification callback surfaces suppression details
-                      google.accounts.id.prompt(function (notification) {
-
-                          if (notification.isNotDisplayed()) {
-                              // Blocked: 3P cookies off, browser policy, or domain not in
-                              // Google Cloud Console Authorized Origins — check Vercel URL
-                              const reason = notification.getNotDisplayedReason();
-                              console.warn('[GSI] Prompt suppressed. Reason:', reason, '— attempting secondary prompt...');
-                              // Secondary call clears transient flags; structural blocks
-                              // (invalid_client / cookies_blocked) will appear in Vercel logs
-                              setTimeout(function () {
-                                  google.accounts.id.prompt();
-                              }, 300);
-
-                          } else if (notification.isSkippedMoment()) {
-                              // GSI cooldown after recent user dismissal
-                              const reason = notification.getSkippedReason();
-                              console.warn('[GSI] Prompt skipped (cooldown). Reason:', reason, '— retrying...');
-                              setTimeout(function () {
-                                  google.accounts.id.prompt();
-                              }, 300);
-                          }
-                          // isDisplayed → working fine
-                          // isDismissedMoment → user closed the popup — no action needed
-                      });
+                      // This ALWAYS opens the real Google account selector popup
+                      window._gsiTokenClient.requestToken();
                   };
 
-                  // 3. Receive the signed Google JWT and route into the Email OTP flow
+                  // Keep handleCredentialResponse on window for any future One-Tap use
                   window.handleCredentialResponse = function (response) {
                       try {
                           const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                          console.log('[GSI] Auth Success — Email:', payload.email, '| Name:', payload.name);
+                          console.log('[GSI] Credential response — Email:', payload.email);
                           processAuthSuccess(payload.email);
                       } catch (err) {
                           console.error('[GSI] JWT decode failed:', err);
-                          alert('Google sign-in failed. Please try again or use email/password.');
                       }
-                  };
-
-                  // 4. UTF-8-safe JWT decoder (on window for external testability)
-                  window.decodeJwtResponse = function (token) {
-                      const base64Url = token.split('.')[1];
-                      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                      const jsonPayload = decodeURIComponent(
-                          window.atob(base64).split('').map(function (c) {
-                              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                          }).join('')
-                      );
-                      return JSON.parse(jsonPayload);
                   };
       });
     </script>
