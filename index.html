@@ -683,6 +683,183 @@
           text-align: center;
       }
       .btn-otp-cancel:hover { color: #94A3B8; }
+
+      /* ================================================================== */
+      /*   RESPONSIVE BREAKPOINT: TABLET & LARGE PHONE  (max-width: 768px)  */
+      /* ================================================================== */
+      @media (max-width: 768px) {
+
+        /* -- Dashboard container -- */
+        .dash-container {
+          margin: 0;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          padding: 1rem;
+          min-height: 100vh;
+          gap: 1rem;
+        }
+
+        /* -- Dashboard header: allow wrapping, compress spacing -- */
+        .dash-header {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+        .dash-header .segmented-control {
+          width: 100%;
+          justify-content: center;
+        }
+
+        /* -- KPI grid: 2 columns on tablet -- */
+        .kpi-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+        .kpi-card {
+          padding: 1rem 1.25rem;
+        }
+        .kpi-v {
+          font-size: 1.6rem;
+        }
+        .kpi-h {
+          font-size: 0.65rem;
+        }
+
+        /* -- Terminal: slightly shorter -- */
+        .terminal-container {
+          height: 350px;
+        }
+        .terminal-body {
+          font-size: 0.8rem; /* 12.8px — readable on retina */
+        }
+
+        /* -- Auth card: breathing room from edges -- */
+        .auth-card {
+          width: 95%;
+          max-width: 95%;
+          padding: 1.75rem 1.25rem;
+        }
+        .light-card {
+          width: 95%;
+          padding: 1.75rem 1.25rem;
+        }
+
+        /* -- OTP card: full-width feel -- */
+        .otp-card {
+          width: 95%;
+          max-width: 460px;
+          padding: 2rem 1.5rem;
+        }
+
+        /* -- Fat-finger touch targets (48px min-height for all buttons) -- */
+        .btn-primary-purple,
+        .btn-outline-light,
+        .btn-primary,
+        .btn-secondary,
+        .btn-otp-verify,
+        .btn-otp-cancel,
+        .segment-btn {
+          min-height: 48px;
+        }
+
+        /* -- Segmented control: even pills on mobile -- */
+        .segment-btn {
+          flex: 1;
+          justify-content: center;
+        }
+
+        /* -- OTP input: slightly smaller digit size -- */
+        #otp-code-input {
+          font-size: 1.75rem;
+          letter-spacing: 10px;
+        }
+      }
+
+      /* ================================================================== */
+      /*   RESPONSIVE BREAKPOINT: SMALL PHONE            (max-width: 480px)  */
+      /* ================================================================== */
+      @media (max-width: 480px) {
+
+        /* -- KPI grid: single column stack -- */
+        .kpi-grid {
+          grid-template-columns: 1fr;
+        }
+        .kpi-card {
+          padding: 0.875rem 1rem;
+        }
+        .kpi-v {
+          font-size: 1.4rem;
+        }
+
+        /* -- Terminal: compact height -- */
+        .terminal-container {
+          height: 300px;
+        }
+        .terminal-body {
+          font-size: 0.75rem; /* 12px — minimum legible */
+          padding: 1rem;
+          padding-top: 2rem;
+        }
+        .log-entry {
+          font-size: 0.75rem;
+        }
+
+        /* -- Auth / OTP cards: nearly edge-to-edge -- */
+        .auth-card,
+        .light-card {
+          width: 96%;
+          padding: 1.5rem 1rem;
+          border-radius: 10px;
+        }
+        .otp-card {
+          width: 96%;
+          padding: 1.75rem 1.25rem;
+          border-radius: 12px;
+        }
+
+        /* -- Auth wrapper: tighter top/bottom padding -- */
+        .auth-wrapper {
+          padding: 0.75rem;
+        }
+
+        /* -- OTP input: comfortable on 375px screens -- */
+        #otp-code-input {
+          font-size: 1.5rem;
+          letter-spacing: 8px;
+          padding: 0.875rem 1rem;
+        }
+
+        /* -- Dashboard header: stack vertically, hide non-essential labels -- */
+        .dash-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+        .status-badge {
+          font-size: 0.7rem;
+          padding: 0.2rem 0.5rem;
+        }
+
+        /* -- Segmented control pills: full row -- */
+        .segmented-control {
+          width: 100%;
+        }
+        .segment-btn {
+          font-size: 0.8rem;
+          padding: 0.4rem 0.75rem;
+        }
+
+        /* -- Terminal header: compress -- */
+        .terminal-header {
+          padding: 0.5rem 0.875rem;
+          font-size: 0.7rem;
+        }
+
+        /* -- KPI sub-text: keep legible -- */
+        .kpi-sub {
+          font-size: 0.7rem;
+        }
+      }
     </style>
   </head>
 
