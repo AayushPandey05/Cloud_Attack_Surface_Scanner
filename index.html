@@ -981,7 +981,7 @@
             type="button"
             class="btn-outline-light"
             id="google-sso"
-            onclick="handleGoogleLogin()"
+            onclick="handleGoogleLogin(event)"
           >
             <svg
               width="18"
@@ -1835,46 +1835,70 @@
                   // ---------------------------------------------------------------- //
                   //             GOOGLE IDENTITY SERVICES (GSI) — GLOBAL SCOPE        //
                   // ---------------------------------------------------------------- //
-                  // These MUST live on window so:
-                  //   (a) onclick="handleGoogleLogin()" in HTML can reach them
-                  //   (b) the GSI library can invoke handleCredentialResponse async
+                  // All functions assigned to window.* so they are reachable from:
+                  //   (a) onclick="handleGoogleLogin(event)" in HTML
+                  //   (b) the GSI library invoking handleCredentialResponse asynchronously
 
-                  // 1. GSI initialization — fires after GSI script has fully loaded
-                  window.addEventListener('load', function () {
+                  // 1. GSI initialization — window.onload guarantees the async GSI
+                  //    script has fully executed before we call .initialize()
+                  window.onload = function () {
                       if (typeof google === 'undefined' || !google.accounts) {
-                          console.warn('[GSI] Google Identity library not loaded.');
+                          console.warn('[GSI] Google Identity library not loaded — skipping init.');
                           return;
                       }
                       google.accounts.id.initialize({
                           client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
-                          callback: window.handleCredentialResponse
+                          callback: window.handleCredentialResponse,
+                          auto_select: false,
+                          cancel_on_tap_outside: true
                       });
-                      console.log('[GSI] Initialized — Google Identity Services ready.');
-                  });
+                      console.log('[GSI] SDK Initialized — Google Identity Services ready.');
+                  };
 
-                  // 2. Trigger the Google One-Tap / sign-in popup
-                  window.handleGoogleLogin = function () {
+                  // 2. Trigger One-Tap prompt; fall back to renderButton if suppressed
+                  window.handleGoogleLogin = function (e) {
+                      if (e && e.preventDefault) e.preventDefault();
+
                       if (typeof google === 'undefined' || !google.accounts) {
-                          console.error('[GSI] Library unavailable. Falling back to demo flow.');
+                          console.error('[GSI] Library unavailable — falling back to demo email flow.');
                           processAuthSuccess('demo@google.com');
                           return;
                       }
-                      google.accounts.id.prompt();
+
+                      // Primary: One-Tap / sign-in prompt
+                      google.accounts.id.prompt(function (notification) {
+                          // If the prompt was skipped or blocked (e.g. ITP, cookie policy)
+                          // fall back to rendering a real Google button inside our element
+                          if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
+                              console.warn('[GSI] One-Tap suppressed (' + notification.getSkippedReason() + ') — rendering button fallback.');
+                              const btnEl = document.getElementById('google-sso');
+                              if (btnEl) {
+                                  btnEl.innerHTML = ''; // clear our styled button content
+                                  google.accounts.id.renderButton(btnEl, {
+                                      type: 'standard',
+                                      theme: 'filled_blue',
+                                      size: 'large',
+                                      width: btnEl.offsetWidth || 320
+                                  });
+                              }
+                          }
+                      });
                   };
 
-                  // 3. Receive the signed Google JWT and route into the OTP flow
+                  // 3. Receive the signed Google JWT and route into the Email OTP flow
                   window.handleCredentialResponse = function (response) {
                       try {
-                          const payload = window.decodeJwtResponse(response.credential);
-                          console.log('[GSI] Google Auth Success — Email:', payload.email, '| Name:', payload.name);
+                          // Simple base64-URL decode — no external library needed
+                          const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                          console.log('[GSI] Auth Success — Email:', payload.email, '| Name:', payload.name);
                           processAuthSuccess(payload.email);
                       } catch (err) {
                           console.error('[GSI] JWT decode failed:', err);
-                          alert('Google login failed. Please try again or use email/password.');
+                          alert('Google sign-in failed. Please try again or use email/password.');
                       }
                   };
 
-                  // 4. Lightweight base64-URL JWT decoder (no external dependency)
+                  // 4. Lightweight UTF-8-safe JWT decoder (kept as window.* for testability)
                   window.decodeJwtResponse = function (token) {
                       const base64Url = token.split('.')[1];
                       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
