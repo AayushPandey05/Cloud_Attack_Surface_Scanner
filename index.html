@@ -13,6 +13,9 @@
       rel="stylesheet"
     />
 
+    <!-- GOOGLE LOGIN -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -225,49 +228,71 @@
       }
       .auth-card { width: 100%; max-width: 400px; }
 
-      .bg-light-gray { background-color: #F8F9FC; }
+      .bg-light-gray { background-color: #0A0D14; }
       .light-card {
-          background-color: #ffffff;
+          background-color: #101828;
           border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          border: 1px solid #E5E7EB;
-          color: #111827;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.06);
+          border: 1px solid #1E293B;
+          color: #F8FAFC;
           padding: 2.5rem 2rem;
+          position: relative;
+          overflow: hidden;
+      }
+      /* Subtle top accent glow matching OTP card */
+      .light-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 50%; transform: translateX(-50%);
+          width: 55%; height: 1px;
+          background: linear-gradient(90deg, transparent, #6366F1, transparent);
+          box-shadow: 0 0 12px 1px rgba(99, 102, 241, 0.35);
       }
       .input-light {
-          background-color: #ffffff;
-          border: 1px solid #D1D5DB;
-          color: #111827;
+          background-color: #0A0D14;
+          border: 1px solid #1E293B;
+          color: #F8FAFC;
           border-radius: 8px;
           padding: 0.75rem 1rem;
           width: 100%;
           font-size: 1rem;
-          transition: border-color 0.2s;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          font-family: inherit;
       }
-      .input-light::placeholder { color: #9CA3AF; }
-      .input-light:focus { border-color: #6366F1; outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+      .input-light::placeholder { color: #4B5563; }
+      .input-light:focus {
+          border-color: #6366F1;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+      }
       .btn-primary-purple {
-          background-color: #6366F1;
+          background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
           color: white;
           border-radius: 8px;
           padding: 0.75rem 1.5rem;
           width: 100%;
           border: none;
-          font-weight: 500;
+          font-weight: 600;
           font-size: 1rem;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
           margin-bottom: 1rem;
+          box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+          letter-spacing: 0.01em;
       }
-      .btn-primary-purple:hover { background-color: #4F46E5; }
+      .btn-primary-purple:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+      }
+      .btn-primary-purple:active { transform: translateY(0); }
       .btn-outline-light {
-          background-color: #ffffff;
-          color: #111827;
-          border: 1px solid #D1D5DB;
+          background-color: transparent;
+          color: #CBD5E1;
+          border: 1px solid #1E293B;
           border-radius: 8px;
           padding: 0.75rem 1.5rem;
           width: 100%;
@@ -278,16 +303,25 @@
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
           margin-bottom: 1.5rem;
       }
-      .btn-outline-light:hover { background-color: #F3F4F6; }
-      .link-purple { color: #5A67D8; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
-      .link-purple:hover { text-decoration: underline; }
-      .text-dark { color: #111827; }
-      .text-light-gray { color: #6B7280; font-size: 0.875rem;}
-      .divider-light { color: #9CA3AF; font-size: 0.875rem; display: flex; align-items: center; margin: 1.5rem 0; }
-      .divider-light::before, .divider-light::after { content: ''; flex: 1; border-bottom: 1px solid #E5E7EB; }
+      .btn-outline-light:hover {
+          background-color: rgba(255, 255, 255, 0.04);
+          border-color: #6366F1;
+      }
+      .link-purple { color: #818CF8; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+      .link-purple:hover { color: #A5B4FC; text-decoration: underline; }
+      .text-dark { color: #F8FAFC; }
+      .text-light-gray { color: #94A3B8; font-size: 0.875rem; }
+      .divider-light {
+          color: #4B5563;
+          font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          margin: 1.5rem 0;
+      }
+      .divider-light::before, .divider-light::after { content: ''; flex: 1; border-bottom: 1px solid #1E293B; }
       .divider-light::before { margin-right: 0.75rem; }
       .divider-light::after { margin-left: 0.75rem; }
 
@@ -943,7 +977,12 @@
 
           <div class="divider-light">or</div>
 
-          <button type="button" class="btn-outline-light" id="google-login-btn">
+          <button
+            type="button"
+            class="btn-outline-light"
+            id="google-sso"
+            onclick="handleGoogleLogin()"
+          >
             <svg
               width="18"
               height="18"
@@ -1256,7 +1295,7 @@
             >
               <i data-lucide="box" color="white" width="20" height="20"></i>
             </div>
-            <h2 class="text-lg font-semibold">Unified Security Hub</h2>
+            <h2 class="text-lg font-semibold">Security Vault Dashboard</h2>
           </div>
 
           <!-- Right Profile/Status -->
@@ -1363,432 +1402,468 @@
     <!--                               JAVASCRIPT LOGIC                             -->
     <!-- -------------------------------------------------------------------------- -->
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-          lucide.createIcons();
+            document.addEventListener('DOMContentLoaded', () => {
+                  lucide.createIcons();
 
-          // DOM References
-          const stateLogin = document.getElementById('state-login');
-          const stateLoading = document.getElementById('state-loading');
-          // #state-mfa has been removed — Email OTP gateway is now a global overlay
-          const stateDashboard = document.getElementById('state-dashboard');
+                  // DOM References
+                  const stateLogin = document.getElementById('state-login');
+                  const stateLoading = document.getElementById('state-loading');
+                  // #state-mfa has been removed — Email OTP gateway is now a global overlay
+                  const stateDashboard = document.getElementById('state-dashboard');
 
-          const loginBlock = document.getElementById('login-block');
-          const signupBlock = document.getElementById('signup-block');
-          const loginForm = document.getElementById('login-form');
-          const signupForm = document.getElementById('signup-form');
-          const toggleSignup = document.getElementById('toggle-signup');
-          const toggleLogin = document.getElementById('toggle-login');
+                  const loginBlock = document.getElementById('login-block');
+                  const signupBlock = document.getElementById('signup-block');
+                  const loginForm = document.getElementById('login-form');
+                  const signupForm = document.getElementById('signup-form');
+                  const toggleSignup = document.getElementById('toggle-signup');
+                  const toggleLogin = document.getElementById('toggle-login');
 
-          const googleLoginBtn = document.getElementById('google-login-btn');
-          const googleSignupBtn = document.getElementById('google-signup-btn');
-          const corpSso = document.getElementById('corp-sso');
+                  const googleLoginBtn = document.getElementById('google-login-btn');
+                  const googleSignupBtn = document.getElementById('google-signup-btn');
+                  const corpSso = document.getElementById('corp-sso');
 
-          const segmentBtns = document.querySelectorAll('.segment-btn');
-          const terminalFeed = document.getElementById('terminal-feed');
+                  const segmentBtns = document.querySelectorAll('.segment-btn');
+                  const terminalFeed = document.getElementById('terminal-feed');
 
-          const avatarToggle = document.getElementById('avatar-toggle');
-          const profileDropdown = document.getElementById('profile-dropdown');
-          const logoutBtn = document.getElementById('logout-btn');
+                  const avatarToggle = document.getElementById('avatar-toggle');
+                  const profileDropdown = document.getElementById('profile-dropdown');
+                  const logoutBtn = document.getElementById('logout-btn');
 
-          // Internal Logic Settings
-          let currentEnv = 'aws';
-          let terminalInterval;
+                  // Internal Logic Settings
+                  let currentEnv = 'aws';
+                  let terminalInterval;
 
 
-           // -- Navigation & State Persistence --
-          function showState(target, pushHistory = true) {
-              [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
-                  el.classList.add('hidden');
-              });
-              if (target) target.classList.remove('hidden');
+                   // -- Navigation & State Persistence --
+                  function showState(target, pushHistory = true) {
+                      [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
+                          el.classList.add('hidden');
+                      });
+                      if (target) target.classList.remove('hidden');
 
-              // Determine the string name for the URL
-              let stateName = 'login';
-              if (target === stateDashboard) stateName = 'dashboard';
+                      // Determine the string name for the URL
+                      let stateName = 'login';
+                      if (target === stateDashboard) stateName = 'dashboard';
 
-              // HISTORY API: Update the URL so the back button works
-              if (pushHistory && target !== stateLoading) {
-                  history.pushState({ view: stateName }, "", `#${stateName}`);
-              }
+                      // HISTORY API: Update the URL so the back button works
+                      if (pushHistory && target !== stateLoading) {
+                          history.pushState({ view: stateName }, "", `#${stateName}`);
+                      }
 
-              if (target === stateDashboard) {
-                  initDashboard();
-              } else {
-                  stopTerminal();
-              }
-          }
+                      if (target === stateDashboard) {
+                          initDashboard();
+                      } else {
+                          stopTerminal();
+                      }
+                  }
 
-          // LISTEN FOR THE BACK BUTTON
-          window.addEventListener('popstate', function(event) {
-              const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+                  // LISTEN FOR THE BACK BUTTON
+                  window.addEventListener('popstate', function(event) {
+                      const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
 
-              if (event.state && event.state.view === 'dashboard' && isAuth) {
-                  showState(stateDashboard, false);
-              } else {
-                  showState(stateLogin, false);
-              }
-          });
-
-          // CHECK SESSION ON REFRESH
-          function initializeApp() {
-              const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
-              const hash = window.location.hash.replace('#', '');
-
-              if (isAuth) {
-                  showState(stateDashboard, false);
-                  if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
-              } else {
-                  showState(stateLogin, false);
-                  history.replaceState({ view: 'login' }, "", "#login");
-              }
-          }
-
-          // Run initialization immediately on load
-          initializeApp();
-
-          // ---------------------------------------------------------------- //
-          //                  EMAIL OTP MFA — 3 GLOBAL FUNCTIONS              //
-          // ---------------------------------------------------------------- //
-
-          // Session variable — stores the active one-time code
-          var currentSessionOtp = '';
-
-          // FUNCTION 1: Trigger the Email OTP flow
-          window.triggerEmailOtpFlow = function(userEmail) {
-              // Generate a random 6-digit code and store it
-              currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
-
-              // Show the MFA gateway overlay
-              var gateway = document.getElementById('mfa-gateway');
-              gateway.classList.add('active');
-
-              // Inject user email into the display paragraph
-              var emailDisplay = document.getElementById('display-user-email');
-              if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
-
-              // Clear any prior input
-              var otpInput = document.getElementById('otp-code-input');
-              if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
-
-              // 🚀 NEW EMAILJS ENGINE 🚀
-              const templateParams = {
-                  user_email: userEmail,
-                  otp_code: currentSessionOtp
-              };
-
-              console.log("Initiating secure OTP dispatch to EmailJS...");
-
-              emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
-                  .then(function(response) {
-                      console.log('SUCCESS! OTP Sent.', response.status, response.text);
-                  }, function(error) {
-                      console.error('FAILED to send OTP...', error);
-                      alert("❌ Network Error: Failed to send security code. Please check your console.");
+                      if (event.state && event.state.view === 'dashboard' && isAuth) {
+                          showState(stateDashboard, false);
+                      } else {
+                          showState(stateLogin, false);
+                      }
                   });
-          };
 
-          // FUNCTION 2: Verify the submitted OTP
-          window.verifyEmailOtp = function() {
-              var otpInput = document.getElementById('otp-code-input');
-              var entered = otpInput ? otpInput.value.trim() : '';
-              if (entered === currentSessionOtp && currentSessionOtp !== '') {
-                  // Success — clear state and go to dashboard
-                  currentSessionOtp = '';
-                  if (otpInput) otpInput.value = '';
-                  document.getElementById('mfa-gateway').classList.remove('active');
+                  // CHECK SESSION ON REFRESH
+                  function initializeApp() {
+                      const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+                      const hash = window.location.hash.replace('#', '');
 
-                  // 🚀 NEW: SAVE THE SESSION SO REFRESH WORKS
-                  sessionStorage.setItem('isVaultAuthenticated', 'true');
+                      if (isAuth) {
+                          showState(stateDashboard, false);
+                          if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
+                      } else {
+                          showState(stateLogin, false);
+                          history.replaceState({ view: 'login' }, "", "#login");
+                      }
+                  }
 
-                  showState(stateDashboard);
-              }else {
-                  // Shake the input then alert
-                  if (otpInput) {
-                      otpInput.style.borderColor = '#F04438';
-                      otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
+                  // Run initialization immediately on load
+                  initializeApp();
+
+                  // ---------------------------------------------------------------- //
+                  //                  EMAIL OTP MFA — 3 GLOBAL FUNCTIONS              //
+                  // ---------------------------------------------------------------- //
+
+                  // Session variable — stores the active one-time code
+                  var currentSessionOtp = '';
+
+                  // FUNCTION 1: Trigger the Email OTP flow
+                  window.triggerEmailOtpFlow = function(userEmail) {
+                      // Generate a random 6-digit code and store it
+                      currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
+
+                      // Show the MFA gateway overlay
+                      var gateway = document.getElementById('mfa-gateway');
+                      gateway.classList.add('active');
+
+                      // Inject user email into the display paragraph
+                      var emailDisplay = document.getElementById('display-user-email');
+                      if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
+
+                      // Clear any prior input
+                      var otpInput = document.getElementById('otp-code-input');
+                      if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
+
+                      // 🚀 NEW EMAILJS ENGINE 🚀
+                      const templateParams = {
+                          user_email: userEmail,
+                          otp_code: currentSessionOtp
+                      };
+
+                      console.log("Initiating secure OTP dispatch to EmailJS...");
+
+                      emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
+                          .then(function(response) {
+                              console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                          }, function(error) {
+                              console.error('FAILED to send OTP...', error);
+                              alert("❌ Network Error: Failed to send security code. Please check your console.");
+                          });
+                  };
+
+                  // FUNCTION 2: Verify the submitted OTP
+                  window.verifyEmailOtp = function() {
+                      var otpInput = document.getElementById('otp-code-input');
+                      var entered = otpInput ? otpInput.value.trim() : '';
+                      if (entered === currentSessionOtp && currentSessionOtp !== '') {
+                          // Success — clear state and go to dashboard
+                          currentSessionOtp = '';
+                          if (otpInput) otpInput.value = '';
+                          document.getElementById('mfa-gateway').classList.remove('active');
+
+                          // 🚀 NEW: SAVE THE SESSION SO REFRESH WORKS
+                          sessionStorage.setItem('isVaultAuthenticated', 'true');
+
+                          showState(stateDashboard);
+                      }else {
+                          // Shake the input then alert
+                          if (otpInput) {
+                              otpInput.style.borderColor = '#F04438';
+                              otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
+                              setTimeout(function() {
+                                  otpInput.style.borderColor = '';
+                                  otpInput.style.boxShadow = '';
+                              }, 1500);
+                          }
+                          alert('\u26A0\uFE0F Invalid Code. Please check your email and try again.');
+                      }
+                  };
+
+                  // FUNCTION 3: Cancel MFA and return to login
+                  window.cancelMfa = function() {
+                      currentSessionOtp = '';
+                      var otpInput = document.getElementById('otp-code-input');
+                      if (otpInput) otpInput.value = '';
+                      document.getElementById('mfa-gateway').classList.remove('active');
+                      showState(stateLogin);
+                  };
+
+                  // Resend helper
+                  window.resendEmailOtp = function() {
+                      var emailDisplay = document.getElementById('display-user-email');
+                      var email = emailDisplay ? emailDisplay.textContent : '';
+
+                      if(email) {
+                         // Trigger the flow again quietly
+                         triggerEmailOtpFlow(email);
+                         console.log("Resending code...");
+                      }
+                  };
+
+                  // ---------------------------------------------------------------- //
+                  //                  UX FIX: "ENTER" KEY SUPPORT                     //
+                  // ---------------------------------------------------------------- //
+                  var otpCodeInput = document.getElementById('otp-code-input');
+                  if (otpCodeInput) {
+                      otpCodeInput.addEventListener('keypress', function(e) {
+                          if (e.key === 'Enter') {
+                              e.preventDefault(); // Stops the browser from doing anything weird
+                              verifyEmailOtp();   // Fires the exact same function as clicking the button
+                          }
+                      });
+                  }
+
+
+                  // ---------------------------------------------------------------- //
+                  //                        NAVIGATION & AUTH                          //
+                  // ---------------------------------------------------------------- //
+
+                  // -- Slider Toggles --
+                  toggleSignup.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      loginBlock.classList.add('hidden');
+                      signupBlock.classList.remove('hidden');
+                  });
+                  toggleLogin.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      signupBlock.classList.add('hidden');
+                      loginBlock.classList.remove('hidden');
+                  });
+
+                  // processAuthSuccess: reads email from the active form, shows loader briefly, then triggers OTP
+                  function processAuthSuccess(email) {
+                      var userEmail = email || 'user@company.com';
+                      showState(stateLoading);
                       setTimeout(function() {
-                          otpInput.style.borderColor = '';
-                          otpInput.style.boxShadow = '';
-                      }, 1500);
+                          // Hide loading state but do NOT show state-mfa (gateway is its own overlay)
+                          [stateLoading].forEach(function(el) { el.classList.add('hidden'); });
+                          triggerEmailOtpFlow(userEmail);
+                      }, 950);
                   }
-                  alert('\u26A0\uFE0F Invalid Code. Please check your email and try again.');
-              }
-          };
 
-          // FUNCTION 3: Cancel MFA and return to login
-          window.cancelMfa = function() {
-              currentSessionOtp = '';
-              var otpInput = document.getElementById('otp-code-input');
-              if (otpInput) otpInput.value = '';
-              document.getElementById('mfa-gateway').classList.remove('active');
-              showState(stateLogin);
-          };
-
-          // Resend helper
-          window.resendEmailOtp = function() {
-              var emailDisplay = document.getElementById('display-user-email');
-              var email = emailDisplay ? emailDisplay.textContent : '';
-
-              if(email) {
-                 // Trigger the flow again quietly
-                 triggerEmailOtpFlow(email);
-                 console.log("Resending code...");
-              }
-          };
-
-          // ---------------------------------------------------------------- //
-          //                  UX FIX: "ENTER" KEY SUPPORT                     //
-          // ---------------------------------------------------------------- //
-          var otpCodeInput = document.getElementById('otp-code-input');
-          if (otpCodeInput) {
-              otpCodeInput.addEventListener('keypress', function(e) {
-                  if (e.key === 'Enter') {
-                      e.preventDefault(); // Stops the browser from doing anything weird
-                      verifyEmailOtp();   // Fires the exact same function as clicking the button
+                  loginForm.addEventListener('submit', (e) => {
+                      e.preventDefault();
+                      var email = document.getElementById('login-email').value;
+                      processAuthSuccess(email);
+                  });
+                  signupForm.addEventListener('submit', (e) => {
+                      e.preventDefault();
+                      const emailVal = document.getElementById('reg-email').value;
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      if (!emailRegex.test(emailVal)) {
+                          alert('Please enter a valid work email.');
+                          return;
+                      }
+                      processAuthSuccess(emailVal);
+                  });
+                  googleLoginBtn.addEventListener('click', () => {
+                      processAuthSuccess('demo@google.com');
+                  });
+                  if (googleSignupBtn) {
+                      googleSignupBtn.addEventListener('click', () => {
+                          processAuthSuccess('demo@google.com');
+                      });
                   }
-              });
-          }
+                  corpSso.addEventListener('click', () => {
+                      processAuthSuccess('sso-user@corp.com');
+                  });
 
+                  // -- Dropdown & Logout Logic --
+                  avatarToggle.addEventListener('click', () => {
+                      profileDropdown.classList.toggle('hidden');
+                  });
 
-          // ---------------------------------------------------------------- //
-          //                        NAVIGATION & AUTH                          //
-          // ---------------------------------------------------------------- //
+                  document.addEventListener('click', (e) => {
+                      if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+                          profileDropdown.classList.add('hidden');
+                      }
+                  });
 
-          // -- Slider Toggles --
-          toggleSignup.addEventListener('click', (e) => {
-              e.preventDefault();
-              loginBlock.classList.add('hidden');
-              signupBlock.classList.remove('hidden');
+                  logoutBtn.addEventListener('click', () => {
+                      profileDropdown.classList.add('hidden');
+                      loginForm.reset();
+                      // Dismiss Email OTP gateway if active
+                      currentSessionOtp = '';
+                      var otpInput = document.getElementById('otp-code-input');
+                      if (otpInput) otpInput.value = '';
+                      document.getElementById('mfa-gateway').classList.remove('active');
+
+                      sessionStorage.removeItem('isVaultAuthenticated');
+                      showState(stateLogin);
+                  });
+
+                  // -- Dashboard Logic --
+                  function initDashboard() {
+                      updateDashboardContext();
+                      startTerminal();
+                  }
+
+                  segmentBtns.forEach(btn => {
+                      btn.addEventListener('click', (e) => {
+                          const view = e.target.dataset.view;
+                          if (currentEnv === view) return;
+
+                          segmentBtns.forEach(b => b.classList.remove('active'));
+                          e.target.classList.add('active');
+
+                          currentEnv = view;
+                          updateDashboardContext();
+
+                          // Clear terminal and log context shift
+                          terminalFeed.innerHTML = '';
+                          addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
+                      });
+                  });
+
+                  function updateDashboardContext() {
+                      const titleTerm = document.getElementById('terminal-title');
+                      if (currentEnv === 'aws') {
+                          // KPI 1
+                          document.getElementById('kpi-1-val').innerText = '3';
+                          document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
+                          // KPI 2
+                          document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
+                          document.getElementById('kpi-2-val').innerText = '1';
+                          document.getElementById('kpi-2-val').style.color = '#F79009';
+                          document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
+                          // KPI 3
+                          document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                          document.getElementById('kpi-3-val').innerText = '98%';
+                          document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
+                          // KPI 4
+                          document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
+                          document.getElementById('kpi-4-val').innerText = '2';
+                          document.getElementById('kpi-4-val').style.color = 'var(--red)';
+                          document.getElementById('kpi-4-sub').innerText = 'Critical severity';
+                          // KPI 5
+                          document.getElementById('kpi-5-title').innerText = 'Controls Passing';
+                          document.getElementById('kpi-5-val').innerText = '84%';
+                          document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                          document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
+
+                          titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
+                      } else {
+                          document.getElementById('kpi-1-val').innerText = '1';
+                          document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
+                          document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
+                          document.getElementById('kpi-2-val').innerText = '2';
+                          document.getElementById('kpi-2-val').style.color = 'var(--red)';
+                          document.getElementById('kpi-2-sub').innerText = 'In public channels';
+                          document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
+                          document.getElementById('kpi-3-val').innerText = '100%';
+                          document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-3-sub').innerText = 'No guest violations';
+                          document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
+                          document.getElementById('kpi-4-val').innerText = '0';
+                          document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
+                          document.getElementById('kpi-5-title').innerText = 'Workspace Health';
+                          document.getElementById('kpi-5-val').innerText = '95%';
+                          document.getElementById('kpi-5-val').style.color = '#3B82F6';
+                          document.getElementById('kpi-5-sub').innerText = 'All core policies met';
+
+                          titleTerm.innerText = 'security-telemetry — Slack Workspace';
+                      }
+                  }
+
+                  // -- Attack Path Terminal Engine --
+                  const attackLogs = {
+                      aws: [
+                          { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
+                          { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
+                          { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
+                          { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
+                      ],
+                      slack: [
+                          { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
+                          { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
+                          { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
+                      ]
+                  };
+
+                  function startTerminal() {
+                      if (terminalInterval) clearInterval(terminalInterval);
+                      terminalFeed.innerHTML = '';
+
+                      // Seed logs
+                      const pool = attackLogs[currentEnv];
+                      for (let i = 0; i < pool.length; i++) {
+                          const item = pool[i];
+                          addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+                      }
+
+                      terminalInterval = setInterval(() => {
+                          const item = pool[Math.floor(Math.random() * pool.length)];
+                          addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
+                      }, 3500);
+                  }
+
+                  function stopTerminal() {
+                      if (terminalInterval) {
+                          clearInterval(terminalInterval);
+                          terminalInterval = null;
+                      }
+                  }
+
+                  function addLog(tag, content, level, pathHighlight, pathTarget) {
+                      const entry = document.createElement('div');
+                      entry.className = 'log-entry fade-in';
+
+                      const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
+                      const tagClass = tag.toLowerCase();
+
+                      let levelHTML = '';
+                      if (level === 'CRITICAL') {
+                          levelHTML = `<span class="log-crit">${level}:</span> `;
+                      } else if (level === 'ALERT') {
+                          levelHTML = `<span class="log-alert">${level}:</span> `;
+                      } else if (level === 'WARN') {
+                          levelHTML = `<span class="log-warn">${level}:</span> `;
+                      } else {
+                          levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
+                      }
+
+                      entry.innerHTML = `
+                          <div>
+                              <span class="log-time">${timeStr}</span>
+                              <span class="log-tag ${tagClass}">[${tag}]</span>
+                              ${levelHTML}<span class="log-text">${content}</span>
+                          </div>
+                      `;
+
+                      if (pathHighlight && pathTarget) {
+                          const pathLine = document.createElement('div');
+                          pathLine.style.paddingLeft = '6.5rem';
+                          pathLine.style.marginTop = '0.1rem';
+                          pathLine.style.marginBottom = '0.4rem';
+                          pathLine.innerHTML = `
+                              <span style="color:#666;">&#x21B3; Attack Path:</span>
+                              <span style="color:#A855F7;">${pathHighlight}</span>
+                              <span style="color:#666;">&rarr;</span>
+                              <span style="color:#818CF8;">${pathTarget}</span>
+                          `;
+                          entry.appendChild(pathLine);
+                      }
+
+                      terminalFeed.appendChild(entry);
+                      terminalFeed.scrollTop = terminalFeed.scrollHeight;
+
+                      if (terminalFeed.childElementCount > 20) {
+                          terminalFeed.removeChild(terminalFeed.firstChild);
+                      }
+                  }
+
+                  // 1. Initialize Google Identity
+        window.onload = function () {
+          google.accounts.id.initialize({
+            client_id: "287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com",
+            callback: handleCredentialResponse
           });
-          toggleLogin.addEventListener('click', (e) => {
-              e.preventDefault();
-              signupBlock.classList.add('hidden');
-              loginBlock.classList.remove('hidden');
-          });
+        };
 
-          // processAuthSuccess: reads email from the active form, shows loader briefly, then triggers OTP
-          function processAuthSuccess(email) {
-              var userEmail = email || 'user@company.com';
-              showState(stateLoading);
-              setTimeout(function() {
-                  // Hide loading state but do NOT show state-mfa (gateway is its own overlay)
-                  [stateLoading].forEach(function(el) { el.classList.add('hidden'); });
-                  triggerEmailOtpFlow(userEmail);
-              }, 950);
-          }
+        // 2. Trigger the Google Pop-up
+        function handleGoogleLogin() {
+          google.accounts.id.prompt(); // Shows the "One Tap" or sign-in prompt
+        }
 
-          loginForm.addEventListener('submit', (e) => {
-              e.preventDefault();
-              var email = document.getElementById('login-email').value;
-              processAuthSuccess(email);
-          });
-          signupForm.addEventListener('submit', (e) => {
-              e.preventDefault();
-              const emailVal = document.getElementById('reg-email').value;
-              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-              if (!emailRegex.test(emailVal)) {
-                  alert('Please enter a valid work email.');
-                  return;
-              }
-              processAuthSuccess(emailVal);
-          });
-          googleLoginBtn.addEventListener('click', () => {
-              processAuthSuccess('demo@google.com');
-          });
-          if (googleSignupBtn) {
-              googleSignupBtn.addEventListener('click', () => {
-                  processAuthSuccess('demo@google.com');
-              });
-          }
-          corpSso.addEventListener('click', () => {
-              processAuthSuccess('sso-user@corp.com');
-          });
+        // 3. Handle the login success
+        function handleCredentialResponse(response) {
+          // Decoding the JWT (JSON Web Token) from Google
+          const responsePayload = decodeJwtResponse(response.credential);
 
-          // -- Dropdown & Logout Logic --
-          avatarToggle.addEventListener('click', () => {
-              profileDropdown.classList.toggle('hidden');
-          });
+          console.log("ID: " + responsePayload.sub);
+          console.log('Full Name: ' + responsePayload.name);
+          console.log('Email: ' + responsePayload.email);
 
-          document.addEventListener('click', (e) => {
-              if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
-                  profileDropdown.classList.add('hidden');
-              }
-          });
+          // Success! Proceed to our OTP flow (Double MFA is a real security best practice!)
+          processAuthSuccess(responsePayload.email);
+        }
 
-          logoutBtn.addEventListener('click', () => {
-              profileDropdown.classList.add('hidden');
-              loginForm.reset();
-              // Dismiss Email OTP gateway if active
-              currentSessionOtp = '';
-              var otpInput = document.getElementById('otp-code-input');
-              if (otpInput) otpInput.value = '';
-              document.getElementById('mfa-gateway').classList.remove('active');
-
-              sessionStorage.removeItem('isVaultAuthenticated');
-              showState(stateLogin);
-          });
-
-          // -- Dashboard Logic --
-          function initDashboard() {
-              updateDashboardContext();
-              startTerminal();
-          }
-
-          segmentBtns.forEach(btn => {
-              btn.addEventListener('click', (e) => {
-                  const view = e.target.dataset.view;
-                  if (currentEnv === view) return;
-
-                  segmentBtns.forEach(b => b.classList.remove('active'));
-                  e.target.classList.add('active');
-
-                  currentEnv = view;
-                  updateDashboardContext();
-
-                  // Clear terminal and log context shift
-                  terminalFeed.innerHTML = '';
-                  addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
-              });
-          });
-
-          function updateDashboardContext() {
-              const titleTerm = document.getElementById('terminal-title');
-              if (currentEnv === 'aws') {
-                  // KPI 1
-                  document.getElementById('kpi-1-val').innerText = '3';
-                  document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
-                  // KPI 2
-                  document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
-                  document.getElementById('kpi-2-val').innerText = '1';
-                  document.getElementById('kpi-2-val').style.color = '#F79009';
-                  document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
-                  // KPI 3
-                  document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                  document.getElementById('kpi-3-val').innerText = '98%';
-                  document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                  document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
-                  // KPI 4
-                  document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
-                  document.getElementById('kpi-4-val').innerText = '2';
-                  document.getElementById('kpi-4-val').style.color = 'var(--red)';
-                  document.getElementById('kpi-4-sub').innerText = 'Critical severity';
-                  // KPI 5
-                  document.getElementById('kpi-5-title').innerText = 'Controls Passing';
-                  document.getElementById('kpi-5-val').innerText = '84%';
-                  document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                  document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
-
-                  titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
-              } else {
-                  document.getElementById('kpi-1-val').innerText = '1';
-                  document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
-                  document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
-                  document.getElementById('kpi-2-val').innerText = '2';
-                  document.getElementById('kpi-2-val').style.color = 'var(--red)';
-                  document.getElementById('kpi-2-sub').innerText = 'In public channels';
-                  document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
-                  document.getElementById('kpi-3-val').innerText = '100%';
-                  document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                  document.getElementById('kpi-3-sub').innerText = 'No guest violations';
-                  document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
-                  document.getElementById('kpi-4-val').innerText = '0';
-                  document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                  document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
-                  document.getElementById('kpi-5-title').innerText = 'Workspace Health';
-                  document.getElementById('kpi-5-val').innerText = '95%';
-                  document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                  document.getElementById('kpi-5-sub').innerText = 'All core policies met';
-
-                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
-              }
-          }
-
-          // -- Attack Path Terminal Engine --
-          const attackLogs = {
-              aws: [
-                  { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
-                  { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
-                  { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
-                  { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
-              ],
-              slack: [
-                  { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
-                  { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
-                  { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
-              ]
-          };
-
-          function startTerminal() {
-              if (terminalInterval) clearInterval(terminalInterval);
-              terminalFeed.innerHTML = '';
-
-              // Seed logs
-              const pool = attackLogs[currentEnv];
-              for (let i = 0; i < pool.length; i++) {
-                  const item = pool[i];
-                  addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-              }
-
-              terminalInterval = setInterval(() => {
-                  const item = pool[Math.floor(Math.random() * pool.length)];
-                  addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-              }, 3500);
-          }
-
-          function stopTerminal() {
-              if (terminalInterval) {
-                  clearInterval(terminalInterval);
-                  terminalInterval = null;
-              }
-          }
-
-          function addLog(tag, content, level, pathHighlight, pathTarget) {
-              const entry = document.createElement('div');
-              entry.className = 'log-entry fade-in';
-
-              const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
-              const tagClass = tag.toLowerCase();
-
-              let levelHTML = '';
-              if (level === 'CRITICAL') {
-                  levelHTML = `<span class="log-crit">${level}:</span> `;
-              } else if (level === 'ALERT') {
-                  levelHTML = `<span class="log-alert">${level}:</span> `;
-              } else if (level === 'WARN') {
-                  levelHTML = `<span class="log-warn">${level}:</span> `;
-              } else {
-                  levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
-              }
-
-              entry.innerHTML = `
-                  <div>
-                      <span class="log-time">${timeStr}</span>
-                      <span class="log-tag ${tagClass}">[${tag}]</span>
-                      ${levelHTML}<span class="log-text">${content}</span>
-                  </div>
-              `;
-
-              if (pathHighlight && pathTarget) {
-                  const pathLine = document.createElement('div');
-                  pathLine.style.paddingLeft = '6.5rem';
-                  pathLine.style.marginTop = '0.1rem';
-                  pathLine.style.marginBottom = '0.4rem';
-                  pathLine.innerHTML = `
-                      <span style="color:#666;">&#x21B3; Attack Path:</span>
-                      <span style="color:#A855F7;">${pathHighlight}</span>
-                      <span style="color:#666;">&rarr;</span>
-                      <span style="color:#818CF8;">${pathTarget}</span>
-                  `;
-                  entry.appendChild(pathLine);
-              }
-
-              terminalFeed.appendChild(entry);
-              terminalFeed.scrollTop = terminalFeed.scrollHeight;
-
-              if (terminalFeed.childElementCount > 20) {
-                  terminalFeed.removeChild(terminalFeed.firstChild);
-              }
-          }
+        // Helper to decode the Google Token
+        function decodeJwtResponse(token) {
+          var base64Url = token.split('.')[1];
+          var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          return JSON.parse(jsonPayload);
+        }
       });
     </script>
 
