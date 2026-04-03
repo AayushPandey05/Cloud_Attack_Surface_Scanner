@@ -1611,50 +1611,62 @@
                       loginBlock.classList.remove('hidden');
                   });
 
-                  // processAuthSuccess: single entry point for ALL login paths
-                  // Strategy: show the loading spinner ON TOP of login (no black screen gap),
-                  // then after 950ms hide the spinner and activate the MFA overlay.
-                  // Exposed as window.processAuthSuccess so logic.js globals and external
-                  // callers (Google OAuth2 callback, Corp SSO) can always resolve it.
+                  // processAuthSuccess — single entry point for ALL login paths.
+                  // The submit/click callers are responsible for showing stateLoading
+                  // BEFORE calling this function (with an 800ms delay to allow a paint).
+                  // This function simply dismisses the loading screen and opens the MFA overlay.
                   window.processAuthSuccess = function processAuthSuccess(email) {
                       var userEmail = email || 'user@company.com';
 
-                      // UI guard: hide any residual loading state immediately
+                      // Dismiss the loading spinner regardless of how we got here.
                       var loaderEl = document.getElementById('state-loading');
                       if (loaderEl) loaderEl.classList.add('hidden');
 
-                      // Brief intentional pause for visual feedback, then show MFA overlay
-                      if (loaderEl) loaderEl.classList.remove('hidden');
+                      // Surface the login page as the background behind the MFA overlay.
+                      if (stateLogin) stateLogin.classList.remove('hidden');
 
-                      setTimeout(function() {
-                          // Hide the loader
-                          if (loaderEl) loaderEl.classList.add('hidden');
-                          // Keep state-login visible as the background while MFA overlay is active
-                          if (stateLogin) stateLogin.classList.remove('hidden');
-                          // Trigger the OTP overlay (global overlay, DOM-independent)
-                          try {
-                              triggerEmailOtpFlow(userEmail);
-                          } catch (err) {
-                              console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
-                              alert('MFA gateway failed to open. Please refresh and try again.');
-                          }
-                      }, 950);
+                      // Open the Email OTP overlay immediately (no extra delay needed —
+                      // the 800ms was already consumed by the caller's setTimeout).
+                      try {
+                          triggerEmailOtpFlow(userEmail);
+                      } catch (err) {
+                          console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
+                          alert('MFA gateway failed to open. Please refresh and try again.');
+                      }
                   };
 
                   loginForm.addEventListener('submit', (e) => {
                       e.preventDefault();
-                      var email = document.getElementById('login-email').value;
-                      processAuthSuccess(email);
+
+                      // STEP 1 — Immediately swap to the loading screen so the
+                      //           login form is fully hidden before anything async runs.
+                      showState(stateLoading, false);
+
+                      // STEP 2 — Capture the email value after preventing default.
+                      var loginEmailInput = document.getElementById('login-email');
+                      var emailValue = loginEmailInput ? loginEmailInput.value.trim() : '';
+
+                      // STEP 3 — Wait one paint cycle (800 ms) so the browser
+                      //           renders the spinner, THEN open the MFA overlay.
+                      setTimeout(() => {
+                          processAuthSuccess(emailValue);
+                      }, 800);
                   });
+
                   signupForm.addEventListener('submit', (e) => {
                       e.preventDefault();
-                      const emailVal = document.getElementById('reg-email').value;
+                      const emailVal = document.getElementById('reg-email').value.trim();
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       if (!emailRegex.test(emailVal)) {
                           alert('Please enter a valid work email.');
                           return;
                       }
-                      processAuthSuccess(emailVal);
+
+                      // Same strict sequencing as login — spinner first, then MFA.
+                      showState(stateLoading, false);
+                      setTimeout(() => {
+                          processAuthSuccess(emailVal);
+                      }, 800);
                   });
                   // google-sso button fires handleGoogleLogin() via inline onclick
                   // googleSignupBtn uses the same OAuth2 token flow
