@@ -1621,11 +1621,14 @@
 
                   segmentBtns.forEach(btn => {
                       btn.addEventListener('click', (e) => {
-                          const view = e.target.dataset.view;
-                          if (currentEnv === view) return;
+                          // Use currentTarget (the button with data-view) not target
+                          // (which may be the inner <i> icon or dot <div>)
+                          const btn = e.currentTarget;
+                          const view = btn.dataset.view;
+                          if (!view || currentEnv === view) return;
 
                           segmentBtns.forEach(b => b.classList.remove('active'));
-                          e.target.classList.add('active');
+                          btn.classList.add('active');
 
                           currentEnv = view;
                           updateDashboardContext();
@@ -1791,105 +1794,74 @@
                   //               AUDIT LOG EXPORT — CLIENT-SIDE BLOB               //
                   // ---------------------------------------------------------------- //
                   window.downloadAuditLogs = function(format) {
-                      // Pull the live log data for whichever environment is active.
-                      var pool = attackLogs[currentEnv] || [];
-                      var ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                      var env  = currentEnv.toUpperCase();
-
-                      var content, mimeType, filename;
-
-                      if (format === 'csv') {
-                          var rows = ['Timestamp,Severity,Service,Message,"Attack Path","Attack Target"'];
-                          pool.forEach(function(log) {
-                              var safeMsg  = '"' + (log.msg         || '').replace(/"/g, '""') + '"';
-                              var safePath = '"' + (log.pathHighlight || '').replace(/"/g, '""') + '"';
-                              var safeTgt  = '"' + (log.pathTarget   || '').replace(/"/g, '""') + '"';
-                              rows.push([ts, log.level, log.t, safeMsg, safePath, safeTgt].join(','));
-                          });
-                          content  = rows.join('\n');
-                          mimeType = 'text/csv';
-                          filename = 'security_audit_' + env + '_' + ts + '.csv';
-                      } else {
-                          var exportObj = {
-                              exported_at:  new Date().toISOString(),
-                              environment:  env,
-                              generated_by: 'Security Vault Dashboard',
-                              logs: pool.map(function(log) {
-                                  return {
-                                      timestamp:    new Date().toISOString(),
-                                      severity:     log.level,
-                                      service:      log.t,
-                                      message:      log.msg,
-                                      attack_path:  log.pathHighlight || null,
-                                      attack_target: log.pathTarget   || null
-                                  };
-                              })
-                          };
-                          content  = JSON.stringify(exportObj, null, 2);
-                          mimeType = 'application/json';
-                          filename = 'security_audit_' + env + '_' + ts + '.json';
-                      }
-
-                      // Trigger the browser file download via a temporary Blob URL.
-                      var blob = new Blob([content], { type: mimeType });
-                      var url  = URL.createObjectURL(blob);
-                      var a    = document.createElement('a');
-                      a.href     = url;
-                      a.download = filename;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-
-                      console.log('[Export] Downloaded', filename, '—', pool.length, 'log entries.');
-                  };
-
-                  window.onload = function () {
-                      // Restore profile data if session already exists (page refresh case)
-                      var savedEmail = sessionStorage.getItem('vaultUserEmail');
-                      var savedName  = sessionStorage.getItem('vaultUserName');
-                      if (savedEmail) {
-                          var pel = document.getElementById('profile-email-display');
-                          var pnl = document.getElementById('profile-name-display');
-                          if (pel) pel.innerText = savedEmail;
-                          if (pnl) pnl.innerText = savedName || 'Security Admin';
-                      }
-
-                      if (typeof google === 'undefined' || !google.accounts) {
-                          console.warn('[GSI] Google library not loaded.');
-                          return;
-                      }
-
-                      // Initialize the OAuth2 Token Client (popup flow)
-                      window._gsiTokenClient = google.accounts.oauth2.initTokenClient({
-                          client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
-                          scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                          prompt: 'select_account', // always show account chooser
-                          callback: function (tokenResponse) {
-                              if (tokenResponse.error) {
-                                  console.error('[GSI] Token error:', tokenResponse.error);
-                                  alert('Google sign-in failed. Please try again.');
-                                  return;
-                              }
-
-                              // Use the access token to fetch the user's real name + email
-                              fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                                  headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
-                              })
-                              .then(function (res) { return res.json(); })
-                              .then(function (userInfo) {
-                                  console.log('[GSI] Auth Success — Email:', userInfo.email, '| Name:', userInfo.name);
-                                  // Pass both email AND real name so the dropdown shows the Google account name
-                                  processAuthSuccess(userInfo.email, userInfo.name || 'Google User');
-                              })
-                              .catch(function (err) {
-                                  console.error('[GSI] UserInfo fetch failed:', err);
-                                  alert('Could not retrieve Google account info. Please try again.');
-                              });
+                      try {
+                          // Null-check: attackLogs may not be populated if called too early
+                          if (!attackLogs || !currentEnv) {
+                              console.warn('[Export] attackLogs or currentEnv not ready.');
+                              return;
                           }
-                      });
 
-                      console.log('[GSI] SDK Initialized — OAuth2 Token Client ready.');
+                          var pool = attackLogs[currentEnv] || [];
+                          var ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                          var env  = (currentEnv || 'unknown').toUpperCase();
+
+                          var content, mimeType, filename;
+
+                          if (format === 'csv') {
+                              var rows = ['Timestamp,Severity,Service,Message,"Attack Path","Attack Target"'];
+                              pool.forEach(function(log) {
+                                  var safeMsg  = '"' + (log.msg          || '').replace(/"/g, '""') + '"';
+                                  var safePath = '"' + (log.pathHighlight || '').replace(/"/g, '""') + '"';
+                                  var safeTgt  = '"' + (log.pathTarget    || '').replace(/"/g, '""') + '"';
+                                  rows.push([ts, log.level || '', log.t || '', safeMsg, safePath, safeTgt].join(','));
+                              });
+                              content  = rows.join('\n');
+                              mimeType = 'text/csv';
+                              filename = 'security_audit_' + env + '_' + ts + '.csv';
+                          } else {
+                              var exportObj = {
+                                  exported_at:  new Date().toISOString(),
+                                  environment:  env,
+                                  generated_by: 'Security Vault Dashboard',
+                                  logs: pool.map(function(log) {
+                                      return {
+                                          timestamp:     new Date().toISOString(),
+                                          severity:      log.level || '',
+                                          service:       log.t || '',
+                                          message:       log.msg || '',
+                                          attack_path:   log.pathHighlight || null,
+                                          attack_target: log.pathTarget    || null
+                                      };
+                                  })
+                              };
+                              content  = JSON.stringify(exportObj, null, 2);
+                              mimeType = 'application/json';
+                              filename = 'security_audit_' + env + '_' + ts + '.json';
+                          }
+
+                          // Null-check: Blob API must be available
+                          if (typeof Blob === 'undefined') {
+                              console.error('[Export] Blob API not supported in this browser.');
+                              alert('Your browser does not support file downloads. Please use Chrome or Firefox.');
+                              return;
+                          }
+
+                          var blob = new Blob([content], { type: mimeType });
+                          var url  = URL.createObjectURL(blob);
+                          var a    = document.createElement('a');
+                          a.href     = url;
+                          a.download = filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+
+                          console.log('[Export] Downloaded', filename, '—', pool.length, 'log entries.');
+
+                      } catch (exportErr) {
+                          // Isolated catch: export failure MUST NOT crash the rest of the application
+                          console.error('[Export] Blob generation failed — application continues normally.', exportErr);
+                      }
                   };
 
                   // Called from onclick="handleGoogleLogin(event)" on the button
@@ -1899,7 +1871,7 @@
 
                       if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
                           console.error('[GSI] Not initialized — falling back to demo flow.');
-                          processAuthSuccess('demo@google.com');
+                          processAuthSuccess('demo@google.com', 'Security Admin');
                           return;
                       }
 
@@ -1912,11 +1884,72 @@
                       try {
                           const payload = JSON.parse(atob(response.credential.split('.')[1]));
                           console.log('[GSI] Credential response — Email:', payload.email);
-                          processAuthSuccess(payload.email);
+                          processAuthSuccess(payload.email, payload.name || 'Google User');
                       } catch (err) {
                           console.error('[GSI] JWT decode failed:', err);
                       }
                   };
+
+      }); // END DOMContentLoaded
+
+      // ------------------------------------------------------------------ //
+      // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it  //
+      // actually fires. Assigning it inside DOMContentLoaded meant it was  //
+      // set after the load event had already fired — GSI never initialized. //
+      // ------------------------------------------------------------------ //
+      window.addEventListener('load', function () {
+          // Session restore: re-populate profile dropdown on hard refresh
+          var savedEmail = sessionStorage.getItem('vaultUserEmail');
+          var savedName  = sessionStorage.getItem('vaultUserName');
+          if (savedEmail) {
+              var pel = document.getElementById('profile-email-display');
+              var pnl = document.getElementById('profile-name-display');
+              if (pel) pel.innerText = savedEmail;
+              else console.warn('[ProfileSync] #profile-email-display not found in DOM.');
+              if (pnl) pnl.innerText = savedName || 'Security Admin';
+              else console.warn('[ProfileSync] #profile-name-display not found in DOM.');
+          }
+
+          // GSI initialization
+          if (typeof google === 'undefined' || !google.accounts) {
+              console.warn('[GSI] Google library not loaded — OAuth2 popup unavailable.');
+              return;
+          }
+
+          try {
+              window._gsiTokenClient = google.accounts.oauth2.initTokenClient({
+                  client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
+                  scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                  prompt: 'select_account',
+                  callback: function (tokenResponse) {
+                      if (tokenResponse.error) {
+                          console.error('[GSI] Token error:', tokenResponse.error);
+                          alert('Google sign-in failed. Please try again.');
+                          return;
+                      }
+                      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                          headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                      })
+                      .then(function (res) { return res.json(); })
+                      .then(function (userInfo) {
+                          console.log('[GSI] Auth — Email:', userInfo.email, '| Name:', userInfo.name);
+                          // Null-check: processAuthSuccess must exist before calling
+                          if (typeof window.processAuthSuccess === 'function') {
+                              window.processAuthSuccess(userInfo.email, userInfo.name || 'Google User');
+                          } else {
+                              console.error('[GSI] processAuthSuccess not defined yet.');
+                          }
+                      })
+                      .catch(function (err) {
+                          console.error('[GSI] UserInfo fetch failed:', err);
+                          alert('Could not retrieve Google account info. Please try again.');
+                      });
+                  }
+              });
+              console.log('[GSI] OAuth2 Token Client ready.');
+          } catch (gsiErr) {
+              console.error('[GSI] initTokenClient threw — Google auth unavailable.', gsiErr);
+          }
       });
     </script>
 
