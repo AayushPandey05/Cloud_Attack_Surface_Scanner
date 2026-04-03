@@ -800,12 +800,48 @@
         .segment-btn {
           flex: 1;
           justify-content: center;
+          margin-bottom: 0.25rem; /* prevent buttons clipping when control wraps */
         }
 
         /* -- OTP input: slightly smaller digit size -- */
         #otp-code-input {
           font-size: 1.75rem;
           letter-spacing: 10px;
+        }
+
+        /* ── Dashboard header right cluster (Status badge + Avatar) ────────── */
+        /* The right-hand <div class="flex items-center gap-6"> gets tightened   */
+        /* so badge and avatar never overlap on a narrow viewport.               */
+        .dash-header > div:last-child {
+          display: flex;
+          align-items: center;
+          gap: 10px;            /* tighter than the desktop gap-6 (1.5rem) */
+          flex-shrink: 0;
+        }
+
+        /* ── Terminal header: prevent title from line-wrapping ──────────────── */
+        /* #terminal-title is the middle child of .terminal-header flex row.    */
+        #terminal-title {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;              /* take remaining space between mac-dots and LIVE */
+          min-width: 0;         /* allow flex child to shrink below content size  */
+          font-size: 0.68rem;   /* slightly smaller than desktop 0.75rem          */
+          padding: 0 0.5rem;
+        }
+
+        /* ── Terminal body: tighter padding & line-height on mobile ─────────── */
+        .terminal-body {
+          padding: 0.625rem;    /* 10px — less than desktop 1.5rem               */
+          padding-top: 2rem;    /* preserve the gradient fade-in clearance        */
+          line-height: 1.55;
+        }
+
+        /* ── Log entry: slightly looser spacing so lines don't look squished ── */
+        .log-entry {
+          margin-bottom: 0.4rem;
+          line-height: 1.55;
         }
       }
 
@@ -883,10 +919,25 @@
           padding: 0.4rem 0.75rem;
         }
 
-        /* -- Terminal header: compress -- */
+        /* -- Terminal header: compress further on small phones -- */
         .terminal-header {
           padding: 0.5rem 0.875rem;
           font-size: 0.7rem;
+        }
+
+        /* -- Terminal title: even tighter on 375px screens -- */
+        #terminal-title {
+          font-size: 0.6rem;
+          padding: 0 0.25rem;
+        }
+
+        /* -- Right header cluster: hide status badge, keep avatar visible -- */
+        /* On 375px there simply isn't room for both badge text and avatar.   */
+        .dash-header > div:last-child {
+          gap: 8px;
+        }
+        .dash-header .status-badge {
+          display: none;        /* reclaims ~80px; avatar + dropdown remain */
         }
 
         /* -- KPI sub-text: keep legible -- */
