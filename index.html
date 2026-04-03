@@ -1614,22 +1614,32 @@
                   // processAuthSuccess: single entry point for ALL login paths
                   // Strategy: show the loading spinner ON TOP of login (no black screen gap),
                   // then after 950ms hide the spinner and activate the MFA overlay.
-                  function processAuthSuccess(email) {
+                  // Exposed as window.processAuthSuccess so logic.js globals and external
+                  // callers (Google OAuth2 callback, Corp SSO) can always resolve it.
+                  window.processAuthSuccess = function processAuthSuccess(email) {
                       var userEmail = email || 'user@company.com';
 
-                      // Show the loader on top — DON'T hide state-login yet
+                      // UI guard: hide any residual loading state immediately
                       var loaderEl = document.getElementById('state-loading');
+                      if (loaderEl) loaderEl.classList.add('hidden');
+
+                      // Brief intentional pause for visual feedback, then show MFA overlay
                       if (loaderEl) loaderEl.classList.remove('hidden');
 
                       setTimeout(function() {
                           // Hide the loader
                           if (loaderEl) loaderEl.classList.add('hidden');
-                          // Show state-login as the background while MFA overlay is active
+                          // Keep state-login visible as the background while MFA overlay is active
                           if (stateLogin) stateLogin.classList.remove('hidden');
-                          // Trigger the OTP overlay (independent global overlay)
-                          triggerEmailOtpFlow(userEmail);
+                          // Trigger the OTP overlay (global overlay, DOM-independent)
+                          try {
+                              triggerEmailOtpFlow(userEmail);
+                          } catch (err) {
+                              console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
+                              alert('MFA gateway failed to open. Please refresh and try again.');
+                          }
                       }, 950);
-                  }
+                  };
 
                   loginForm.addEventListener('submit', (e) => {
                       e.preventDefault();

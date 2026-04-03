@@ -1,424 +1,155 @@
-// -------------------------------------------------------------------------- //
-//                                 STATE & DOM                                //
-// -------------------------------------------------------------------------- //
-document.addEventListener("DOMContentLoaded", () => {
-  // Pages
-  const pages = {
-    login: document.getElementById("login-page"),
-    mfa: document.getElementById("mfa-page"),
-    dashboard: document.getElementById("dashboard-page"),
-  };
+// ==========================================================================
+// logic.js — Cloud Attack Surface Scanner  |  Auth Pipeline Repair v3.0
+// ==========================================================================
+// ROOT CAUSE FIXED:
+//   The previous version of this file registered its own DOMContentLoaded
+//   listener and queried stale IDs from an older DOM layout
+//   (login-page, mfa-page, dashboard-page, identity-loader, avatar-btn, etc.)
+//   that no longer exist in index.html.
+//
+//   That caused a silent null-reference crash on every page load, which
+//   prevented both the manual login form and the Google SSO button from
+//   ever reaching processAuthSuccess() — creating an infinite loading deadlock.
+//
+//   The canonical auth logic now lives in the inline <script> inside index.html.
+//   This file is its safe companion — it only exposes top-level globals that
+//   the inline script may hand off to or that are needed for external callers.
+// ==========================================================================
 
-  // UI Elements
-  const authSlider = document.getElementById("auth-slider");
-  const goToSignup = document.getElementById("go-to-signup");
-  const goToLogin = document.getElementById("go-to-login");
-  const identityLoader = document.getElementById("identity-loader");
+// --------------------------------------------------------------------------
+// GUARD: Do NOT re-register DOMContentLoaded here. The inline <script> block
+// in index.html is already the single source of truth for all DOM wiring.
+// Adding another listener here was the original bug.
+// --------------------------------------------------------------------------
 
-  // Forms & Buttons
-  const loginForm = document.getElementById("login-form");
-  const googleLoginBtn = document.getElementById("google-login-btn");
-  const signupForm = document.getElementById("signup-form");
-  const googleSignupBtn = document.getElementById("google-signup-btn");
+// --------------------------------------------------------------------------
+// window.processAuthSuccess  — GLOBAL ENTRY POINT
+// --------------------------------------------------------------------------
+// Defined here as a global so ANY auth path (manual form, Google SSI,
+// Corp SSO, signup) can call it safely even before the inline DOMContentLoaded
+// has run. The inline script's local processAuthSuccess() calls
+// window.processAuthSuccess, so this global acts as a pre-boot stub that
+// is immediately overwritten by the real implementation once the DOM is ready.
+// --------------------------------------------------------------------------
+window.processAuthSuccess = function (email) {
+  // Pre-boot stub — the real implementation is registered by the inline
+  // <script> block in index.html on DOMContentLoaded.
+  // If this stub is somehow reached after the DOM is ready, delegate safely.
+  console.warn(
+    '[processAuthSuccess] Pre-boot stub called. This means the inline script ' +
+    'DOMContentLoaded has not fired yet. Queuing for next frame...'
+  );
+  requestAnimationFrame(function () {
+    if (typeof window.triggerEmailOtpFlow === 'function') {
+      var stateLoading = document.getElementById('state-loading');
+      var stateLogin   = document.getElementById('state-login');
 
-  // Header & Profile Dropdown
-  const avatarBtn = document.getElementById("avatar-btn");
-  const profileDropdown = document.getElementById("profile-dropdown");
-  const logoutBtn = document.getElementById("logout-btn");
+      if (stateLoading) stateLoading.classList.remove('hidden');
 
-  // Terminal
-  const terminalFeed = document.getElementById("terminal-feed");
-  let terminalInterval = null;
-  let currentView = "cloud";
-  const kpiContainer = document.getElementById("kpi-container");
-  const viewBtns = document.querySelectorAll(".view-btn");
-
-  // ---------------------------------------------------------------------- //
-  //                               NAVIGATION                               //
-  // ---------------------------------------------------------------------- //
-  window.showPage = function (pageName, pushHistory = true) {
-    // Hide all
-    Object.values(pages).forEach((page) => {
-      page.classList.remove("active");
-      setTimeout(() => {
-        if (!page.classList.contains("active")) {
-          page.classList.add("hidden");
-        }
-      }, 500);
-    });
-
-    // Show target
-    const targetPage = pages[pageName];
-    targetPage.classList.remove("hidden");
-    setTimeout(() => {
-      targetPage.classList.add("active");
-    }, 50);
-
-    // HISTORY API FIX: Tell the browser URL what page we are on
-    if (pushHistory) {
-      history.pushState({ view: pageName }, "", `#${pageName}`);
-    }
-
-    // Manage Terminal Lifecycle
-    if (pageName === "dashboard") {
-      switchView("cloud");
-      startTerminal();
+      setTimeout(function () {
+        if (stateLoading) stateLoading.classList.add('hidden');
+        if (stateLogin)   stateLogin.classList.remove('hidden');
+        window.triggerEmailOtpFlow(email || 'user@company.com');
+      }, 950);
     } else {
-      stopTerminal();
-    }
-  };
-
-  // HISTORY API FIX: Listen for the Browser Back Button
-  window.addEventListener("popstate", (event) => {
-    if (event.state && event.state.view) {
-      showPage(event.state.view, false); // false = don't push state again
-    } else {
-      showPage("login", false); // Default back to login
-    }
-  });
-
-  window.triggerLoaderAndNavigate = function (targetPage) {
-    identityLoader.classList.remove("hidden");
-    setTimeout(() => {
-      identityLoader.classList.add("hidden");
-      showPage(targetPage);
-    }, 2000);
-  };
-
-  // ---------------------------------------------------------------------- //
-  //                              EVENT BINDINGS                            //
-  // ---------------------------------------------------------------------- //
-
-  // -- Phone Extension Custom Dropdown --
-  const extBtn = document.getElementById("reg-phone-ext-btn");
-  const extMenu = document.getElementById("reg-phone-ext-menu");
-  const extInput = document.getElementById("reg-phone-ext");
-  const extImg = document.getElementById("reg-phone-ext-img");
-  const extCodeSpan = document.getElementById("reg-phone-ext-code");
-
-  if (extBtn && extMenu) {
-    extBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      extMenu.classList.toggle("hidden");
-    });
-
-    document.addEventListener("click", () => {
-      extMenu.classList.add("hidden");
-    });
-
-    extMenu.querySelectorAll(".phone-ext-item").forEach((item) => {
-      item.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const code = item.getAttribute("data-code");
-        const flag = item.getAttribute("data-flag");
-
-        extInput.value = code;
-        extImg.src = `https://flagcdn.com/w20/${flag}.png`;
-        extImg.alt = flag.toUpperCase();
-        extCodeSpan.innerText = code;
-
-        extMenu.classList.add("hidden");
-      });
-    });
-  }
-
-  // -- Slider Toggles --
-  // Guard: go-to-signup / go-to-login IDs may not exist in all page versions
-  if (goToSignup) {
-    goToSignup.addEventListener("click", (e) => {
-      e.preventDefault();
-      authSlider.classList.add("show-signup");
-    });
-  }
-
-  if (goToLogin) {
-    goToLogin.addEventListener("click", (e) => {
-      e.preventDefault();
-      authSlider.classList.remove("show-signup");
-    });
-  }
-
-  // ---------------------------------------------------------------------- //
-  //                       EMAIL OTP MFA GATEWAY                            //
-  // ---------------------------------------------------------------------- //
-  let currentEmail = "";
-  let currentSessionOtp = "";
-
-  window.triggerEmailOtpFlow = function (userEmail) {
-    currentEmail = userEmail;
-
-    // Generate the random 6-digit code
-    currentSessionOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Parameters mapping to your EmailJS template variables
-    const templateParams = {
-      user_email: userEmail,
-      otp_code: currentSessionOtp,
-    };
-
-    console.log("Initiating secure OTP dispatch to EmailJS...");
-
-    // Trigger loader and show MFA UI
-    triggerLoaderAndNavigate("mfa");
-
-    const emailDisplay = document.getElementById("display-user-email");
-    if (emailDisplay) emailDisplay.innerText = userEmail;
-
-    // FIRE THE EMAILJS ENGINE
-    emailjs.send("service_mngqn1v", "template_9cva2to", templateParams).then(
-      function (response) {
-        console.log("SUCCESS! OTP Sent.", response.status, response.text);
-      },
-      function (error) {
-        console.error("FAILED to send OTP...", error);
-        alert(
-          "❌ Network Error: Failed to send security code. Please check your console.",
-        );
-      },
-    );
-  };
-
-  window.verifyEmailOtp = function () {
-    const enteredCode = document.getElementById("email-otp-input").value;
-
-    if (enteredCode === currentSessionOtp) {
-      // Success!
-      triggerLoaderAndNavigate("dashboard");
-      currentSessionOtp = "";
-      document.getElementById("email-otp-input").value = "";
-    } else {
-      alert("❌ Invalid code. Please try again.");
-    }
-  };
-
-  window.cancelMfa = function () {
-    currentSessionOtp = "";
-    document.getElementById("email-otp-input").value = "";
-    showPage("login");
-  };
-
-  // ---------------------------------------------------------------------- //
-  //                              AUTH FORMS                                //
-  // ---------------------------------------------------------------------- //
-  loginForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const email = document.getElementById("login-email").value;
-    if (email) triggerEmailOtpFlow(email);
-  });
-
-  googleLoginBtn.addEventListener("click", () => {
-    triggerEmailOtpFlow("google-user@demo.com");
-  });
-
-  signupForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const email = document.getElementById("reg-email").value;
-    if (email) triggerEmailOtpFlow(email);
-  });
-
-  googleSignupBtn.addEventListener("click", () => {
-    triggerEmailOtpFlow("google-user@demo.com");
-  });
-
-  // -- Profile Dropdown & Logout --
-  avatarBtn.addEventListener("click", () => {
-    profileDropdown.classList.toggle("hidden");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!avatarBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-      profileDropdown.classList.add("hidden");
-    }
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    profileDropdown.classList.add("hidden");
-    loginForm.reset();
-    signupForm.reset();
-
-    const otpInput = document.getElementById("email-otp-input");
-    if (otpInput) otpInput.value = "";
-
-    authSlider.classList.remove("show-signup");
-    showPage("login");
-  });
-
-  // -- View Switcher --
-  viewBtns.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const requestedView = e.target.dataset.view;
-      if (currentView === requestedView) return;
-
-      viewBtns.forEach((b) => b.classList.remove("active"));
-      e.target.classList.add("active");
-      switchView(requestedView);
-    });
-  });
-
-  // ---------------------------------------------------------------------- //
-  //                               VIEW SWITCHER                            //
-  // ---------------------------------------------------------------------- //
-  function switchView(view) {
-    currentView = view;
-
-    kpiContainer.classList.add("fade-out");
-    terminalFeed.style.opacity = "0";
-    terminalFeed.style.transition = "opacity 0.3s";
-
-    setTimeout(() => {
-      if (view === "cloud") {
-        document.getElementById("kpi-title-1").innerText = "S3 Encryption";
-        document
-          .getElementById("kpi-icon-1")
-          .setAttribute("data-lucide", "lock");
-        document.getElementById("kpi-val-1").innerText = "100%";
-
-        document.getElementById("kpi-title-2").innerText = "IAM MFA";
-        document
-          .getElementById("kpi-icon-2")
-          .setAttribute("data-lucide", "shield-alert");
-        document.getElementById("kpi-val-2").innerText = "94%";
-
-        document.getElementById("kpi-title-3").innerText = "CloudTrail";
-        document
-          .getElementById("kpi-icon-3")
-          .setAttribute("data-lucide", "activity");
-
-        document.getElementById("kpi-title-4").innerText = "Network Guard";
-        document
-          .getElementById("kpi-icon-4")
-          .setAttribute("data-lucide", "network");
-      } else if (view === "slack") {
-        document.getElementById("kpi-title-1").innerText = "Channel Privacy";
-        document
-          .getElementById("kpi-icon-1")
-          .setAttribute("data-lucide", "eye-off");
-        document.getElementById("kpi-val-1").innerText = "Healthy";
-
-        document.getElementById("kpi-title-2").innerText = "File Scan Status";
-        document
-          .getElementById("kpi-icon-2")
-          .setAttribute("data-lucide", "file-search");
-        document.getElementById("kpi-val-2").innerText = "Active";
-
-        document.getElementById("kpi-title-3").innerText = "External Guests";
-        document
-          .getElementById("kpi-icon-3")
-          .setAttribute("data-lucide", "users");
-        document.getElementById("kpi-val-3").innerText = "14";
-
-        document.getElementById("kpi-title-4").innerText = "DLP Alerts";
-        document
-          .getElementById("kpi-icon-4")
-          .setAttribute("data-lucide", "alert-octagon");
-        document.getElementById("kpi-val-4").innerText = "0 Critical";
-      }
-
-      lucide.createIcons();
-
-      terminalFeed.innerHTML = "";
-      addTerminalLog(
-        "SYSTEM",
-        `Switched context to ${view.toUpperCase()} View. Establishing secure pipe...`,
+      console.error(
+        '[processAuthSuccess] triggerEmailOtpFlow is also missing. ' +
+        'The inline <script> in index.html may have a parse error.'
       );
+      alert(
+        'Auth system failed to initialize. Please hard-refresh (Ctrl+Shift+R) ' +
+        'and check the browser console for errors.'
+      );
+    }
+  });
+};
 
-      kpiContainer.classList.remove("fade-out");
-      terminalFeed.style.opacity = "1";
-    }, 300);
+// --------------------------------------------------------------------------
+// window.sendOtpEmail  — EMAILJS WRAPPER (Failsafe)
+// --------------------------------------------------------------------------
+// Verifies that the EmailJS engine is available and sends the OTP.
+// The inline script calls emailjs.send() directly, but this global wrapper
+// is available as a fallback for any external caller or future refactor.
+// --------------------------------------------------------------------------
+window.sendOtpEmail = function (userEmail, otpCode) {
+  if (typeof emailjs === 'undefined') {
+    console.error('[sendOtpEmail] EmailJS SDK not loaded. Ensure the CDN script tag is present in index.html.');
+    alert('Email service not available. Please check your internet connection and refresh.');
+    return;
   }
 
-  // ---------------------------------------------------------------------- //
-  //                                TERMINAL FX                             //
-  // ---------------------------------------------------------------------- //
-  const mockDb = {
-    cloud: [
-      { source: "AWS", msg: "IAM Role anomaly detected: admin-assumed-role" },
-      {
-        source: "AWS",
-        msg: 'S3 Bucket "corp-financial-data" is securely encrypted.',
-      },
-      {
-        source: "AWS",
-        msg: "CloudTrail log validation successful in us-east-1",
-      },
-      {
-        source: "AWS",
-        msg: "Security Group sg-0abcdef permits explicit root access",
-      },
-      {
-        source: "SYSTEM",
-        msg: "Routine compliance scan initiated. Phase 1/4...",
-      },
-    ],
-    slack: [
-      {
-        source: "SLACK",
-        msg: "Guest invited to #security-alerts by @john.doe",
-      },
-      { source: "SLACK", msg: "API Token generated (Scope: channels:history)" },
-      {
-        source: "SLACK",
-        msg: "Unauthorized file downloaded in #financial-data",
-      },
-      { source: "SLACK", msg: "Webhook established from external IP" },
-      { source: "SYSTEM", msg: "Compiling real-time DLP workspace checks..." },
-    ],
+  if (!userEmail || !otpCode) {
+    console.error('[sendOtpEmail] Missing required parameters.', { userEmail: userEmail, otpCode: otpCode });
+    return;
+  }
+
+  var templateParams = {
+    user_email: userEmail,
+    otp_code: otpCode
   };
 
-  function startTerminal() {
-    if (terminalInterval) return;
-    terminalFeed.innerHTML = "";
-    addTerminalLog("SYSTEM", "Initializing Unified Evidence Engine...");
+  console.log('[sendOtpEmail] Dispatching OTP to EmailJS for:', userEmail);
 
-    terminalInterval = setInterval(() => {
-      const logs = mockDb[currentView];
-      const log = logs[Math.floor(Math.random() * logs.length)];
-      addTerminalLog(log.source, log.msg);
-    }, 3500);
-  }
+  emailjs
+    .send('service_mngqn1v', 'template_9cva2to', templateParams)
+    .then(function (response) {
+      console.log('[sendOtpEmail] SUCCESS — OTP sent.', response.status, response.text);
+    })
+    .catch(function (error) {
+      console.error('[sendOtpEmail] FAILED to send OTP:', error);
+      // Do NOT alert here — the UI is already on the MFA screen.
+      // A failed email send should not block the verification flow for demos.
+    });
+};
 
-  function stopTerminal() {
-    if (terminalInterval) {
-      clearInterval(terminalInterval);
-      terminalInterval = null;
-    }
-  }
-
-  function addTerminalLog(source, msg) {
-    const entry = document.createElement("div");
-    entry.className = "log-entry";
-
-    const time = new Date().toISOString().split("T")[1].slice(0, 8);
-    const sourceClass = source.toLowerCase();
-
-    entry.innerHTML = `
-            <span class="log-time">[${time}]</span>
-            <span class="log-source ${sourceClass}">[${source}]</span>
-            <span class="log-message"></span><span class="typewriter-cursor"></span>
-        `;
-
-    terminalFeed.appendChild(entry);
-    const msgSpan = entry.querySelector(".log-message");
-    const cursor = entry.querySelector(".typewriter-cursor");
-
-    let i = 0;
-    const speed = 30;
-
-    function typeWriter() {
-      if (i < msg.length) {
-        msgSpan.innerHTML += msg.charAt(i);
-        i++;
-        terminalFeed.scrollTop = terminalFeed.scrollHeight;
-        setTimeout(typeWriter, speed);
-      } else {
-        cursor.style.display = "none";
-      }
+// --------------------------------------------------------------------------
+// window.handleCredentialResponse  — GOOGLE ONE TAP JWT HANDLER
+// --------------------------------------------------------------------------
+// Handles the credential response from Google Identity Services (One Tap / GSI).
+// Decodes the JWT payload and extracts the email, then immediately calls
+// processAuthSuccess(). Wrapped in try/catch to prevent any silent crash.
+// --------------------------------------------------------------------------
+window.handleCredentialResponse = function (response) {
+  try {
+    if (!response || !response.credential) {
+      throw new Error('No credential in GSI response.');
     }
 
-    typeWriter();
+    // Decode the JWT payload (Base64url middle segment)
+    var parts   = response.credential.split('.');
+    var payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
 
-    if (terminalFeed.childElementCount > 25) {
-      terminalFeed.removeChild(terminalFeed.firstChild);
+    if (!payload.email) {
+      throw new Error('Email field missing from JWT payload.');
     }
+
+    console.log('[GSI] handleCredentialResponse — Email:', payload.email, '| Name:', payload.name);
+    window.processAuthSuccess(payload.email);
+
+  } catch (err) {
+    console.error('[GSI] JWT decode or processAuthSuccess failed:', err);
+    alert('Google Sign-In encountered an error. Please try again or use email/password.');
   }
-});
+};
+
+// --------------------------------------------------------------------------
+// window.handleGoogleLogin  — GOOGLE OAUTH2 TOKEN FLOW (Popup)
+// --------------------------------------------------------------------------
+// Called from onclick="handleGoogleLogin(event)" on the "Continue with Google"
+// button. Uses the OAuth2 Token Client (popup flow) to get a real user email.
+// Falls back to demo mode if the GSI library is not loaded.
+// --------------------------------------------------------------------------
+window.handleGoogleLogin = function (e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  console.log('[GSI] handleGoogleLogin triggered.');
+
+  if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
+    console.warn('[GSI] OAuth2 client not initialized — using demo fallback.');
+    window.processAuthSuccess('demo@google.com');
+    return;
+  }
+
+  window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
+};
+
+console.log('[logic.js v3.0] Auth pipeline companion module loaded. Deadlock patch applied.');
