@@ -1,14 +1,4 @@
-// =============================================================================
-// api/scan-slack.js — Vercel Serverless Function
-// Cloud Attack Surface Scanner | Slack Telemetry Engine v1.2
-// =============================================================================
-// Deployed as: GET /api/scan-slack
-// Auth:        process.env.SLACK_BOT_TOKEN  (set in Vercel dashboard or .env)
-// Scopes needed on your Slack App:
-//   users:read, users:read.email, channels:read, channels:history
-// =============================================================================
-
-const SLACK_API = 'https://slack.com/api';
+const SLACK_API = "https://slack.com/api";
 
 // ── Regex for secret detection ────────────────────────────────────────────────
 const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}/g;
@@ -16,22 +6,24 @@ const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}/g;
 // ── Generic Slack fetch helper ────────────────────────────────────────────────
 async function slackFetch(endpoint, params = {}) {
   const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) throw new Error('SLACK_BOT_TOKEN environment variable is not set.');
+  if (!token)
+    throw new Error("SLACK_BOT_TOKEN environment variable is not set.");
 
-  const qs  = new URLSearchParams(params).toString();
-  const url = `${SLACK_API}/${endpoint}${qs ? '?' + qs : ''}`;
+  const qs = new URLSearchParams(params).toString();
+  const url = `${SLACK_API}/${endpoint}${qs ? "?" + qs : ""}`;
 
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!res.ok) throw new Error(`HTTP ${res.status} from Slack (${endpoint})`);
 
   const json = await res.json();
-  if (!json.ok) throw new Error(`Slack API error on ${endpoint}: ${json.error}`);
+  if (!json.ok)
+    throw new Error(`Slack API error on ${endpoint}: ${json.error}`);
 
   return json;
 }
@@ -40,24 +32,25 @@ async function slackFetch(endpoint, params = {}) {
 async function runScan() {
   // ── 1. USERS AUDIT ────────────────────────────────────────────────────────
   let nonCompliant = 0;
-  let totalUsers   = 0;
+  let totalUsers = 0;
 
   try {
-    const { members } = await slackFetch('users.list', { limit: 200 });
+    const { members } = await slackFetch("users.list", { limit: 200 });
 
     // Exclude bots, deleted accounts, and Slackbot itself
-    const humans = members.filter(u => !u.is_bot && !u.deleted && u.id !== 'USLACKBOT');
+    const humans = members.filter(
+      (u) => !u.is_bot && !u.deleted && u.id !== "USLACKBOT",
+    );
     totalUsers = humans.length;
 
-    nonCompliant = humans.filter(u => {
-      const noMfa   = u.has_2fa === false;           // requires admin scope on paid plans
-      const noPhoto = !u.profile?.image_24 ||
-                      u.profile.image_24.includes('gravatar');
+    nonCompliant = humans.filter((u) => {
+      const noMfa = u.has_2fa === false; // requires admin scope on paid plans
+      const noPhoto =
+        !u.profile?.image_24 || u.profile.image_24.includes("gravatar");
       return noMfa || noPhoto;
     }).length;
-
   } catch (e) {
-    console.error('[scan-slack] users.list failed:', e.message);
+    console.error("[scan-slack] users.list failed:", e.message);
     // Non-fatal — continue to message scan
   }
 
@@ -72,34 +65,35 @@ async function runScan() {
     if (channelId) {
       channelsToScan = [channelId];
     } else {
-      const { channels } = await slackFetch('conversations.list', {
-        types:            'public_channel',
-        exclude_archived: 'true',
-        limit:            '10',
+      const { channels } = await slackFetch("conversations.list", {
+        types: "public_channel",
+        exclude_archived: "true",
+        limit: "10",
       });
-      channelsToScan = channels.map(c => c.id);
+      channelsToScan = channels.map((c) => c.id);
     }
 
     for (const channel of channelsToScan) {
       try {
-        const { messages } = await slackFetch('conversations.history', {
+        const { messages } = await slackFetch("conversations.history", {
           channel,
-          limit: '20',
+          limit: "20",
         });
 
         for (const msg of messages) {
-          const text    = msg.text || '';
+          const text = msg.text || "";
           const matches = text.match(SECRET_REGEX);
           if (matches) secrets += matches.length;
         }
       } catch (chanErr) {
         // Bot not in channel — skip silently
-        console.warn(`[scan-slack] Skipping channel ${channel}: ${chanErr.message}`);
+        console.warn(
+          `[scan-slack] Skipping channel ${channel}: ${chanErr.message}`,
+        );
       }
     }
-
   } catch (e) {
-    console.error('[scan-slack] conversations scan failed:', e.message);
+    console.error("[scan-slack] conversations scan failed:", e.message);
   }
 
   return { secrets, nonCompliant, totalUsers };
@@ -108,16 +102,15 @@ async function runScan() {
 // ── Handler ───────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   // Only allow GET
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const data = await runScan();
     return res.status(200).json(data);
-
   } catch (err) {
-    console.error('[scan-slack] Fatal error:', err.message);
+    console.error("[scan-slack] Fatal error:", err.message);
     return res.status(500).json({ error: err.message });
   }
 }
