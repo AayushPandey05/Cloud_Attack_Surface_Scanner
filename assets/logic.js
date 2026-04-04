@@ -153,3 +153,156 @@ window.handleGoogleLogin = function (e) {
 };
 
 console.log('[logic.js v3.0] Auth pipeline companion module loaded. Deadlock patch applied.');
+
+// ==========================================================================
+// window.fetchLiveSlackData — SLACK TELEMETRY ENGINE v1.2
+// ==========================================================================
+// Called by the inline dashboard script in index.html whenever the user
+// switches to the "Slack Workspace" segment view.
+//
+// Flow:
+//   1. Immediately show loading placeholders in KPI cards.
+//   2. Fetch GET /api/scan-slack (Vercel serverless — token never leaves server).
+//   3. Apply real data to the DOM; log findings in the terminal feed.
+//   4. If the API is unavailable, degrade gracefully — UI stays stable.
+// ==========================================================================
+
+window.fetchLiveSlackData = async function () {
+  // ── 1. Loading state ──────────────────────────────────────────────────────
+  var setKpi = function (id, val, sub, color) {
+    var valEl = document.getElementById('kpi-' + id + '-val');
+    var subEl = document.getElementById('kpi-' + id + '-sub');
+    if (valEl) { valEl.innerText = val; if (color) valEl.style.color = color; }
+    if (subEl) subEl.innerText = sub;
+  };
+  var setTitle = function (id, text) {
+    var el = document.getElementById('kpi-' + id + '-title');
+    if (el) el.innerText = text;
+  };
+
+  setTitle(2, 'Exposed Secrets');
+  setTitle(3, 'MFA Enforced');
+  setTitle(4, 'Non-Compliant Users');
+  setTitle(5, 'Total Users');
+
+  setKpi(1, '—', 'Scanning workspace…', 'var(--gray)');
+  setKpi(2, '—', 'Scanning messages…',  'var(--gray)');
+  setKpi(3, '—', 'Checking users…',     'var(--gray)');
+  setKpi(4, '—', 'MFA & profile audit', 'var(--gray)');
+  setKpi(5, '—', 'Querying API…',       'var(--gray)');
+
+  // Log initiation in terminal (calls addLog defined in the inline script)
+  if (typeof window._slackAddLog === 'function') {
+    window._slackAddLog('SLACK', 'Initiating live workspace scan via /api/scan-slack…', 'SYSTEM');
+  }
+
+  // ── 2. Fetch ──────────────────────────────────────────────────────────────
+  try {
+    var res = await fetch('/api/scan-slack');
+
+    if (!res.ok) {
+      var errBody = await res.json().catch(function () { return { error: 'HTTP ' + res.status }; });
+      throw new Error(errBody.error || 'API returned ' + res.status);
+    }
+
+    var data = await res.json();
+
+    // ── 3. Apply results ──────────────────────────────────────────────────
+    var secrets      = typeof data.secrets     === 'number' ? data.secrets     : 0;
+    var nonCompliant = typeof data.nonCompliant === 'number' ? data.nonCompliant : 0;
+    var totalUsers   = typeof data.totalUsers  === 'number' ? data.totalUsers  : 0;
+
+    // MFA % = (compliant / total) * 100  — clamp between 0 and 100
+    var mfaPct = totalUsers > 0
+      ? Math.round(((totalUsers - nonCompliant) / totalUsers) * 100)
+      : 100;
+
+    // KPI 1 — attack surface (secrets = entry points)
+    setKpi(1,
+      String(secrets),
+      secrets > 0 ? '↑ ' + secrets + ' secret(s) found' : 'No secrets found ✓',
+      secrets > 0 ? 'var(--red)' : 'var(--green)'
+    );
+
+    // KPI 2 — Exposed Secrets count
+    setKpi(2,
+      String(secrets),
+      secrets > 0 ? 'Critical severity' : 'Clean ✓',
+      secrets > 0 ? 'var(--red)' : 'var(--green)'
+    );
+
+    // KPI 3 — MFA Enforced %
+    setKpi(3,
+      mfaPct + '%',
+      nonCompliant > 0 ? nonCompliant + ' user(s) non-compliant' : 'All users compliant ✓',
+      mfaPct >= 90 ? 'var(--green)' : 'var(--red)'
+    );
+
+    // KPI 4 — Non-compliant count
+    setKpi(4,
+      String(nonCompliant),
+      nonCompliant > 0 ? 'MFA / profile gaps' : 'No violations ✓',
+      nonCompliant > 0 ? 'var(--red)' : 'var(--green)'
+    );
+
+    // KPI 5 — Total users audited
+    setKpi(5,
+      String(totalUsers),
+      'Users audited',
+      '#3B82F6'
+    );
+
+    // ── Terminal log real findings ────────────────────────────────────────
+    if (typeof window._slackAddLog === 'function') {
+      window._slackAddLog('SLACK',
+        'Scan complete — ' + totalUsers + ' users, ' + secrets + ' secret(s) detected.',
+        'SYSTEM'
+      );
+
+      if (secrets > 0) {
+        window._slackAddLog('SLACK',
+          secrets + ' credential pattern(s) matched (AKIA/sk_live) in channel history.',
+          'CRITICAL', 'Initial Access', 'Credential Theft'
+        );
+      } else {
+        window._slackAddLog('SLACK', 'No AWS keys or Stripe secrets found in scanned messages.', 'SYSTEM');
+      }
+
+      if (nonCompliant > 0) {
+        window._slackAddLog('SLACK',
+          nonCompliant + ' user(s) missing MFA or profile photo.',
+          'WARN', 'Weak Identity', 'Account Takeover'
+        );
+      } else {
+        window._slackAddLog('SLACK', 'All users pass MFA and profile compliance checks.', 'SYSTEM');
+      }
+    }
+
+  } catch (err) {
+    // ── 4. Graceful degradation ───────────────────────────────────────────
+    console.error('[fetchLiveSlackData] API call failed:', err.message);
+
+    var isOffline = err.message.includes('Failed to fetch') ||
+                    err.message.includes('NetworkError') ||
+                    err.message.includes('Load failed');
+
+    var hint = isOffline ? 'Run: vercel dev' : err.message.slice(0, 45);
+
+    setKpi(1, '?', 'API unreachable', 'var(--gray)');
+    setKpi(2, '?', hint,              'var(--gray)');
+    setKpi(3, '?', 'API unavailable', 'var(--gray)');
+    setKpi(4, '?', 'API unavailable', 'var(--gray)');
+    setKpi(5, '?', 'API unavailable', 'var(--gray)');
+
+    if (typeof window._slackAddLog === 'function') {
+      window._slackAddLog('SLACK', '⚠ Scan API unreachable: ' + err.message, 'ALERT');
+      if (isOffline) {
+        window._slackAddLog('SLACK', 'Start the dev server with: vercel dev', 'SYSTEM');
+        window._slackAddLog('SLACK', 'Add SLACK_BOT_TOKEN to .env before running.', 'SYSTEM');
+      }
+    }
+  }
+};
+
+console.log('[logic.js v3.1] Slack Telemetry Engine loaded — fetchLiveSlackData ready.');
+

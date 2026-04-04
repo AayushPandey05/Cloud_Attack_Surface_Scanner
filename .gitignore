@@ -1,2 +1,11 @@
 #desktop
 desktop.ini
+
+# Environment variables — NEVER commit your Slack bot token
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+package-lock.json

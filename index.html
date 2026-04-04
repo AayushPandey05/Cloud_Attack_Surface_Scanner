@@ -1667,27 +1667,34 @@
                           document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
 
                           titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
-                      } else {
-                          document.getElementById('kpi-1-val').innerText = '1';
-                          document.getElementById('kpi-1-sub').innerText = 'Since yesterday';
-                          document.getElementById('kpi-2-title').innerText = 'Exposed Tokens';
-                          document.getElementById('kpi-2-val').innerText = '2';
-                          document.getElementById('kpi-2-val').style.color = 'var(--red)';
-                          document.getElementById('kpi-2-sub').innerText = 'In public channels';
-                          document.getElementById('kpi-3-title').innerText = 'Channel Privacy';
-                          document.getElementById('kpi-3-val').innerText = '100%';
-                          document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-3-sub').innerText = 'No guest violations';
-                          document.getElementById('kpi-4-title').innerText = 'Data Exfiltration';
-                          document.getElementById('kpi-4-val').innerText = '0';
-                          document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-4-sub').innerText = 'No bulk downloads';
-                          document.getElementById('kpi-5-title').innerText = 'Workspace Health';
-                          document.getElementById('kpi-5-val').innerText = '95%';
-                          document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                          document.getElementById('kpi-5-sub').innerText = 'All core policies met';
+                       } else {
+                           // Set card titles for the Slack view
+                           document.getElementById('kpi-1-val').innerText = '—';
+                           document.getElementById('kpi-1-sub').innerText = 'Scanning…';
+                           document.getElementById('kpi-1-val').style.color = 'var(--gray)';
+                           document.getElementById('kpi-2-title').innerText = 'Exposed Secrets';
+                           document.getElementById('kpi-2-val').innerText = '—';
+                           document.getElementById('kpi-2-val').style.color = 'var(--gray)';
+                           document.getElementById('kpi-2-sub').innerText = 'Scanning messages…';
+                           document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                           document.getElementById('kpi-3-val').innerText = '—';
+                           document.getElementById('kpi-3-val').style.color = 'var(--gray)';
+                           document.getElementById('kpi-3-sub').innerText = 'Checking users…';
+                           document.getElementById('kpi-4-title').innerText = 'Non-Compliant Users';
+                           document.getElementById('kpi-4-val').innerText = '—';
+                           document.getElementById('kpi-4-val').style.color = 'var(--gray)';
+                           document.getElementById('kpi-4-sub').innerText = 'MFA / profile audit';
+                           document.getElementById('kpi-5-title').innerText = 'Total Users';
+                           document.getElementById('kpi-5-val').innerText = '—';
+                           document.getElementById('kpi-5-val').style.color = 'var(--gray)';
+                           document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
 
-                          titleTerm.innerText = 'security-telemetry — Slack Workspace';
+                           titleTerm.innerText = 'security-telemetry — Slack Workspace';
+
+                           // Kick off the live scan from logic.js
+                           if (typeof window.fetchLiveSlackData === 'function') {
+                               window.fetchLiveSlackData();
+                           }
                       }
                   }
 
@@ -1731,6 +1738,7 @@
                   }
 
                   function addLog(tag, content, level, pathHighlight, pathTarget) {
+                      window._slackAddLog = addLog;
                       const entry = document.createElement('div');
                       entry.className = 'log-entry fade-in';
 

@@ -1,0 +1,15 @@
+{
+  "name": "cloud-attack-surface-scanner",
+  "version": "1.0.0",
+  "description": "Zero-Trust DevSecOps Dashboard",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "build": "vercel build"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
