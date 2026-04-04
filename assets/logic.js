@@ -235,6 +235,18 @@ window.fetchLiveSlackData = async function () {
     // KPI 5 — Total users audited
     setKpi(5, String(totalUsers), "Users audited", "#3B82F6");
 
+    // ── Persist scan results globally for CSV/JSON export ─────────────────
+    window.latestSlackData = {
+      scannedAt:      new Date().toISOString(),
+      secrets:        secrets,
+      nonCompliant:   nonCompliant,
+      totalUsers:     totalUsers,
+      mfaPct:         mfaPct,
+      detailedAlerts: Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [],
+      raw:            data,   // full API payload — used by JSON export
+    };
+
+
     // ── Terminal log real findings ────────────────────────────────────────
     if (typeof window._slackAddLog === "function") {
       window._slackAddLog(

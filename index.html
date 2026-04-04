@@ -1841,75 +1841,143 @@
                   //               AUDIT LOG EXPORT — CLIENT-SIDE BLOB               //
                   // ---------------------------------------------------------------- //
                   window.downloadAuditLogs = function(format) {
-                      try {
-                          // Null-check: attackLogs may not be populated if called too early
-                          if (!attackLogs || !currentEnv) {
-                              console.warn('[Export] attackLogs or currentEnv not ready.');
-                              return;
-                          }
+                       try {
+                           var ts  = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                           var env = (currentEnv || 'unknown').toUpperCase();
+                           var content, mimeType, filename;
 
-                          var pool = attackLogs[currentEnv] || [];
-                          var ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                          var env  = (currentEnv || 'unknown').toUpperCase();
+                           // ────────────────────────────────────────────────────────────────
+                           // SLACK EXPORT — uses live window.latestSlackData from the scan
+                           // ────────────────────────────────────────────────────────────────
+                           if (currentEnv === 'slack') {
+                               var sd = window.latestSlackData;
 
-                          var content, mimeType, filename;
+                               if (!sd) {
+                                   alert('No Slack scan data available yet. Switch to the Slack tab and wait for the scan to complete.');
+                                   return;
+                               }
 
-                          if (format === 'csv') {
-                              var rows = ['Timestamp,Severity,Service,Message,"Attack Path","Attack Target"'];
-                              pool.forEach(function(log) {
-                                  var safeMsg  = '"' + (log.msg          || '').replace(/"/g, '""') + '"';
-                                  var safePath = '"' + (log.pathHighlight || '').replace(/"/g, '""') + '"';
-                                  var safeTgt  = '"' + (log.pathTarget    || '').replace(/"/g, '""') + '"';
-                                  rows.push([ts, log.level || '', log.t || '', safeMsg, safePath, safeTgt].join(','));
-                              });
-                              content  = rows.join('\n');
-                              mimeType = 'text/csv';
-                              filename = 'security_audit_' + env + '_' + ts + '.csv';
-                          } else {
-                              var exportObj = {
-                                  exported_at:  new Date().toISOString(),
-                                  environment:  env,
-                                  generated_by: 'Security Vault Dashboard',
-                                  logs: pool.map(function(log) {
-                                      return {
-                                          timestamp:     new Date().toISOString(),
-                                          severity:      log.level || '',
-                                          service:       log.t || '',
-                                          message:       log.msg || '',
-                                          attack_path:   log.pathHighlight || null,
-                                          attack_target: log.pathTarget    || null
-                                      };
-                                  })
-                              };
-                              content  = JSON.stringify(exportObj, null, 2);
-                              mimeType = 'application/json';
-                              filename = 'security_audit_' + env + '_' + ts + '.json';
-                          }
+                               if (format === 'csv') {
+                                   var rows = [
+                                       'Timestamp,Report Type,Severity,Detail'
+                                   ];
 
-                          // Null-check: Blob API must be available
-                          if (typeof Blob === 'undefined') {
-                              console.error('[Export] Blob API not supported in this browser.');
-                              alert('Your browser does not support file downloads. Please use Chrome or Firefox.');
-                              return;
-                          }
+                                   // Row 1 — Summary
+                                   rows.push([
+                                       sd.scannedAt,
+                                       '"Workspace Summary"',
+                                       'INFO',
+                                       '"Total Users: ' + sd.totalUsers +
+                                       ' | MFA Compliant: '    + sd.mfaPct + '%' +
+                                       ' | Non-Compliant: '    + sd.nonCompliant +
+                                       ' | Exposed Secrets: '  + sd.secrets + '"'
+                                   ].join(','));
 
-                          var blob = new Blob([content], { type: mimeType });
-                          var url  = URL.createObjectURL(blob);
-                          var a    = document.createElement('a');
-                          a.href     = url;
-                          a.download = filename;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
+                                   // Rows 2+ — one per attack path
+                                   if (sd.detailedAlerts.length > 0) {
+                                       sd.detailedAlerts.forEach(function(path) {
+                                           rows.push([
+                                               sd.scannedAt,
+                                               '"Credential Exposure"',
+                                               'CRITICAL',
+                                               '"' + path.replace(/"/g, '""') + '"'
+                                           ].join(','));
+                                       });
+                                   } else {
+                                       rows.push([sd.scannedAt, '"Secret Scan"', 'PASS', '"No credentials detected in public channels"'].join(','));
+                                   }
 
-                          console.log('[Export] Downloaded', filename, '—', pool.length, 'log entries.');
+                                   if (sd.nonCompliant > 0) {
+                                       rows.push([sd.scannedAt, '"MFA Audit"', 'WARN',
+                                           '"' + sd.nonCompliant + ' user(s) missing MFA or profile photo"'].join(','));
+                                   } else {
+                                       rows.push([sd.scannedAt, '"MFA Audit"', 'PASS', '"All users compliant"'].join(','));
+                                   }
 
-                      } catch (exportErr) {
-                          // Isolated catch: export failure MUST NOT crash the rest of the application
-                          console.error('[Export] Blob generation failed — application continues normally.', exportErr);
-                      }
-                  };
+                                   content  = rows.join('\n');
+                                   mimeType = 'text/csv';
+                                   filename = 'slack_audit_' + ts + '.csv';
+
+                               } else {
+                                   // JSON — export full raw payload + computed fields
+                                   var exportObj = {
+                                       exported_at:   new Date().toISOString(),
+                                       environment:   'SLACK',
+                                       generated_by:  'Security Vault Dashboard',
+                                       summary: {
+                                           total_users:    sd.totalUsers,
+                                           mfa_compliant:  sd.mfaPct + '%',
+                                           non_compliant:  sd.nonCompliant,
+                                           exposed_secrets: sd.secrets
+                                       },
+                                       detailed_alerts: sd.detailedAlerts,
+                                       raw_api_response: sd.raw
+                                   };
+                                   content  = JSON.stringify(exportObj, null, 2);
+                                   mimeType = 'application/json';
+                                   filename = 'slack_audit_' + ts + '.json';
+                               }
+
+                           // ────────────────────────────────────────────────────────────────
+                           // AWS EXPORT — uses existing static attackLogs pool (unchanged)
+                           // ────────────────────────────────────────────────────────────────
+                           } else {
+                               var pool = attackLogs[currentEnv] || [];
+
+                               if (format === 'csv') {
+                                   var awsRows = ['Timestamp,Severity,Service,Message,"Attack Path","Attack Target"'];
+                                   pool.forEach(function(log) {
+                                       var safeMsg  = '"' + (log.msg          || '').replace(/"/g, '""') + '"';
+                                       var safePath = '"' + (log.pathHighlight || '').replace(/"/g, '""') + '"';
+                                       var safeTgt  = '"' + (log.pathTarget    || '').replace(/"/g, '""') + '"';
+                                       awsRows.push([ts, log.level || '', log.t || '', safeMsg, safePath, safeTgt].join(','));
+                                   });
+                                   content  = awsRows.join('\n');
+                                   mimeType = 'text/csv';
+                                   filename = 'security_audit_AWS_' + ts + '.csv';
+                               } else {
+                                   var awsExport = {
+                                       exported_at:  new Date().toISOString(),
+                                       environment:  'AWS',
+                                       generated_by: 'Security Vault Dashboard',
+                                       logs: pool.map(function(log) {
+                                           return {
+                                               timestamp:     new Date().toISOString(),
+                                               severity:      log.level || '',
+                                               service:       log.t || '',
+                                               message:       log.msg || '',
+                                               attack_path:   log.pathHighlight || null,
+                                               attack_target: log.pathTarget    || null
+                                           };
+                                       })
+                                   };
+                                   content  = JSON.stringify(awsExport, null, 2);
+                                   mimeType = 'application/json';
+                                   filename = 'security_audit_AWS_' + ts + '.json';
+                               }
+                           }
+
+                           if (typeof Blob === 'undefined') {
+                               alert('Your browser does not support file downloads. Please use Chrome or Firefox.');
+                               return;
+                           }
+
+                           var blob = new Blob([content], { type: mimeType });
+                           var url  = URL.createObjectURL(blob);
+                           var a    = document.createElement('a');
+                           a.href     = url;
+                           a.download = filename;
+                           document.body.appendChild(a);
+                           a.click();
+                           document.body.removeChild(a);
+                           URL.revokeObjectURL(url);
+
+                           console.log('[Export] Downloaded', filename);
+
+                       } catch (exportErr) {
+                           console.error('[Export] Failed — application continues normally.', exportErr);
+                       }
+                   };
 
                   // Called from onclick="handleGoogleLogin(event)" on the button
                   window.handleGoogleLogin = function (e) {
