@@ -1327,6 +1327,22 @@
                   let currentEnv = 'aws';
                   let terminalInterval;
 
+                  // -- Attack Path Data (declared here so startTerminal() can access it
+                  //    during the boot/re-hydration sequence before it is called) --
+                  const attackLogs = {
+                      aws: [
+                          { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
+                          { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
+                          { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
+                          { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
+                      ],
+                      slack: [
+                          { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
+                          { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
+                          { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
+                      ]
+                  };
+
 
                    // -- Navigation & State Persistence --
                   function showState(target, pushHistory = true) {
@@ -1732,20 +1748,6 @@
                   }
 
                   // -- Attack Path Terminal Engine --
-                  const attackLogs = {
-                      aws: [
-                          { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
-                          { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
-                          { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
-                          { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
-                      ],
-                      slack: [
-                          { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
-                          { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
-                          { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
-                      ]
-                  };
-
                   function startTerminal() {
                       if (terminalInterval) clearInterval(terminalInterval);
                       terminalFeed.innerHTML = '';
