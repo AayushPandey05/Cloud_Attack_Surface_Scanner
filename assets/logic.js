@@ -247,11 +247,25 @@ window.fetchLiveSlackData = async function () {
         "SYSTEM",
       );
 
-      if (secrets > 0) {
+      // ── Secrets / detailedAlerts ──────────────────────────────────────────
+      var alerts = Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [];
+
+      if (alerts.length > 0) {
+        // Print one CRITICAL entry per identity-aware attack path
+        alerts.forEach(function (alertPath) {
+          window._slackAddLog(
+            "SLACK",
+            "Credential pattern matched — " + alertPath,
+            "CRITICAL",
+            "Initial Access",
+            "Credential Theft",
+          );
+        });
+      } else if (secrets > 0) {
+        // Older API response without detailedAlerts — fallback to count
         window._slackAddLog(
           "SLACK",
-          secrets +
-            " credential pattern(s) matched (AKIA/sk_live) in channel history.",
+          secrets + " credential pattern(s) matched (AKIA/sk_live) in channel history.",
           "CRITICAL",
           "Initial Access",
           "Credential Theft",
@@ -263,6 +277,7 @@ window.fetchLiveSlackData = async function () {
           "SYSTEM",
         );
       }
+
 
       if (nonCompliant > 0) {
         window._slackAddLog(
