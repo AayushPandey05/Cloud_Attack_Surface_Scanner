@@ -1635,7 +1635,7 @@
 
                           // Clear terminal and log context shift
                           terminalFeed.innerHTML = '';
-                          addLog('SYSTEM', 'Context switched to ' + view.toUpperCase() + ' environment.');
+                          addLog(view.toUpperCase() === 'SLACK' ? 'SLACK' : 'AWS', 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
                       });
                   });
 
