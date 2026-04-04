@@ -44,9 +44,17 @@ async function runScan() {
     totalUsers = humans.length;
 
     nonCompliant = humans.filter((u) => {
-      const noMfa = u.has_2fa === false; // requires admin scope on paid plans
+      const noMfa = u.has_2fa === false;
       const noPhoto =
         !u.profile?.image_24 || u.profile.image_24.includes("gravatar");
+
+      // Add this debug log!
+      if (noMfa || noPhoto) {
+        console.log(
+          `[AUDIT] Flagged User: ${u.real_name} | Missing MFA: ${noMfa} | Missing Photo: ${noPhoto}`,
+        );
+      }
+
       return noMfa || noPhoto;
     }).length;
   } catch (e) {
