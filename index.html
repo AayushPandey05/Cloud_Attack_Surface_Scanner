@@ -1487,9 +1487,13 @@
                           }
                       });
                   }
+                   // Expose addLog to logic.js immediately — do NOT do this lazily
+                   // inside the function body, as fetchLiveSlackData may run before
+                   // addLog is ever called on the first refresh boot.
+                   window._slackAddLog = addLog;
 
+                   // ---------------------------------------------------------------- //
 
-                  // ---------------------------------------------------------------- //
                   //                        NAVIGATION & AUTH                          //
                   // ---------------------------------------------------------------- //
 
@@ -1615,8 +1619,27 @@
 
                   // -- Dashboard Logic --
                   function initDashboard() {
+                      // ── Restore last active tab from session ──────────────────────
+                      var savedEnv = sessionStorage.getItem('vaultActiveEnv');
+                      if (savedEnv === 'slack' || savedEnv === 'aws') {
+                          currentEnv = savedEnv;
+                          // Sync the segment button active state
+                          segmentBtns.forEach(function(b) {
+                              b.classList.toggle('active', b.dataset.view === currentEnv);
+                          });
+                      }
+
                       updateDashboardContext();
-                      startTerminal();
+
+                      // ── Boot correct engine based on active tab ───────────────────
+                      if (currentEnv === 'slack') {
+                          // fetchLiveSlackData() is already called inside
+                          // updateDashboardContext() for the slack branch.
+                          // Stop any lingering AWS interval.
+                          stopTerminal();
+                      } else {
+                          startTerminal();
+                      }
                   }
 
                   segmentBtns.forEach(btn => {
@@ -1631,11 +1654,21 @@
                           btn.classList.add('active');
 
                           currentEnv = view;
+                          // Persist so refresh restores the correct tab
+                          sessionStorage.setItem('vaultActiveEnv', view);
                           updateDashboardContext();
 
                           // Clear terminal and log context shift
                           terminalFeed.innerHTML = '';
                           addLog(view.toUpperCase() === 'SLACK' ? 'SLACK' : 'AWS', 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
+
+                          // For AWS: restart the looping terminal engine
+                          // For Slack: fetchLiveSlackData() is called inside updateDashboardContext()
+                          if (view === 'aws') {
+                              startTerminal();
+                          } else {
+                              stopTerminal();
+                          }
                       });
                   });
 
@@ -1738,7 +1771,6 @@
                   }
 
                   function addLog(tag, content, level, pathHighlight, pathTarget) {
-                      window._slackAddLog = addLog;
                       const entry = document.createElement('div');
                       entry.className = 'log-entry fade-in';
 
@@ -1785,6 +1817,11 @@
                           terminalFeed.removeChild(terminalFeed.firstChild);
                       }
                   }
+                   // Set eagerly so fetchLiveSlackData can log to terminal
+                   // even before addLog has been called for the first time.
+                   window._slackAddLog = addLog;
+
+                   // ---------------------------------------------------------------- //
 
                   // ---------------------------------------------------------------- //
                   //        GOOGLE IDENTITY SERVICES — OAUTH2 POPUP FLOW             //
