@@ -33,12 +33,13 @@ async function runScan() {
   // ── 1. USERS AUDIT ────────────────────────────────────────────────────────
   let nonCompliant = 0;
   let totalUsers = 0;
+  let humans = [];
 
   try {
     const { members } = await slackFetch("users.list", { limit: 200 });
 
     // Exclude bots, deleted accounts, and Slackbot itself
-    const humans = members.filter(
+    humans = members.filter(
       (u) => !u.is_bot && !u.deleted && u.id !== "USLACKBOT",
     );
     totalUsers = humans.length;
@@ -64,24 +65,29 @@ async function runScan() {
 
   // ── 2. MESSAGE SCAN ───────────────────────────────────────────────────────
   let secrets = 0;
+  let detailedAlerts = [];
 
   try {
     // Use SLACK_CHANNEL_ID env var if set; otherwise scan first 10 public channels
     const channelId = process.env.SLACK_CHANNEL_ID;
-    let channelsToScan = [];
+    let rawChannels = [];
 
     if (channelId) {
-      channelsToScan = [channelId];
+      // Manual object creation to maintain consistency for single channel scan
+      rawChannels = [{ id: channelId, name: "specified-channel" }];
     } else {
       const { channels } = await slackFetch("conversations.list", {
         types: "public_channel",
         exclude_archived: "true",
         limit: "10",
       });
-      channelsToScan = channels.map((c) => c.id);
+      rawChannels = channels;
     }
 
-    for (const channel of channelsToScan) {
+    for (const channelObj of rawChannels) {
+      const channel = channelObj.id;
+      const channelName = channelObj.name || channel;
+
       try {
         const { messages } = await slackFetch("conversations.history", {
           channel,
@@ -91,7 +97,20 @@ async function runScan() {
         for (const msg of messages) {
           const text = msg.text || "";
           const matches = text.match(SECRET_REGEX);
-          if (matches) secrets += matches.length;
+
+          if (matches) {
+            secrets += matches.length;
+
+            // ── IDENTITY LOOKUP ─────────────────────────────────────────────
+            const offender = humans.find((u) => u.id === msg.user);
+            const userName = offender
+              ? offender.real_name || offender.name
+              : "Unknown Entity";
+
+            // Build the Attack Path string
+            const path = `Initial Access → Credential Theft → #${channelName} → User(${userName})`;
+            detailedAlerts.push(path);
+          }
         }
       } catch (chanErr) {
         // Bot not in channel — skip silently
@@ -104,7 +123,7 @@ async function runScan() {
     console.error("[scan-slack] conversations scan failed:", e.message);
   }
 
-  return { secrets, nonCompliant, totalUsers };
+  return { secrets, nonCompliant, totalUsers, detailedAlerts };
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
