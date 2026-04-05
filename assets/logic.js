@@ -469,6 +469,20 @@ window.triggerAwsScan = async function () {
   if (jsonBtn) jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
 })();
 
+
+// AUTO-AUDIT REGISTRY — Reinforces session state persistence on hard refresh
+document.addEventListener("DOMContentLoaded", function () {
+  const awsBtn = document.getElementById("aws-btn");
+  // Check if AWS is the active forensic context before dispatching the background audit
+  if (awsBtn && awsBtn.classList.contains("active")) {
+    if (typeof window._slackAddLog === "function") {
+      window._slackAddLog("AWS", "Resuming security session...", "SYSTEM");
+    }
+    // Dispatch the live audit — leverages already initialized IAM client scope
+    if (typeof window.triggerAwsScan === "function") window.triggerAwsScan();
+  }
+});
+
 console.log(
-  "[logic.js v3.7] Sanitized Hierarchical Parser Active — Standardized CSV/JSON 4-column alignment reinforced.",
+  "[logic.js v3.8] AWS State Persistence Engine active — Auto-Audit enabled for IaaS context.",
 );
