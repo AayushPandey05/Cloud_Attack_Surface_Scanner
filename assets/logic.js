@@ -345,27 +345,16 @@ window.clearTerminal = function () {
 };
 
 window.triggerAwsScan = async function () {
-  // Verify telemetry sink is available before initiating the scan cycle.
-  // slackAddLog is registered by the inline DOMContentLoaded script and
-  // must be present before the first terminal write attempt.
   var log = window._slackAddLog;
   if (typeof log !== "function") {
     console.warn("[triggerAwsScan] _slackAddLog not ready — aborting.");
     return;
   }
 
-  // Cross-surface isolation: purge Slack telemetry from the feed
   window.clearTerminal();
 
-  // Emit scan initiation with localized 24h timestamp for audit trail integrity
-  var initTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
-  log(
-    "AWS",
-    "[SYSTEM] Initializing Cloud Security Posture Management (CSPM) Audit… [" +
-      initTime +
-      "]",
-    "SYSTEM",
-  );
+  log("AWS", "Context switched to AWS environment.", "SYSTEM");
+  log("AWS", "Initializing Cloud Security Posture Management (CSPM) Audit...", "SYSTEM");
 
   //! CSPM Telemetry Fetch
   try {
@@ -380,7 +369,6 @@ window.triggerAwsScan = async function () {
 
     var data = await res.json();
 
-    // Defensive normalisation — guards against schema drift in the API response
     var totalBuckets =
       typeof data.totalBuckets === "number" ? data.totalBuckets : 0;
     var publicBuckets =
@@ -389,50 +377,24 @@ window.triggerAwsScan = async function () {
       ? data.detailedAlerts
       : [];
 
-    // S3 enumeration summary with localized audit timestamp
-    var scanTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
-    log(
-      "AWS",
-      "S3 Audit complete — " +
-        totalBuckets +
-        " bucket(s) enumerated. [" +
-        scanTime +
-        "]",
-      "SYSTEM",
-    );
+    log("AWS", "Scan complete — " + totalBuckets + " S3 buckets enumerated.", "SYSTEM");
 
-    // Public bucket exposure: maps to MITRE ATT&CK T1530 (Data from Cloud Storage)
     if (publicBuckets > 0) {
       log(
         "AWS",
-        "⚠ CRITICAL ALERT: " +
-          publicBuckets +
-          " publicly accessible S3 bucket(s) detected — immediate remediation required.",
+        publicBuckets + " Public S3 Bucket(s) detected!",
         "CRITICAL",
         "Data Exfiltration",
         "S3 Public Exposure",
       );
     } else {
-      log(
-        "AWS",
-        "All S3 buckets pass Public Access Block validation ✓",
-        "SYSTEM",
-      );
+      log("AWS", "All S3 buckets pass Public Access Block validation ✓", "SYSTEM");
     }
 
-    // Per-bucket attack path enumeration — each entry encodes the full
-    // Initial Access → Data Exfiltration → Resource(name) → Policy(state) chain
     detailedAlerts.forEach(function (alert) {
-      log(
-        "AWS",
-        "↳ " + alert,
-        "CRITICAL",
-        "Initial Access",
-        "Data Exfiltration",
-      );
+      log("AWS", "↳ " + alert, "CRITICAL", "Initial Access", "Data Exfiltration");
     });
 
-    // Immutable scan snapshot — mirrors window.latestSlackData commit pattern
     window.latestAwsData = {
       scannedAt: new Date().toISOString(),
       totalBuckets: totalBuckets,
@@ -440,19 +402,15 @@ window.triggerAwsScan = async function () {
       detailedAlerts: detailedAlerts,
       raw: data,
     };
+
+    log("AWS", "Identity and Access Management (IAM) checks finalized.", "SYSTEM");
   } catch (err) {
-    // ── Credential / Connectivity Fault — Forensic Diagnosis Chain ───────────
-    // Structured error emission provides actionable remediation steps without
-    // exposing raw stack traces to the operator terminal.
     console.error("[triggerAwsScan] Fetch failed:", err.message);
 
     var errTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
     log(
       "AWS",
-      "⚠ CSPM scan failed at " +
-        errTime +
-        ". Cause: " +
-        err.message.slice(0, 60),
+      "⚠ CSPM scan failed at " + errTime + ". Cause: " + err.message.slice(0, 60),
       "ALERT",
     );
     log(
