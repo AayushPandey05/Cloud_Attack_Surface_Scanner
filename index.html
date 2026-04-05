@@ -1354,7 +1354,7 @@
                   const profileDropdown = document.getElementById('profile-dropdown');
                   const logoutBtn = document.getElementById('logout-btn');
 
-                  let currentEnv = 'aws';
+                  window.currentEnv = 'aws';
                   let terminalInterval;
 
 
@@ -1663,14 +1663,14 @@
                       // Restore persisted attack surface context from the prior session
                       var savedEnv = sessionStorage.getItem('vaultActiveEnv');
                       if (savedEnv === 'slack' || savedEnv === 'aws') {
-                          currentEnv = savedEnv;
+                          window.currentEnv = savedEnv;
                           segmentBtns.forEach(function(b) {
-                              b.classList.toggle('active', b.dataset.view === currentEnv);
+                              b.classList.toggle('active', b.dataset.view === window.currentEnv);
                           });
                       }
 
                       updateDashboardContext();
-                      if (currentEnv === 'slack') {
+                      if (window.currentEnv === 'slack') {
                           stopTerminal();
                       } else {
                           if (typeof window.triggerAwsScan === 'function') window.triggerAwsScan();
@@ -1682,12 +1682,12 @@
                       btn.addEventListener('click', (e) => {
                           const btn = e.currentTarget;
                           const view = btn.dataset.view;
-                          if (!view || currentEnv === view) return;
+                          if (!view || window.currentEnv === view) return;
 
                           segmentBtns.forEach(b => b.classList.remove('active'));
                           btn.classList.add('active');
 
-                          currentEnv = view;
+                          window.currentEnv = view;
                           // Persist context for cross-refresh continuity
                           sessionStorage.setItem('vaultActiveEnv', view);
                           updateDashboardContext();
@@ -1709,26 +1709,27 @@
                   // Binds KPI panel labels and values to the taxonomy of the active
                   function updateDashboardContext() {
                       const titleTerm = document.getElementById('terminal-title');
-                      if (currentEnv === 'aws') {
-                          // IaaS attack surface — static posture metrics pending live CSPM integration
-                          document.getElementById('kpi-1-val').innerText = '3';
-                          document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
+                      if (window.currentEnv === 'aws') {
+                          // IaaS attack surface — safe zero-state defaults pending live CSPM scan
+                          document.getElementById('kpi-1-val').innerText = '0';
+                          document.getElementById('kpi-1-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-1-sub').innerText = 'No public exposure';
                           document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
-                          document.getElementById('kpi-2-val').innerText = '1';
-                          document.getElementById('kpi-2-val').style.color = '#F79009';
-                          document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
+                          document.getElementById('kpi-2-val').innerText = '0';
+                          document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-2-sub').innerText = 'No issues detected';
                           document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                          document.getElementById('kpi-3-val').innerText = '98%';
+                          document.getElementById('kpi-3-val').innerText = '—';
                           document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
+                          document.getElementById('kpi-3-sub').innerText = 'Awaiting scan';
                           document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
-                          document.getElementById('kpi-4-val').innerText = '2';
-                          document.getElementById('kpi-4-val').style.color = 'var(--red)';
-                          document.getElementById('kpi-4-sub').innerText = 'Critical severity';
+                          document.getElementById('kpi-4-val').innerText = '0';
+                          document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-4-sub').innerText = 'No credentials exposed';
                           document.getElementById('kpi-5-title').innerText = 'Controls Passing';
-                          document.getElementById('kpi-5-val').innerText = '84%';
-                          document.getElementById('kpi-5-val').style.color = '#3B82F6';
-                          document.getElementById('kpi-5-sub').innerText = 'SOC 2 Type II progress';
+                          document.getElementById('kpi-5-val').innerText = '—';
+                          document.getElementById('kpi-5-val').style.color = 'var(--green)';
+                          document.getElementById('kpi-5-sub').innerText = 'Awaiting scan';
 
                           titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                        } else {
@@ -1826,140 +1827,7 @@
                   window._slackAddLog = addLog;
 
                   // AUDIT LOG EXPORT — Client-Side Blob Engine
-                  window.downloadAuditLogs = function(format) {
-                       try {
-                           var ts  = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                           var env = (currentEnv || 'unknown').toUpperCase();
-                           var content, mimeType, filename;
-
-                           // Slack Telemetry Export
-                           if (currentEnv === 'slack') {
-                               var sd = window.latestSlackData;
-
-                               if (!sd) {
-                                   alert('No Slack scan data available yet. Switch to the Slack tab and wait for the scan to complete.');
-                                   return;
-                               }
-
-                               if (format === 'csv') {
-                                   var rows = [
-                                       'Timestamp,Report Type,Severity,Detail'
-                                   ];
-
-                                   // Aggregate posture summary row
-                                   rows.push([
-                                       sd.scannedAt,
-                                       '"Workspace Summary"',
-                                       'INFO',
-                                       '"Total Users: ' + sd.totalUsers +
-                                       ' | MFA Compliant: '    + sd.mfaPct + '%' +
-                                       ' | Non-Compliant: '    + sd.nonCompliant +
-                                       ' | Exposed Secrets: '  + sd.secrets + '"'
-                                   ].join(','));
-
-                                   // Per-identity attack chain rows (SaaS-to-IaaS correlation)
-                                   if (sd.detailedAlerts.length > 0) {
-                                       sd.detailedAlerts.forEach(function(path) {
-                                           rows.push([
-                                               sd.scannedAt,
-                                               '"Credential Exposure"',
-                                               'CRITICAL',
-                                               '"' + path.replace(/"/g, '""') + '"'
-                                           ].join(','));
-                                       });
-                                   } else {
-                                       rows.push([sd.scannedAt, '"Secret Scan"', 'PASS', '"No credentials detected in public channels"'].join(','));
-                                   }
-
-                                   if (sd.nonCompliant > 0) {
-                                       rows.push([sd.scannedAt, '"MFA Audit"', 'WARN',
-                                           '"' + sd.nonCompliant + ' user(s) missing MFA or profile photo"'].join(','));
-                                   } else {
-                                       rows.push([sd.scannedAt, '"MFA Audit"', 'PASS', '"All users compliant"'].join(','));
-                                   }
-
-                                   content  = rows.join('\n');
-                                   mimeType = 'text/csv';
-                                   filename = 'slack_audit_' + ts + '.csv';
-
-                               } else {
-                                   var exportObj = {
-                                       exported_at:   new Date().toISOString(),
-                                       environment:   'SLACK',
-                                       generated_by:  'Security Vault Dashboard',
-                                       summary: {
-                                           total_users:    sd.totalUsers,
-                                           mfa_compliant:  sd.mfaPct + '%',
-                                           non_compliant:  sd.nonCompliant,
-                                           exposed_secrets: sd.secrets
-                                       },
-                                       detailed_alerts: sd.detailedAlerts,
-                                       raw_api_response: sd.raw
-                                   };
-                                   content  = JSON.stringify(exportObj, null, 2);
-                                   mimeType = 'application/json';
-                                   filename = 'slack_audit_' + ts + '.json';
-                               }
-
-                           // AWS Telemetry Export
-                           } else {
-                               var ad = window.latestAwsData;
-                               if (!ad) {
-                                   alert('No AWS scan data available. Run a scan first.');
-                                   return;
-                               }
-
-                               if (format === 'csv') {
-                                   var awsRows = ['Timestamp,Severity,Total Buckets,Public Buckets,Alert'];
-                                   (ad.detailedAlerts || []).forEach(function(msg) {
-                                       awsRows.push([ad.scannedAt, 'CRITICAL', ad.totalBuckets, ad.publicBuckets, '"' + msg.replace(/"/g, '""') + '"'].join(','));
-                                   });
-                                   if (!ad.detailedAlerts || ad.detailedAlerts.length === 0) {
-                                       awsRows.push([ad.scannedAt, 'PASS', ad.totalBuckets, 0, '"All S3 buckets pass Public Access Block validation"'].join(','));
-                                   }
-                                   content  = awsRows.join('\n');
-                                   mimeType = 'text/csv';
-                                   filename = 'security_audit_AWS_' + ts + '.csv';
-                               } else {
-                                   var awsExport = {
-                                       exported_at:   new Date().toISOString(),
-                                       environment:   'AWS',
-                                       generated_by:  'Security Vault Dashboard',
-                                       summary: {
-                                           scanned_at:     ad.scannedAt,
-                                           total_buckets:  ad.totalBuckets,
-                                           public_buckets: ad.publicBuckets
-                                       },
-                                       detailed_alerts: ad.detailedAlerts,
-                                       raw_api_response: ad.raw
-                                   };
-                                   content  = JSON.stringify(awsExport, null, 2);
-                                   mimeType = 'application/json';
-                                   filename = 'security_audit_AWS_' + ts + '.json';
-                               }
-                           }
-
-                           if (typeof Blob === 'undefined') {
-                               alert('Your browser does not support file downloads. Please use Chrome or Firefox.');
-                               return;
-                           }
-
-                           var blob = new Blob([content], { type: mimeType });
-                           var url  = URL.createObjectURL(blob);
-                           var a    = document.createElement('a');
-                           a.href     = url;
-                           a.download = filename;
-                           document.body.appendChild(a);
-                           a.click();
-                           document.body.removeChild(a);
-                           URL.revokeObjectURL(url);
-
-                           console.log('[Export] Downloaded', filename);
-
-                       } catch (exportErr) {
-                           console.error('[Export] Failed — application continues normally.', exportErr);
-                       }
-                   };
+                  // downloadAuditLogs has been refactored to assets/logic.js for context-aware naming and data isolation.
 
                   // Called from onclick="handleGoogleLogin(event)" on the button
                   window.handleGoogleLogin = function (e) {

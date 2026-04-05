@@ -488,6 +488,65 @@ window.triggerAwsScan = async function () {
 
 
 
+// AUDIT LOG EXPORT ENGINE — Context-Aware Serialisation & Client-Side Delivery
+window.downloadAuditLogs = function(format) {
+    try {
+        var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        var env = (window.currentEnv || 'unknown').toLowerCase();
+        var content, mimeType, filename;
+
+        if (window.currentEnv === 'slack') {
+            var sd = window.latestSlackData;
+            if (!sd) return alert('No Slack scan data available. Perform a scan first.');
+
+            if (format === 'csv') {
+                var rows = ['Timestamp,Report Type,Severity,Detail'];
+                rows.push([sd.scannedAt, '"Workspace Summary"', 'INFO', '"Total Users: ' + sd.totalUsers + ' | MFA: ' + sd.mfaPct + '%"'].join(','));
+                (sd.detailedAlerts || []).forEach(function(path) {
+                    rows.push([sd.scannedAt, '"Credential Exposure"', 'CRITICAL', '"' + path.replace(/"/g, '""') + '"'].join(','));
+                });
+                content = rows.join('\n');
+                mimeType = 'text/csv';
+                filename = 'slack_audit_logs_' + ts + '.csv';
+            } else {
+                content = JSON.stringify({ exported_at: new Date().toISOString(), environment: 'SLACK', summary: sd }, null, 2);
+                mimeType = 'application/json';
+                filename = 'slack_audit_logs_' + ts + '.json';
+            }
+        } else {
+            var ad = window.latestAwsData;
+            if (!ad) return alert('No AWS scan data available. Perform a scan first.');
+
+            if (format === 'csv') {
+                var awsRows = ['Timestamp,Severity,Total Buckets,Public Buckets,Alert'];
+                (ad.detailedAlerts || []).forEach(function(msg) {
+                    awsRows.push([ad.scannedAt, 'CRITICAL', ad.totalBuckets, ad.publicBuckets, '"' + msg.replace(/"/g, '""') + '"'].join(','));
+                });
+                if (!ad.detailedAlerts || ad.detailedAlerts.length === 0) {
+                    awsRows.push([ad.scannedAt, 'PASS', ad.totalBuckets, 0, '"All S3 buckets pass Public Access Block validation"'].join(','));
+                }
+                content = awsRows.join('\n');
+                mimeType = 'text/csv';
+                filename = 'aws_audit_logs_' + ts + '.csv';
+            } else {
+                content = JSON.stringify({ exported_at: new Date().toISOString(), environment: 'AWS', summary: ad }, null, 2);
+                mimeType = 'application/json';
+                filename = 'aws_audit_logs_' + ts + '.json';
+            }
+        }
+
+        if (typeof Blob === 'undefined') return alert('Browser not supported.');
+        var blob = new Blob([content], { type: mimeType });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('[Export] Critical failure:', err);
+    }
+};
+
 console.log(
   "[logic.js v3.2] AWS CSPM Audit Engine loaded — triggerAwsScan ready.",
 );
