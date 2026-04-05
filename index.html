@@ -1354,26 +1354,8 @@
                   const profileDropdown = document.getElementById('profile-dropdown');
                   const logoutBtn = document.getElementById('logout-btn');
 
-                  // Active attack surface context — drives terminal engine and KPI taxonomy
                   let currentEnv = 'aws';
                   let terminalInterval;
-
-                  // Static threat intelligence corpus: attack path seeds for the looping
-                  // terminal engine. Declared at scope root to survive the session
-                  // re-hydration sequence that runs before startTerminal() is invoked.
-                  const attackLogs = {
-                      aws: [
-                          { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
-                          { t: 'AWS', level: 'CRITICAL', msg: "Lambda 'process-payments' has wildcard IAM role (*:*).", pathHighlight: "Privilege Escalation", pathTarget: "Full Account Takeover" },
-                          { t: 'AWS', level: 'ALERT', msg: "RDS instance 'prod-db' security group allows 0.0.0.0/0 on port 5432.", pathHighlight: "Direct Database Breach", pathTarget: "PII Exposure" },
-                          { t: 'AWS', level: 'WARN', msg: "CloudTrail logging DISABLED in us-east-2.", pathHighlight: "Lateral Movement", pathTarget: "Undetected Persistence" }
-                      ],
-                      slack: [
-                          { t: 'SLACK', level: 'CRITICAL', msg: "API Key 'aws-prod-admin' detected in #engineering-public.", pathHighlight: "Initial Access", pathTarget: "Full AWS Compromise" },
-                          { t: 'SLACK', level: 'ALERT', msg: "Unauthorized application 'DataScraperBot' added to workspace.", pathHighlight: "Data Exfiltration", pathTarget: "Message History Export" },
-                          { t: 'SLACK', level: 'WARN', msg: "External guest invited to private executive channel.", pathHighlight: "Reconnaissance", pathTarget: "Sensitive Discussions" }
-                      ]
-                  };
 
 
                   // View-State Router & History API Integration
@@ -1691,8 +1673,6 @@
                       if (currentEnv === 'slack') {
                           stopTerminal();
                       } else {
-                          startTerminal();
-                          // Initialize live telemetry post-auth
                           if (typeof window.triggerAwsScan === 'function') window.triggerAwsScan();
                       }
                   }
@@ -1782,21 +1762,9 @@
                       }
                   }
 
-                  // Threat Intelligence Terminal Engine
                   function startTerminal() {
                       if (terminalInterval) clearInterval(terminalInterval);
                       terminalFeed.innerHTML = '';
-
-                      const pool = attackLogs[currentEnv];
-                      for (let i = 0; i < pool.length; i++) {
-                          const item = pool[i];
-                          addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-                      }
-
-                      terminalInterval = setInterval(() => {
-                          const item = pool[Math.floor(Math.random() * pool.length)];
-                          addLog(item.t, item.msg, item.level, item.pathHighlight, item.pathTarget);
-                      }, 3500);
                   }
 
                   function stopTerminal() {
@@ -1935,34 +1903,35 @@
 
                            // AWS Telemetry Export
                            } else {
-                               var pool = attackLogs[currentEnv] || [];
+                               var ad = window.latestAwsData;
+                               if (!ad) {
+                                   alert('No AWS scan data available. Run a scan first.');
+                                   return;
+                               }
 
                                if (format === 'csv') {
-                                   var awsRows = ['Timestamp,Severity,Service,Message,"Attack Path","Attack Target"'];
-                                   pool.forEach(function(log) {
-                                       var safeMsg  = '"' + (log.msg          || '').replace(/"/g, '""') + '"';
-                                       var safePath = '"' + (log.pathHighlight || '').replace(/"/g, '""') + '"';
-                                       var safeTgt  = '"' + (log.pathTarget    || '').replace(/"/g, '""') + '"';
-                                       awsRows.push([ts, log.level || '', log.t || '', safeMsg, safePath, safeTgt].join(','));
+                                   var awsRows = ['Timestamp,Severity,Total Buckets,Public Buckets,Alert'];
+                                   (ad.detailedAlerts || []).forEach(function(msg) {
+                                       awsRows.push([ad.scannedAt, 'CRITICAL', ad.totalBuckets, ad.publicBuckets, '"' + msg.replace(/"/g, '""') + '"'].join(','));
                                    });
+                                   if (!ad.detailedAlerts || ad.detailedAlerts.length === 0) {
+                                       awsRows.push([ad.scannedAt, 'PASS', ad.totalBuckets, 0, '"All S3 buckets pass Public Access Block validation"'].join(','));
+                                   }
                                    content  = awsRows.join('\n');
                                    mimeType = 'text/csv';
                                    filename = 'security_audit_AWS_' + ts + '.csv';
                                } else {
                                    var awsExport = {
-                                       exported_at:  new Date().toISOString(),
-                                       environment:  'AWS',
-                                       generated_by: 'Security Vault Dashboard',
-                                       logs: pool.map(function(log) {
-                                           return {
-                                               timestamp:     new Date().toISOString(),
-                                               severity:      log.level || '',
-                                               service:       log.t || '',
-                                               message:       log.msg || '',
-                                               attack_path:   log.pathHighlight || null,
-                                               attack_target: log.pathTarget    || null
-                                           };
-                                       })
+                                       exported_at:   new Date().toISOString(),
+                                       environment:   'AWS',
+                                       generated_by:  'Security Vault Dashboard',
+                                       summary: {
+                                           scanned_at:     ad.scannedAt,
+                                           total_buckets:  ad.totalBuckets,
+                                           public_buckets: ad.publicBuckets
+                                       },
+                                       detailed_alerts: ad.detailedAlerts,
+                                       raw_api_response: ad.raw
                                    };
                                    content  = JSON.stringify(awsExport, null, 2);
                                    mimeType = 'application/json';
