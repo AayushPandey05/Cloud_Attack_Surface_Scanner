@@ -488,27 +488,33 @@ window.triggerAwsScan = async function () {
 
 
 
-// STRUCTURED TELEMETRY PARSER — Regex-Driven Tokenisation & Tabular Export
-(function initStructuredExport() {
+// HIERARCHICAL TELEMETRY PARSER — Stateful Merging & Tabular Export
+(function initHierarchicalExport() {
   function downloadAuditLogs(format) {
     const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
     const rawText = document.getElementById("terminal-feed")?.innerText || "";
     const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
 
-    const parsed = rawText.split("\n").filter(l => l.trim() !== "").map(line => {
+    const parsed = [];
+    let lastLog = null;
+
+    rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
       const m = line.match(logRegex);
-      if (m) return { timestamp: m[1], environment: m[2], severity: m[3], message: m[4] };
-      if (line.trim().startsWith("↳")) return { timestamp: "", environment: "", severity: "", message: line.trim() };
-      return { timestamp: "", environment: "", severity: "", message: line };
+      if (m) {
+        lastLog = { time: m[1], source: m[2], level: m[3], message: m[4] };
+        parsed.push(lastLog);
+      } else if (line.trim().startsWith("↳") && lastLog) {
+        lastLog.message += " | " + line.trim();
+      }
     });
 
     let content, mimeType;
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      const csvRows = ["Timestamp,Environment,Severity,Message"];
-      parsed.forEach(r => csvRows.push(`${r.timestamp},${r.environment},${r.severity},"${r.message.replace(/"/g, '""')}"`));
+      const csvRows = ["Timestamp,Source,Level,Message"];
+      parsed.forEach(r => csvRows.push(`${r.time},${r.source},${r.level},"${r.message.replace(/"/g, '""')}"`));
       content = csvRows.join("\n");
       mimeType = "text/csv";
     } else {
@@ -531,5 +537,5 @@ window.triggerAwsScan = async function () {
 })();
 
 console.log(
-  "[logic.js v3.4] Structured Telemetry Parser Active — CSV/JSON schemas strictly reinforced.",
+  "[logic.js v3.5] Hierarchical Telemetry Parser Active — Stateful parent-child log merging reinforced.",
 );
