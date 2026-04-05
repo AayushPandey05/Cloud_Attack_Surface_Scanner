@@ -1,14 +1,12 @@
 import {
-  S3Client,
-  ListBucketsCommand,
-  GetPublicAccessBlockCommand,
-} from "@aws-sdk/client-s3";
-import {
   IAMClient,
-  ListUsersCommand,
-  ListUserPoliciesCommand,
-  ListAttachedUserPoliciesCommand,
+  ListUsersCommand
 } from "@aws-sdk/client-iam";
+import {
+  GetPublicAccessBlockCommand,
+  ListBucketsCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 // Initialize Clients
 const s3Client = new S3Client({

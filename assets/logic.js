@@ -132,6 +132,7 @@ console.log(
 
 // ==========================================================================
 // window.fetchLiveSlackData — SLACK TELEMETRY ENGINE v1.2
+
 window.fetchLiveSlackData = async function () {
   // ── 1. Loading state ──────────────────────────────────────────────────────
   var setKpi = function (id, val, sub, color) {
@@ -162,7 +163,6 @@ window.fetchLiveSlackData = async function () {
   setKpi(3, "—", "Checking users…", "var(--gray)");
   setKpi(4, "—", "MFA & profile audit", "var(--gray)");
   setKpi(5, "—", "Querying API…", "var(--gray)");
-
 
   // Log initiation in terminal (calls addLog defined in the inline script)
   if (typeof window._slackAddLog === "function") {
@@ -237,15 +237,16 @@ window.fetchLiveSlackData = async function () {
 
     // ── Persist scan results globally for CSV/JSON export ─────────────────
     window.latestSlackData = {
-      scannedAt:      new Date().toISOString(),
-      secrets:        secrets,
-      nonCompliant:   nonCompliant,
-      totalUsers:     totalUsers,
-      mfaPct:         mfaPct,
-      detailedAlerts: Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [],
-      raw:            data,   // full API payload — used by JSON export
+      scannedAt: new Date().toISOString(),
+      secrets: secrets,
+      nonCompliant: nonCompliant,
+      totalUsers: totalUsers,
+      mfaPct: mfaPct,
+      detailedAlerts: Array.isArray(data.detailedAlerts)
+        ? data.detailedAlerts
+        : [],
+      raw: data, // full API payload — used by JSON export
     };
-
 
     // ── Terminal log real findings ────────────────────────────────────────
     if (typeof window._slackAddLog === "function") {
@@ -260,7 +261,9 @@ window.fetchLiveSlackData = async function () {
       );
 
       // ── Secrets / detailedAlerts ──────────────────────────────────────────
-      var alerts = Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [];
+      var alerts = Array.isArray(data.detailedAlerts)
+        ? data.detailedAlerts
+        : [];
 
       if (alerts.length > 0) {
         // Print one CRITICAL entry per identity-aware attack path
@@ -277,7 +280,8 @@ window.fetchLiveSlackData = async function () {
         // Older API response without detailedAlerts — fallback to count
         window._slackAddLog(
           "SLACK",
-          secrets + " credential pattern(s) matched (AKIA/sk_live) in channel history.",
+          secrets +
+            " credential pattern(s) matched (AKIA/sk_live) in channel history.",
           "CRITICAL",
           "Initial Access",
           "Credential Theft",
@@ -289,7 +293,6 @@ window.fetchLiveSlackData = async function () {
           "SYSTEM",
         );
       }
-
 
       if (nonCompliant > 0) {
         window._slackAddLog(
@@ -346,6 +349,178 @@ window.fetchLiveSlackData = async function () {
   }
 };
 
+
+
 console.log(
   "[logic.js v3.1] Slack Telemetry Engine loaded — fetchLiveSlackData ready.",
+);
+
+// ==========================================================================
+// CSPM AUDIT ENGINE v1.0 — AWS Infrastructure
+// ==========================================================================
+
+/**
+ * clearTerminal()
+ * Wipes all entries from the forensic terminal feed.
+ * Called before an AWS scan so Slack telemetry doesn't pollute the view.
+ */
+window.clearTerminal = function () {
+  var terminalEl = document.getElementById("terminal-feed");
+  if (terminalEl) terminalEl.innerHTML = "";
+};
+
+/**
+ * triggerAwsScan()
+ * Async CSPM orchestration function.
+ * Clears the terminal, fetches /api/scan-aws, and renders:
+ *   - Total S3 bucket count
+ *   - CRITICAL ALERT if any public buckets detected
+ *   - Each detailedAlert prefixed with the ↳ forensic arrow
+ */
+window.triggerAwsScan = async function () {
+  // Guard: addLog must be available (set by the inline script on DOMContentLoaded)
+  var log = window._slackAddLog;
+  if (typeof log !== "function") {
+    console.warn("[triggerAwsScan] _slackAddLog not ready — aborting.");
+    return;
+  }
+
+  // 1. Wipe any residual Slack telemetry from the terminal
+  window.clearTerminal();
+
+  // 2. Announce scan initiation with a localized timestamp in the message body
+  var initTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
+  log(
+    "AWS",
+    "[SYSTEM] Initializing Cloud Security Posture Management (CSPM) Audit… [" +
+      initTime +
+      "]",
+    "SYSTEM",
+  );
+
+  // 3. Fetch CSPM telemetry from the deployed API endpoint
+  try {
+    var res = await fetch("/api/scan-aws");
+
+    if (!res.ok) {
+      var errBody = await res.json().catch(function () {
+        return { error: "HTTP " + res.status };
+      });
+      throw new Error(errBody.error || "API returned " + res.status);
+    }
+
+    var data = await res.json();
+
+    var totalBuckets =
+      typeof data.totalBuckets === "number" ? data.totalBuckets : 0;
+    var publicBuckets =
+      typeof data.publicBuckets === "number" ? data.publicBuckets : 0;
+    var detailedAlerts = Array.isArray(data.detailedAlerts)
+      ? data.detailedAlerts
+      : [];
+
+    // 4a. Render total S3 bucket count
+    var scanTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    log(
+      "AWS",
+      "S3 Audit complete — " +
+        totalBuckets +
+        " bucket(s) enumerated. [" +
+        scanTime +
+        "]",
+      "SYSTEM",
+    );
+
+    // 4b. CRITICAL ALERT if any public buckets detected
+    if (publicBuckets > 0) {
+      log(
+        "AWS",
+        "⚠ CRITICAL ALERT: " +
+          publicBuckets +
+          " publicly accessible S3 bucket(s) detected — immediate remediation required.",
+        "CRITICAL",
+        "Data Exfiltration",
+        "S3 Public Exposure",
+      );
+    } else {
+      log(
+        "AWS",
+        "All S3 buckets pass Public Access Block validation ✓",
+        "SYSTEM",
+      );
+    }
+
+    // 4c. Loop through detailedAlerts and print each with the ↳ forensic prefix
+    detailedAlerts.forEach(function (alert) {
+      log("AWS", "↳ " + alert, "CRITICAL", "Initial Access", "Data Exfiltration");
+    });
+
+    // 4d. Persist scan snapshot globally (mirrors latestSlackData pattern)
+    window.latestAwsData = {
+      scannedAt: new Date().toISOString(),
+      totalBuckets: totalBuckets,
+      publicBuckets: publicBuckets,
+      detailedAlerts: detailedAlerts,
+      raw: data,
+    };
+  } catch (err) {
+    // 5. Forensic error — surface credential/connectivity diagnosis
+    console.error("[triggerAwsScan] Fetch failed:", err.message);
+
+    var errTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    log(
+      "AWS",
+      "⚠ CSPM scan failed at " +
+        errTime +
+        ". Cause: " +
+        err.message.slice(0, 60),
+      "ALERT",
+    );
+    log(
+      "AWS",
+      "Forensic Diagnosis: Verify AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY " +
+        "are present in .env and that the Vercel dev server is running (vercel dev).",
+      "SYSTEM",
+    );
+    log(
+      "AWS",
+      "↳ Credential resolution path: .env → process.env → IAM Client → S3 Client",
+      "SYSTEM",
+    );
+  }
+};
+
+// 6. Event binding — wire triggerAwsScan to the AWS Infrastructure toggle
+(function bindAwsBtn() {
+  function attachListener() {
+    var awsBtn = document.getElementById("aws-btn");
+    if (awsBtn) {
+      awsBtn.addEventListener("click", function () {
+        window.triggerAwsScan();
+      });
+      console.log(
+        "[logic.js v3.2] CSPM Engine bound to #aws-btn — triggerAwsScan ready.",
+      );
+    } else {
+      // Retry once DOM is fully parsed (handles deferred script injection)
+      document.addEventListener("DOMContentLoaded", function () {
+        var btn = document.getElementById("aws-btn");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            window.triggerAwsScan();
+          });
+        }
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachListener);
+  } else {
+    attachListener();
+  }
+})();
+
+console.log(
+  "[logic.js v3.2] AWS CSPM Audit Engine loaded — triggerAwsScan ready.",
 );
