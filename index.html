@@ -1776,7 +1776,7 @@
                       const entry = document.createElement('div');
                       entry.className = 'log-entry fade-in';
 
-                      const timeStr = new Date().toISOString().split('T')[1].substr(0, 8);
+                      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                       const tagClass = tag.toLowerCase();
 
                       let levelHTML = '';
