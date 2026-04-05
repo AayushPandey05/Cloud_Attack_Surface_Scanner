@@ -427,7 +427,7 @@ window.triggerAwsScan = async function () {
     const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
     const rawText = document.getElementById("terminal-feed")?.innerText || "";
-    // Strict A, B, C, D tokenizing regex: [Timestamp] [Env] Severity: Message
+    // Strict A, B, C, D tokenizing regex: Matches [Timestamp] [Env] Severity: Message
     const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
 
     const parsed = [];
@@ -436,12 +436,12 @@ window.triggerAwsScan = async function () {
     rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
       const match = line.match(logRegex);
       if (match) {
-        // Extract A, B, C, D tokens into a clean flat record
+        // Strict Cleaner — Extraction strips [], :, and trailing whitespace from keys
         lastLog = { timestamp: match[1], environment: match[2], severity: match[3], message: match[4] };
         parsed.push(lastLog);
       } else if (line.trim().startsWith("↳") && lastLog) {
-        // Child log consolidation via semicolon per Gold-Standard tabular rules
-        lastLog.message += "; " + line.trim();
+        // Child Row Merger — Consolidation via pipe (|) to maintain 1:1 terminal-to-row ratio
+        lastLog.message += " | " + line.trim();
       }
     });
 
@@ -449,9 +449,9 @@ window.triggerAwsScan = async function () {
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      // Excel-safe professional header with double-quote encoding
+      // Professional EXCEL-safe header with explicit double-quote encapsulation
       const csvRows = ['"Timestamp","Environment","Severity","Message"'];
-      // Every single value wrapped in double quotes for 100% Google Sheets alignment
+      // Every single value wrapped in double quotes for 100% Sheets/Excel alignment
       parsed.forEach(r => {
         const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}"`;
         csvRows.push(row);
@@ -459,7 +459,7 @@ window.triggerAwsScan = async function () {
       content = csvRows.join("\n");
       mimeType = "text/csv";
     } else {
-      // JSON Parity: maintains the same 4 clean forensic keys
+      // JSON Parity: ensures the same 4 clean forensic keys are used for SaaS/IaaS data
       content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
       mimeType = "application/json";
     }
