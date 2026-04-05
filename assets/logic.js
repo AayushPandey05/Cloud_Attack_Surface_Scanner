@@ -500,12 +500,17 @@ window.triggerAwsScan = async function () {
   }
 })();
 
-// Dashboard Auto-Initialization — Simulated Entry Point
-// Fires a programmatic click on #aws-btn once the DOM is ready.
-// This routes through all registered segment-control event listeners,
-// ensuring the UI active-state, KPI taxonomy, and CSPM telemetry engine
-// are all initialized through the same code path as a real user interaction.
+// Dashboard Auto-Initialization — Authenticated Sessions Only
+// Fires a programmatic click on #aws-btn after DOMContentLoaded, but ONLY
+// when the user is already authenticated (sessionStorage flag is present).
+// On unauthenticated loads (#login route), initializeApp() in index.html
+// handles visibility via showState(stateLogin) — no click needed here.
+// Firing the auto-click unconditionally would invoke triggerAwsScan before
+// _slackAddLog is registered by the inline script, wasting a round-trip.
 document.addEventListener("DOMContentLoaded", function () {
+  var isAuth = sessionStorage.getItem("isVaultAuthenticated") === "true";
+  if (!isAuth) return; // Login view — let index.html's initializeApp() handle it
+
   var awsBtn = document.getElementById("aws-btn");
   if (awsBtn) {
     awsBtn.click();

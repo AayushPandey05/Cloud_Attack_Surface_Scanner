@@ -1381,9 +1381,15 @@
                   // Enforces strict UI state isolation by purging DOM visibility before
                   // rendering the target view.
                   function showState(target, pushHistory = true) {
+                      // Hide all view-state containers before activating the target.
+                      // Mutual exclusivity is enforced here — only one state is ever visible.
                       [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
                           el.classList.add('hidden');
                       });
+
+                      // Activate the target view — this is the line that was missing,
+                      // causing all containers to remain hidden (blank screen on load).
+                      if (target) target.classList.remove('hidden');
 
                       // Derive canonical state name for URL hash and history entry
                       let stateName = 'login';
