@@ -2,9 +2,9 @@
 
 const SLACK_API = "https://slack.com/api";
 
-// Credential detection signature: AWS IAM Access Key ID (AKIA*) and
-// Stripe live secret key (sk_live_*) — highest-severity exfiltration patterns
-const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}/g;
+// Credential detection signature: AWS IAM Access Key ID (AKIA*),
+// Stripe live secret key (sk_live_*), and Slack Bot Tokens (xoxb-)
+const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}|xoxb-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]+/g;
 
 // AUTHENTICATED SLACK FETCH HELPER
 async function slackFetch(endpoint, params = {}) {
@@ -113,20 +113,17 @@ async function runScan() {
 
           if (matches) {
             secrets += matches.length;
-
-            // SaaS-to-IaaS Identity Correlation
-            // Map the posting user's Slack ID to a human-readable identity.
-            // If the user is outside the audit roster (e.g. a guest or deleted
-            // account), the attribution falls back to "Unknown Entity" — this
-            // is itself a security signal indicating Shadow IT credential leakage.
             const offender = humans.find((u) => u.id === msg.user);
-            const userName = offender
-              ? offender.real_name || offender.name
-              : "Unknown Entity";
+            const userName = offender ? offender.real_name || offender.name : "Unknown Entity";
 
-            // Serialize as a full attack chain: access vector → payload → identity
-            const path = `Initial Access → Credential Theft → #${channelName} → User(${userName})`;
-            detailedAlerts.push(path);
+            // Categorize findings based on pattern match
+            matches.forEach(m => {
+              let type = "Credential";
+              if (m.startsWith("xoxb-")) type = "Slack Bot Token";
+              else if (m.startsWith("AKIA")) type = "AWS Access Key";
+              else if (m.startsWith("sk_live_")) type = "Stripe Secret Key";
+              detailedAlerts.push(`${type} Leaked in #${channelName}! | ↳ Initial Access → Credential Theft → User(${userName})`);
+            });
           }
         }
       } catch (chanErr) {

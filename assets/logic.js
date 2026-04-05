@@ -215,12 +215,12 @@ window.fetchLiveSlackData = async function () {
       mfaPct >= 90 ? "var(--green)" : "var(--red)",
     );
 
-    //! KPI 4 — Identity posture: users failing MFA or profile integrity checks
+    //! KPI 4 — Exposed Secrets from the SaaS/IaaS boundary scan
     setKpi(
       4,
-      String(nonCompliant),
-      nonCompliant > 0 ? "MFA / profile gaps" : "No violations ✓",
-      nonCompliant > 0 ? "var(--red)" : "var(--green)",
+      String(secrets),
+      secrets > 0 ? "Leaked credentials found" : "No secrets exposed ✓",
+      secrets > 0 ? "var(--red)" : "var(--green)",
     );
 
     //! KPI 5 — Total identity scope of the audit (human accounts only)
@@ -253,12 +253,17 @@ window.fetchLiveSlackData = async function () {
 
       if (alerts.length > 0) {
         alerts.forEach(function (alertPath) {
+          // Identify cross-environment Slack tokens for forensic tag upgrade
+          var tag = alertPath.indexOf("Slack Bot Token") !== -1 ? "AWS/SLACK" : "SLACK";
+          var message = alertPath.indexOf("Slack Bot Token") !== -1 ? alertPath.split(" | ")[0] : "Credential pattern matched — " + alertPath;
+          var subtext = alertPath.indexOf(" | ") !== -1 ? alertPath.split(" | ")[1] : null;
+
           window._slackAddLog(
-            "SLACK",
-            "Credential pattern matched — " + alertPath,
+            tag,
+            message,
             "CRITICAL",
             "Initial Access",
-            "Credential Theft",
+            subtext || "Credential Theft",
           );
         });
       } else if (secrets > 0) {
