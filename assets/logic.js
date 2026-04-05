@@ -427,18 +427,21 @@ window.triggerAwsScan = async function () {
     const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
     const rawText = document.getElementById("terminal-feed")?.innerText || "";
+    // Strict A, B, C, D tokenizing regex: [Timestamp] [Env] Severity: Message
     const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
 
     const parsed = [];
     let lastLog = null;
 
     rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
-      const m = line.match(logRegex);
-      if (m) {
-        lastLog = { time: m[1], source: m[2], level: m[3], message: m[4] };
+      const match = line.match(logRegex);
+      if (match) {
+        // Extract A, B, C, D tokens into a clean flat record
+        lastLog = { timestamp: match[1], environment: match[2], severity: match[3], message: match[4] };
         parsed.push(lastLog);
       } else if (line.trim().startsWith("↳") && lastLog) {
-        lastLog.message += " " + line.trim();
+        // Child log consolidation via semicolon per Gold-Standard tabular rules
+        lastLog.message += "; " + line.trim();
       }
     });
 
@@ -446,11 +449,17 @@ window.triggerAwsScan = async function () {
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      const csvRows = ["Timestamp,Source,Level,Message"];
-      parsed.forEach(r => csvRows.push(`${r.time},${r.source},${r.level},"${r.message.replace(/"/g, '""')}"`));
+      // Excel-safe professional header with double-quote encoding
+      const csvRows = ['"Timestamp","Environment","Severity","Message"'];
+      // Every single value wrapped in double quotes for 100% Google Sheets alignment
+      parsed.forEach(r => {
+        const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}"`;
+        csvRows.push(row);
+      });
       content = csvRows.join("\n");
       mimeType = "text/csv";
     } else {
+      // JSON Parity: maintains the same 4 clean forensic keys
       content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
       mimeType = "application/json";
     }
