@@ -403,6 +403,34 @@ window.triggerAwsScan = async function () {
       raw: data,
     };
 
+    // Update KPI cards with live AWS scan results
+    var kpi1 = document.getElementById("kpi-1-val");
+    var kpi1s = document.getElementById("kpi-1-sub");
+    var kpi2 = document.getElementById("kpi-2-val");
+    var kpi2s = document.getElementById("kpi-2-sub");
+    var kpi3 = document.getElementById("kpi-3-val");
+    var kpi3s = document.getElementById("kpi-3-sub");
+    var kpi4 = document.getElementById("kpi-4-val");
+    var kpi4s = document.getElementById("kpi-4-sub");
+    var kpi5 = document.getElementById("kpi-5-val");
+    var kpi5s = document.getElementById("kpi-5-sub");
+
+    if (kpi1) { kpi1.innerText = String(publicBuckets); kpi1.style.color = publicBuckets > 0 ? "var(--red)" : "var(--green)"; }
+    if (kpi1s) kpi1s.innerText = publicBuckets > 0 ? "↑ Immediate remediation required" : "All buckets secured";
+
+    if (kpi2) { kpi2.innerText = String(detailedAlerts.length); kpi2.style.color = detailedAlerts.length > 0 ? "#F79009" : "var(--green)"; }
+    if (kpi2s) kpi2s.innerText = detailedAlerts.length > 0 ? "Public ACL violations found" : "No IAM issues detected";
+
+    if (kpi3) { kpi3.innerText = "N/A"; kpi3.style.color = "var(--gray)"; }
+    if (kpi3s) kpi3s.innerText = "Switch to Slack scan";
+
+    if (kpi4) { kpi4.innerText = "0"; kpi4.style.color = "var(--green)"; }
+    if (kpi4s) kpi4s.innerText = "No secrets in S3 scope";
+
+    var controlsPct = totalBuckets > 0 ? Math.round(((totalBuckets - publicBuckets) / totalBuckets) * 100) : 100;
+    if (kpi5) { kpi5.innerText = controlsPct + "%"; kpi5.style.color = controlsPct === 100 ? "var(--green)" : controlsPct >= 80 ? "#3B82F6" : "var(--red)"; }
+    if (kpi5s) kpi5s.innerText = controlsPct === 100 ? "All S3 controls passing" : (totalBuckets - publicBuckets) + " of " + totalBuckets + " buckets secure";
+
     log("AWS", "Identity and Access Management (IAM) checks finalized.", "SYSTEM");
   } catch (err) {
     console.error("[triggerAwsScan] Fetch failed:", err.message);
