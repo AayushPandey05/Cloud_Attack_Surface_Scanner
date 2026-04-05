@@ -500,10 +500,20 @@ window.triggerAwsScan = async function () {
   }
 })();
 
-// Initialization: Auto-run the AWS CSPM audit on page load
-document.addEventListener("DOMContentLoaded", () => {
-  // Just trigger the scan directly. No UI manipulation needed here.
-  triggerAwsScan();
+// Dashboard Auto-Initialization — Simulated Entry Point
+// Fires a programmatic click on #aws-btn once the DOM is ready.
+// This routes through all registered segment-control event listeners,
+// ensuring the UI active-state, KPI taxonomy, and CSPM telemetry engine
+// are all initialized through the same code path as a real user interaction.
+document.addEventListener("DOMContentLoaded", function () {
+  var awsBtn = document.getElementById("aws-btn");
+  if (awsBtn) {
+    awsBtn.click();
+  } else {
+    console.error(
+      "[logic.js] DOMContentLoaded: #aws-btn not found — dashboard auto-initialization skipped.",
+    );
+  }
 });
 
 console.log(
