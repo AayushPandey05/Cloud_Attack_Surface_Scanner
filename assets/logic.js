@@ -488,18 +488,25 @@ window.triggerAwsScan = async function () {
 
 
 
-// UNIVERSAL STRUCTURED PARSING ENGINE — Regex-Based 1-to-1 Mapping
-(function initUniversalExport() {
+// SANITIZED HIERARCHICAL PARSER — Clean Columns & Merged Findings
+(function initSanitizedExport() {
   function downloadAuditLogs(format) {
     const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
     const rawText = document.getElementById("terminal-feed")?.innerText || "";
     const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
 
-    const parsed = rawText.split("\n").filter(l => l.trim() !== "").map(line => {
+    const parsed = [];
+    let lastLog = null;
+
+    rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
       const m = line.match(logRegex);
-      if (m) return { time: m[1], source: m[2], level: m[3], message: m[4] };
-      return { time: "", source: "", level: "", message: line.trim() };
+      if (m) {
+        lastLog = { time: m[1], source: m[2], level: m[3], message: m[4] };
+        parsed.push(lastLog);
+      } else if (line.trim().startsWith("↳") && lastLog) {
+        lastLog.message += " " + line.trim();
+      }
     });
 
     let content, mimeType;
@@ -530,5 +537,5 @@ window.triggerAwsScan = async function () {
 })();
 
 console.log(
-  "[logic.js v3.6] Universal Structured Parsing Engine Active — 1-to-1 line mapping reinforced.",
+  "[logic.js v3.7] Sanitized Hierarchical Parser Active — Standardized CSV/JSON 4-column alignment reinforced.",
 );
