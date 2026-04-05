@@ -345,113 +345,46 @@ window.clearTerminal = function () {
 };
 
 window.triggerAwsScan = async function () {
-  var log = window._slackAddLog;
-  if (typeof log !== "function") {
-    console.warn("[triggerAwsScan] _slackAddLog not ready — aborting.");
-    return;
-  }
+  const terminal = document.getElementById("terminal-feed");
+  if (typeof window._slackAddLog !== "function") return;
 
+  // Clear terminal before dispatching live Identity Audit
   window.clearTerminal();
 
-  log("AWS", "Context switched to AWS environment.", "SYSTEM");
-  log("AWS", "Initializing Cloud Security Posture Management (CSPM) Audit...", "SYSTEM");
-
-  //! CSPM Telemetry Fetch
   try {
-    var res = await fetch("/api/scan-aws");
+    const res = await fetch("/api/scan-aws");
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
 
-    if (!res.ok) {
-      var errBody = await res.json().catch(function () {
-        return { error: "HTTP " + res.status };
+    // Ensure terminal is scrubbed of any context-switching ghosts before populating live data
+    if (terminal) terminal.innerHTML = "";
+
+    // Sync live telemetry stream to the dashboard terminal
+    if (Array.isArray(data.terminalLogs)) {
+      data.terminalLogs.forEach(entry => {
+        // Strip [HH:MM:SS] if present — the renderer adds its own forensic timestamp
+        let clean = entry.replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, '').replace(/^\[AWS\]\s+/, '');
+        const [level, ...contentParts] = clean.split(': ');
+        window._slackAddLog("AWS", contentParts.join(': '), level || "SYSTEM");
       });
-      throw new Error(errBody.error || "API returned " + res.status);
     }
 
-    var data = await res.json();
+    // Bind real-time IAM summary to the identity posture KPI cards
+    const kpi2 = document.getElementById("kpi-2-val");
+    const kpi2s = document.getElementById("kpi-2-sub");
+    if (kpi2) { kpi2.innerText = String(data.summary); kpi2.style.color = "var(--green)"; }
+    if (kpi2s) kpi2s.innerText = `Found ${data.summary} IAM Identities`;
 
-    var totalBuckets =
-      typeof data.totalBuckets === "number" ? data.totalBuckets : 0;
-    var publicBuckets =
-      typeof data.publicBuckets === "number" ? data.publicBuckets : 0;
-    var detailedAlerts = Array.isArray(data.detailedAlerts)
-      ? data.detailedAlerts
-      : [];
+    // Reset attack path counters — real-time scan overrides simulated vulnerabilities
+    const kpi1 = document.getElementById("kpi-1-val");
+    const kpi1s = document.getElementById("kpi-1-sub");
+    if (kpi1) { kpi1.innerText = "0"; kpi1.style.color = "var(--green)"; }
+    if (kpi1s) kpi1s.innerText = "No public exposure detected";
 
-    log("AWS", "Scan complete — " + totalBuckets + " S3 buckets enumerated.", "SYSTEM");
-
-    if (publicBuckets > 0) {
-      log(
-        "AWS",
-        publicBuckets + " Public S3 Bucket(s) detected!",
-        "CRITICAL",
-        "Data Exfiltration",
-        "S3 Public Exposure",
-      );
-    } else {
-      log("AWS", "All S3 buckets pass Public Access Block validation ✓", "SYSTEM");
-    }
-
-    detailedAlerts.forEach(function (alert) {
-      log("AWS", "↳ " + alert, "CRITICAL", "Initial Access", "Data Exfiltration");
-    });
-
-    window.latestAwsData = {
-      scannedAt: new Date().toISOString(),
-      totalBuckets: totalBuckets,
-      publicBuckets: publicBuckets,
-      detailedAlerts: detailedAlerts,
-      raw: data,
-    };
-
-    // Update KPI cards with live AWS scan results
-    var kpi1 = document.getElementById("kpi-1-val");
-    var kpi1s = document.getElementById("kpi-1-sub");
-    var kpi2 = document.getElementById("kpi-2-val");
-    var kpi2s = document.getElementById("kpi-2-sub");
-    var kpi3 = document.getElementById("kpi-3-val");
-    var kpi3s = document.getElementById("kpi-3-sub");
-    var kpi4 = document.getElementById("kpi-4-val");
-    var kpi4s = document.getElementById("kpi-4-sub");
-    var kpi5 = document.getElementById("kpi-5-val");
-    var kpi5s = document.getElementById("kpi-5-sub");
-
-    if (kpi1) { kpi1.innerText = String(publicBuckets); kpi1.style.color = publicBuckets > 0 ? "var(--red)" : "var(--green)"; }
-    if (kpi1s) kpi1s.innerText = publicBuckets > 0 ? "↑ Immediate remediation required" : "All buckets secured";
-
-    if (kpi2) { kpi2.innerText = String(detailedAlerts.length); kpi2.style.color = detailedAlerts.length > 0 ? "#F79009" : "var(--green)"; }
-    if (kpi2s) kpi2s.innerText = detailedAlerts.length > 0 ? "Public ACL violations found" : "No IAM issues detected";
-
-    if (kpi3) { kpi3.innerText = "N/A"; kpi3.style.color = "var(--gray)"; }
-    if (kpi3s) kpi3s.innerText = "Switch to Slack scan";
-
-    if (kpi4) { kpi4.innerText = "0"; kpi4.style.color = "var(--green)"; }
-    if (kpi4s) kpi4s.innerText = "No secrets in S3 scope";
-
-    var controlsPct = totalBuckets > 0 ? Math.round(((totalBuckets - publicBuckets) / totalBuckets) * 100) : 100;
-    if (kpi5) { kpi5.innerText = controlsPct + "%"; kpi5.style.color = controlsPct === 100 ? "var(--green)" : controlsPct >= 80 ? "#3B82F6" : "var(--red)"; }
-    if (kpi5s) kpi5s.innerText = controlsPct === 100 ? "All S3 controls passing" : (totalBuckets - publicBuckets) + " of " + totalBuckets + " buckets secure";
-
-    log("AWS", "Identity and Access Management (IAM) checks finalized.", "SYSTEM");
   } catch (err) {
+    // Audit failure capture — propagate detailed telemetry to dashboard terminal
+    window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
     console.error("[triggerAwsScan] Fetch failed:", err.message);
-
-    var errTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
-    log(
-      "AWS",
-      "⚠ CSPM scan failed at " + errTime + ". Cause: " + err.message.slice(0, 60),
-      "ALERT",
-    );
-    log(
-      "AWS",
-      "Forensic Diagnosis: Verify AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY " +
-        "are present in .env and that the Vercel dev server is running (vercel dev).",
-      "SYSTEM",
-    );
-    log(
-      "AWS",
-      "↳ Credential resolution path: .env → process.env → IAM Client → S3 Client",
-      "SYSTEM",
-    );
   }
 };
 
