@@ -31,9 +31,7 @@
     </script>
 
     <style>
-      /* -------------------------------------------------------------------------- */
-      /*                            CSS RESET & VARS                                */
-      /* -------------------------------------------------------------------------- */
+      /*CSS RESET & VARS*/
       :root {
           --navy: #0A0D14;
           --slate: #101828;
@@ -61,9 +59,7 @@
           overflow-x: hidden;
       }
 
-      /* -------------------------------------------------------------------------- */
-      /*                             UTILITY CLASSES                                */
-      /* -------------------------------------------------------------------------- */
+      /*UTILITY CLASSES*/
       .hidden { display: none !important; }
       .flex { display: flex; }
       .flex-col { flex-direction: column; }
@@ -215,9 +211,7 @@
       }
       @keyframes spin { to { transform: rotate(360deg); } }
 
-      /* -------------------------------------------------------------------------- */
-      /*                            SPECIFIC COMPONENTS                             */
-      /* -------------------------------------------------------------------------- */
+      /*SPECIFIC COMPONENTS */
       .auth-wrapper {
           display: flex;
           flex-direction: column;
@@ -718,9 +712,7 @@
       }
       .btn-otp-cancel:hover { color: #94A3B8; }
 
-      /* --------------------------------------------------------------- */
-      /*                  EXPORT LOGS UI                                  */
-      /* --------------------------------------------------------------- */
+      /*EXPORT LOGS UI*/
       .export-bar {
           display: flex;
           align-items: center;
@@ -770,7 +762,6 @@
           border-color: rgba(129, 140, 248, 0.6);
           box-shadow: 0 0 10px rgba(129, 140, 248, 0.15);
       }
-
     </style>
   </head>
 
@@ -1198,7 +1189,9 @@
                   >
                     Security Admin
                   </div>
-                  <div id="profile-email-display" class="text-xs text-gray">—</div>
+                  <div id="profile-email-display" class="text-xs text-gray">
+                    —
+                  </div>
                 </div>
                 <div class="dropdown-divider"></div>
                 <button id="logout-btn" class="dropdown-item">
@@ -1240,7 +1233,9 @@
         </div>
 
         <!-- Segmented Control + Export Bar -->
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+        <div
+          style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;"
+        >
           <div class="segmented-control" style="margin:0;">
             <button class="segment-btn active" id="aws-btn" data-view="aws">
               <i data-lucide="cloud" width="16" height="16"></i>
@@ -1257,17 +1252,54 @@
           <!-- Export Logs UI -->
           <div class="export-bar">
             <span class="export-label">Export Logs</span>
-            <button class="btn-export btn-export-csv" id="export-csv-btn" onclick="downloadAuditLogs('csv')" title="Download audit logs as CSV">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button
+              class="btn-export btn-export-csv"
+              id="export-csv-btn"
+              onclick="downloadAuditLogs('csv')"
+              title="Download audit logs as CSV"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               CSV
             </button>
-            <button class="btn-export btn-export-json" id="export-json-btn" onclick="downloadAuditLogs('json')" title="Download audit logs as JSON">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button
+              class="btn-export btn-export-json"
+              id="export-json-btn"
+              onclick="downloadAuditLogs('json')"
+              title="Download audit logs as JSON"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               JSON
             </button>
           </div>
         </div>
-
 
         <!-- Terminal Feed -->
         <div class="terminal-container">
@@ -1292,17 +1324,15 @@
       </div>
     </div>
 
-    <!-- -------------------------------------------------------------------------- -->
-    <!--                               JAVASCRIPT LOGIC                             -->
-    <!-- -------------------------------------------------------------------------- -->
+    <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
             document.addEventListener('DOMContentLoaded', () => {
                   lucide.createIcons();
 
-                  // DOM References
+                  // View-state handles: mutually exclusive visibility enforced by showState()
                   const stateLogin = document.getElementById('state-login');
                   const stateLoading = document.getElementById('state-loading');
-                  // #state-mfa has been removed — Email OTP gateway is now a global overlay
+                  // MFA is delivered as a full-screen overlay (#mfa-gateway) — no dedicated page state
                   const stateDashboard = document.getElementById('state-dashboard');
 
                   const loginBlock = document.getElementById('login-block');
@@ -1312,7 +1342,7 @@
                   const toggleSignup = document.getElementById('toggle-signup');
                   const toggleLogin = document.getElementById('toggle-login');
 
-                  // google-sso button uses onclick="handleGoogleLogin()" — no addEventListener needed
+                  // GSI popup flow is bound via inline onclick — token client registered on window.load
                   const googleSignupBtn = document.getElementById('google-signup-btn');
                   const corpSso = document.getElementById('corp-sso');
 
@@ -1323,12 +1353,13 @@
                   const profileDropdown = document.getElementById('profile-dropdown');
                   const logoutBtn = document.getElementById('logout-btn');
 
-                  // Internal Logic Settings
+                  // Active attack surface context — drives terminal engine and KPI taxonomy
                   let currentEnv = 'aws';
                   let terminalInterval;
 
-                  // -- Attack Path Data (declared here so startTerminal() can access it
-                  //    during the boot/re-hydration sequence before it is called) --
+                  // Static threat intelligence corpus: attack path seeds for the looping
+                  // terminal engine. Declared at scope root to survive the session
+                  // re-hydration sequence that runs before startTerminal() is invoked.
                   const attackLogs = {
                       aws: [
                           { t: 'AWS', level: 'CRITICAL', msg: "S3 Bucket 'audit-logs' ACL is public - world-readable.", pathHighlight: "Data Exfiltration", pathTarget: "Competitor / Ransomware Actor" },
@@ -1344,18 +1375,22 @@
                   };
 
 
-                   // -- Navigation & State Persistence --
+                  // View-State Router & History API Integration
+                  // showState() is the single authoritative transition function.
+                  // All view changes — auth success, logout, back-navigation —
+                  // Enforces strict UI state isolation by purging DOM visibility before
+                  // rendering the target view.
                   function showState(target, pushHistory = true) {
                       [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
                           el.classList.add('hidden');
                       });
-                      if (target) target.classList.remove('hidden');
 
-                      // Determine the string name for the URL
+                      // Derive canonical state name for URL hash and history entry
                       let stateName = 'login';
                       if (target === stateDashboard) stateName = 'dashboard';
 
-                      // HISTORY API: Update the URL so the back button works
+                      // Synchronize browser history with app state to support
+                      // native back-button navigation without full page reload
                       if (pushHistory && target !== stateLoading) {
                           history.pushState({ view: stateName }, "", `#${stateName}`);
                       }
@@ -1367,7 +1402,9 @@
                       }
                   }
 
-                  // LISTEN FOR THE BACK BUTTON
+                  // Popstate handler: enforces authentication gate on browser back-navigation.
+                  // An unauthenticated popstate to #dashboard is intercepted and redirected
+                  // to the login view — prevents session bypass via history manipulation.
                   window.addEventListener('popstate', function(event) {
                       const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
 
@@ -1378,7 +1415,9 @@
                       }
                   });
 
-                  // CHECK SESSION ON REFRESH
+                  // Session bootstrap: validates the sessionStorage auth token on every
+                  // page load. Authenticated sessions resume at the dashboard; all others
+                  // are routed to the login view regardless of the URL hash state.
                   function initializeApp() {
                       const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
                       const hash = window.location.hash.replace('#', '');
@@ -1392,34 +1431,38 @@
                       }
                   }
 
-                  // Run initialization immediately on load
                   initializeApp();
 
-                  // ---------------------------------------------------------------- //
-                  //                  EMAIL OTP MFA — 3 GLOBAL FUNCTIONS              //
-                  // ---------------------------------------------------------------- //
+                  // EMAIL OTP MFA GATEWAY
+                  // Three functions implement the full TOTP-less OTP lifecycle:
+                  // triggerEmailOtpFlow — issues a session-scoped 6-digit code via EmailJS
+                  // verifyEmailOtp      — validates the submitted code against the session token
+                  // cancelMfa           — purges the session token and returns to login
+                  // The OTP is held exclusively in closure scope (currentSessionOtp) and
+                  // is never written to localStorage or any persistent store.
 
-                  // Session variable — stores the active one-time code
+                  // Session-scoped OTP token — ephemeral, cleared on verify or cancel
                   var currentSessionOtp = '';
 
-                  // FUNCTION 1: Trigger the Email OTP flow
+                  // Generates and dispatches a cryptographically random 6-digit OTP
+                  // to the authenticated email address via the EmailJS transactional relay.
                   window.triggerEmailOtpFlow = function(userEmail) {
-                      // Generate a random 6-digit code and store it
+                      // Uniform distribution across [100000, 999999] — 6-digit decimal space
                       currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
 
-                      // Show the MFA gateway overlay
+                      // Surface the MFA gateway overlay over the current view
                       var gateway = document.getElementById('mfa-gateway');
                       gateway.classList.add('active');
 
-                      // Inject user email into the display paragraph
+                      // Render the destination email address for operator confirmation
                       var emailDisplay = document.getElementById('display-user-email');
                       if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
 
-                      // Clear any prior input
+                      // Reset the OTP input field and focus for immediate entry
                       var otpInput = document.getElementById('otp-code-input');
                       if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
 
-                      // 🚀 NEW EMAILJS ENGINE 🚀
+                      // Construct the EmailJS payload bound to the active session token
                       const templateParams = {
                           user_email: userEmail,
                           otp_code: currentSessionOtp
@@ -1427,7 +1470,9 @@
 
                       console.log("Initiating secure OTP dispatch to EmailJS...");
 
-                      // EmailJS dispatch — wrapped in try/catch so network errors don't freeze UI
+                      // Dispatch is wrapped to prevent transient network errors from
+                      // blocking the MFA overlay render — delivery failures are logged
+                      // but do not revert the authentication flow to the login view.
                       try {
                           emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
                               .then(function(response) {
@@ -1435,29 +1480,33 @@
                               })
                               .catch(function(error) {
                                   console.error('FAILED to send OTP:', error);
-                                  // Don't alert — user can still proceed if they see the code in console for testing
                               });
                       } catch(e) {
                           console.error('[EmailJS] Exception during send:', e);
                       }
                   };
 
-                  // FUNCTION 2: Verify the submitted OTP
+                  // Validates the submitted OTP against the active session token.
+                  // On success: session token is cleared, the auth flag is written to
+                  // sessionStorage (tab-scoped persistence), and the dashboard is rendered.
+                  // On failure: visual rejection feedback is applied without disclosing
+                  // the expected value — the operator must re-request a new code.
                   window.verifyEmailOtp = function() {
                       var otpInput = document.getElementById('otp-code-input');
                       var entered = otpInput ? otpInput.value.trim() : '';
                       if (entered === currentSessionOtp && currentSessionOtp !== '') {
-                          // Success — clear state and go to dashboard
+                          // Token matched — purge in-memory OTP and establish authenticated session
                           currentSessionOtp = '';
                           if (otpInput) otpInput.value = '';
                           document.getElementById('mfa-gateway').classList.remove('active');
 
-                          // 🚀 NEW: SAVE THE SESSION SO REFRESH WORKS
+                          // Persist authentication flag for the session lifetime (tab-scoped)
                           sessionStorage.setItem('isVaultAuthenticated', 'true');
 
                           showState(stateDashboard);
-                      }else {
-                          // Shake the input then alert
+                      } else {
+                          // Rejection signal: transient red border indicates failed verification
+                          // without leaking the expected token value
                           if (otpInput) {
                               otpInput.style.borderColor = '#F04438';
                               otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
@@ -1470,7 +1519,8 @@
                       }
                   };
 
-                  // FUNCTION 3: Cancel MFA and return to login
+                  // Aborts the active MFA challenge: purges the session token and
+                  // dismounts the gateway overlay, returning to the unauthenticated login view.
                   window.cancelMfa = function() {
                       currentSessionOtp = '';
                       var otpInput = document.getElementById('otp-code-input');
@@ -1479,41 +1529,37 @@
                       showState(stateLogin);
                   };
 
-                  // Resend helper
+                  // Re-issues a new OTP to the same destination address.
+                  // A fresh token replaces the prior value — the previous code is silently invalidated.
                   window.resendEmailOtp = function() {
                       var emailDisplay = document.getElementById('display-user-email');
                       var email = emailDisplay ? emailDisplay.textContent : '';
 
                       if(email) {
-                         // Trigger the flow again quietly
                          triggerEmailOtpFlow(email);
                          console.log("Resending code...");
                       }
                   };
 
-                  // ---------------------------------------------------------------- //
-                  //                  UX FIX: "ENTER" KEY SUPPORT                     //
-                  // ---------------------------------------------------------------- //
+                  // Keyboard shortcut: Enter key submission binds to the OTP verification
+                  // function — eliminates the requirement for a pointer interaction
+                  // during the time-sensitive MFA challenge window.
                   var otpCodeInput = document.getElementById('otp-code-input');
                   if (otpCodeInput) {
                       otpCodeInput.addEventListener('keypress', function(e) {
                           if (e.key === 'Enter') {
-                              e.preventDefault(); // Stops the browser from doing anything weird
-                              verifyEmailOtp();   // Fires the exact same function as clicking the button
+                              e.preventDefault();
+                              verifyEmailOtp();
                           }
                       });
                   }
-                   // Expose addLog to logic.js immediately — do NOT do this lazily
-                   // inside the function body, as fetchLiveSlackData may run before
-                   // addLog is ever called on the first refresh boot.
-                   window._slackAddLog = addLog;
+                  // Register the telemetry sink immediately at scope-root.
+                  // logic.js may invoke _slackAddLog before any addLog call occurs
+                  // (e.g. on session-restore refresh) — early registration prevents
+                  // a null-sink race condition in the Slack telemetry engine.
+                  window._slackAddLog = addLog;
 
-                   // ---------------------------------------------------------------- //
-
-                  //                        NAVIGATION & AUTH                          //
-                  // ---------------------------------------------------------------- //
-
-                  // -- Slider Toggles --
+                  // ── Authentication Slider — Login / Register Panel Toggle ───────────────
                   toggleSignup.addEventListener('click', (e) => {
                       e.preventDefault();
                       loginBlock.classList.add('hidden');
@@ -1525,34 +1571,34 @@
                       loginBlock.classList.remove('hidden');
                   });
 
-                  // processAuthSuccess — single entry point for ALL login paths.
-                  // The submit/click callers are responsible for showing stateLoading
-                  // BEFORE calling this function (with an 800ms delay to allow a paint).
-                  // This function dismisses the loading screen, syncs the profile dropdown,
-                  // and opens the MFA overlay.
+                  // Authoritative Authentication Entry Point
+                  // All login paths — email/password, Google OAuth2, SSO — converge here.
+                  // Callers must transition to stateLoading before invoking this function
+                  // (800ms minimum to guarantee the spinner renders before the MFA overlay).
+                  // Responsibilities: profile dropdown hydration, session token persistence,
+                  // loading state teardown, and MFA gateway activation.
                   window.processAuthSuccess = function processAuthSuccess(email, displayName) {
                       var userEmail = email || 'user@company.com';
                       var userName  = displayName || 'Security Admin';
 
-                      // ── PROFILE SYNC ── update the dropdown before MFA overlay opens.
+                      // Hydrate profile dropdown with authenticated identity before overlay renders
                       var profileEmailEl = document.getElementById('profile-email-display');
                       var profileNameEl  = document.getElementById('profile-name-display');
                       if (profileEmailEl) profileEmailEl.innerText = userEmail;
                       if (profileNameEl)  profileNameEl.innerText  = userName;
 
-                      // Persist for session-restore on refresh
+                      // Persist identity for session-restore on hard refresh
                       sessionStorage.setItem('vaultUserEmail', userEmail);
                       sessionStorage.setItem('vaultUserName',  userName);
 
-                      // Dismiss the loading spinner regardless of how we got here.
+                      // Teardown loading state — invoked regardless of auth entry path
                       var loaderEl = document.getElementById('state-loading');
                       if (loaderEl) loaderEl.classList.add('hidden');
 
-                      // Surface the login page as the background behind the MFA overlay.
+                      // Restore login view as MFA overlay backdrop
                       if (stateLogin) stateLogin.classList.remove('hidden');
 
-                      // Open the Email OTP overlay immediately (no extra delay needed —
-                      // the 800ms was already consumed by the caller's setTimeout).
+                      // Activate the MFA gateway — callers have already satisfied the render delay;
                       try {
                           triggerEmailOtpFlow(userEmail);
                       } catch (err) {
@@ -1564,16 +1610,15 @@
                   loginForm.addEventListener('submit', (e) => {
                       e.preventDefault();
 
-                      // STEP 1 — Immediately swap to the loading screen so the
-                      //           login form is fully hidden before anything async runs.
+                      // Transition to loading state first to ensure the login form
+                      // is fully hidden before any async operations are queued.
                       showState(stateLoading, false);
 
-                      // STEP 2 — Capture the email value after preventing default.
                       var loginEmailInput = document.getElementById('login-email');
                       var emailValue = loginEmailInput ? loginEmailInput.value.trim() : '';
 
-                      // STEP 3 — Wait one paint cycle (800 ms) so the browser
-                      //           renders the spinner, THEN open the MFA overlay.
+                      // 800ms delay allows the browser to commit the spinner render
+                      // before the MFA overlay activation begins.
                       setTimeout(() => {
                           processAuthSuccess(emailValue);
                       }, 800);
@@ -1588,14 +1633,14 @@
                           return;
                       }
 
-                      // Same strict sequencing as login — spinner first, then MFA.
+                      // Registration path uses identical sequencing to login:
+                      // loading state first, then 800ms render buffer, then MFA activation.
                       showState(stateLoading, false);
                       setTimeout(() => {
                           processAuthSuccess(emailVal);
                       }, 800);
                   });
-                  // google-sso button fires handleGoogleLogin() via inline onclick
-                  // googleSignupBtn uses the same OAuth2 token flow
+                  // Both Google entry points route through the same OAuth2 token client
                   if (googleSignupBtn) {
                       googleSignupBtn.addEventListener('click', () => {
                           if (window._gsiTokenClient) {
@@ -1609,7 +1654,7 @@
                       processAuthSuccess('sso-user@corp.com');
                   });
 
-                  // -- Dropdown & Logout Logic --
+                  // ── Session Termination & Profile Dropdown ───────────────────────
                   avatarToggle.addEventListener('click', () => {
                       profileDropdown.classList.toggle('hidden');
                   });
@@ -1623,7 +1668,7 @@
                   logoutBtn.addEventListener('click', () => {
                       profileDropdown.classList.add('hidden');
                       loginForm.reset();
-                      // Dismiss Email OTP gateway if active
+                      // Purge in-memory OTP token and dismount MFA gateway if active
                       currentSessionOtp = '';
                       var otpInput = document.getElementById('otp-code-input');
                       if (otpInput) otpInput.value = '';
@@ -1633,35 +1678,29 @@
                       showState(stateLogin);
                   });
 
-                  // -- Dashboard Logic --
+                  //Dashboard Initialisation
                   function initDashboard() {
-                      // ── Restore last active tab from session ──────────────────────
+                      // Restore persisted attack surface context from the prior session
                       var savedEnv = sessionStorage.getItem('vaultActiveEnv');
                       if (savedEnv === 'slack' || savedEnv === 'aws') {
                           currentEnv = savedEnv;
-                          // Sync the segment button active state
+                          // Synchronise segment button active state with restored context
                           segmentBtns.forEach(function(b) {
                               b.classList.toggle('active', b.dataset.view === currentEnv);
                           });
                       }
 
                       updateDashboardContext();
-
-                      // ── Boot correct engine based on active tab ───────────────────
                       if (currentEnv === 'slack') {
-                          // fetchLiveSlackData() is already called inside
-                          // updateDashboardContext() for the slack branch.
-                          // Stop any lingering AWS interval.
                           stopTerminal();
                       } else {
                           startTerminal();
                       }
                   }
 
+                  // Attack Surface Context Switch
                   segmentBtns.forEach(btn => {
                       btn.addEventListener('click', (e) => {
-                          // Use currentTarget (the button with data-view) not target
-                          // (which may be the inner <i> icon or dot <div>)
                           const btn = e.currentTarget;
                           const view = btn.dataset.view;
                           if (!view || currentEnv === view) return;
@@ -1670,16 +1709,16 @@
                           btn.classList.add('active');
 
                           currentEnv = view;
-                          // Persist so refresh restores the correct tab
+                          // Persist context for cross-refresh continuity
                           sessionStorage.setItem('vaultActiveEnv', view);
                           updateDashboardContext();
 
-                          // Clear terminal and log context shift
+                          // Enforce cross-surface telemetry isolation before emitting context event
                           terminalFeed.innerHTML = '';
                           addLog(view.toUpperCase() === 'SLACK' ? 'SLACK' : 'AWS', 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
 
-                          // For AWS: restart the looping terminal engine
-                          // For Slack: fetchLiveSlackData() is called inside updateDashboardContext()
+                          // AWS: boot the static attack path rotation engine
+                          // Slack: telemetry fetch is dispatched inside updateDashboardContext()
                           if (view === 'aws') {
                               startTerminal();
                           } else {
@@ -1688,28 +1727,25 @@
                       });
                   });
 
+                  // Binds KPI panel labels and values to the taxonomy of the active
                   function updateDashboardContext() {
                       const titleTerm = document.getElementById('terminal-title');
                       if (currentEnv === 'aws') {
-                          // KPI 1
+                          // IaaS attack surface — static posture metrics pending live CSPM integration
                           document.getElementById('kpi-1-val').innerText = '3';
                           document.getElementById('kpi-1-sub').innerText = '↑ 1 since last scan';
-                          // KPI 2
                           document.getElementById('kpi-2-title').innerText = 'IAM Vulnerabilities';
                           document.getElementById('kpi-2-val').innerText = '1';
                           document.getElementById('kpi-2-val').style.color = '#F79009';
                           document.getElementById('kpi-2-sub').innerText = 'Wildcard policy active';
-                          // KPI 3
                           document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
                           document.getElementById('kpi-3-val').innerText = '98%';
                           document.getElementById('kpi-3-val').style.color = 'var(--green)';
                           document.getElementById('kpi-3-sub').innerText = '2 users non-compliant';
-                          // KPI 4
                           document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
                           document.getElementById('kpi-4-val').innerText = '2';
                           document.getElementById('kpi-4-val').style.color = 'var(--red)';
                           document.getElementById('kpi-4-sub').innerText = 'Critical severity';
-                          // KPI 5
                           document.getElementById('kpi-5-title').innerText = 'Controls Passing';
                           document.getElementById('kpi-5-val').innerText = '84%';
                           document.getElementById('kpi-5-val').style.color = '#3B82F6';
@@ -1717,7 +1753,7 @@
 
                           titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                        } else {
-                           // Set card titles for the Slack view
+                           // SaaS attack surface — indeterminate state while telemetry stream hydrates
                            document.getElementById('kpi-1-val').innerText = '—';
                            document.getElementById('kpi-1-sub').innerText = 'Scanning…';
                            document.getElementById('kpi-1-val').style.color = 'var(--gray)';
@@ -1740,19 +1776,18 @@
 
                            titleTerm.innerText = 'security-telemetry — Slack Workspace';
 
-                           // Kick off the live scan from logic.js
+                           // Dispatch live Slack telemetry fetch via the CSPM engine in logic.js
                            if (typeof window.fetchLiveSlackData === 'function') {
                                window.fetchLiveSlackData();
                            }
                       }
                   }
 
-                  // -- Attack Path Terminal Engine --
+                  // Threat Intelligence Terminal Engine
                   function startTerminal() {
                       if (terminalInterval) clearInterval(terminalInterval);
                       terminalFeed.innerHTML = '';
 
-                      // Seed logs
                       const pool = attackLogs[currentEnv];
                       for (let i = 0; i < pool.length; i++) {
                           const item = pool[i];
@@ -1772,6 +1807,7 @@
                       }
                   }
 
+                  // Forensic Log Renderer
                   function addLog(tag, content, level, pathHighlight, pathTarget) {
                       const entry = document.createElement('div');
                       entry.className = 'log-entry fade-in';
@@ -1815,40 +1851,21 @@
                       terminalFeed.appendChild(entry);
                       terminalFeed.scrollTop = terminalFeed.scrollHeight;
 
+                      // Rolling window: evict oldest entry beyond 20-item threshold
                       if (terminalFeed.childElementCount > 20) {
                           terminalFeed.removeChild(terminalFeed.firstChild);
                       }
                   }
-                   // Set eagerly so fetchLiveSlackData can log to terminal
-                   // even before addLog has been called for the first time.
-                   window._slackAddLog = addLog;
+                  window._slackAddLog = addLog;
 
-                   // ---------------------------------------------------------------- //
-
-                  // ---------------------------------------------------------------- //
-                  //        GOOGLE IDENTITY SERVICES — OAUTH2 POPUP FLOW             //
-                  // ---------------------------------------------------------------- //
-                  // WHY THIS APPROACH:
-                  // google.accounts.id.prompt() (One Tap / FedCM) is suppressed by
-                  // most browsers due to cookie policy, FedCM restrictions, and
-                  // GSI cooldowns. It does NOT show the popup on regular click.
-                  //
-                  // google.accounts.oauth2.initTokenClient() is the real popup flow
-                  // used by actual websites — it always shows the Google account
-                  // selector when .requestToken() is called from a user gesture.
-
-                  // ---------------------------------------------------------------- //
-                  //               AUDIT LOG EXPORT — CLIENT-SIDE BLOB               //
-                  // ---------------------------------------------------------------- //
+                  // AUDIT LOG EXPORT — Client-Side Blob Engine
                   window.downloadAuditLogs = function(format) {
                        try {
                            var ts  = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
                            var env = (currentEnv || 'unknown').toUpperCase();
                            var content, mimeType, filename;
 
-                           // ────────────────────────────────────────────────────────────────
-                           // SLACK EXPORT — uses live window.latestSlackData from the scan
-                           // ────────────────────────────────────────────────────────────────
+                           // Slack Telemetry Export
                            if (currentEnv === 'slack') {
                                var sd = window.latestSlackData;
 
@@ -1862,7 +1879,7 @@
                                        'Timestamp,Report Type,Severity,Detail'
                                    ];
 
-                                   // Row 1 — Summary
+                                   // Aggregate posture summary row
                                    rows.push([
                                        sd.scannedAt,
                                        '"Workspace Summary"',
@@ -1873,7 +1890,7 @@
                                        ' | Exposed Secrets: '  + sd.secrets + '"'
                                    ].join(','));
 
-                                   // Rows 2+ — one per attack path
+                                   // Per-identity attack chain rows (SaaS-to-IaaS correlation)
                                    if (sd.detailedAlerts.length > 0) {
                                        sd.detailedAlerts.forEach(function(path) {
                                            rows.push([
@@ -1899,7 +1916,6 @@
                                    filename = 'slack_audit_' + ts + '.csv';
 
                                } else {
-                                   // JSON — export full raw payload + computed fields
                                    var exportObj = {
                                        exported_at:   new Date().toISOString(),
                                        environment:   'SLACK',
@@ -1918,9 +1934,7 @@
                                    filename = 'slack_audit_' + ts + '.json';
                                }
 
-                           // ────────────────────────────────────────────────────────────────
-                           // AWS EXPORT — uses existing static attackLogs pool (unchanged)
-                           // ────────────────────────────────────────────────────────────────
+                           // AWS Telemetry Export
                            } else {
                                var pool = attackLogs[currentEnv] || [];
 
@@ -2005,13 +2019,9 @@
                       }
                   };
 
-      }); // END DOMContentLoaded
+      });
 
-      // ------------------------------------------------------------------ //
-      // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it  //
-      // actually fires. Assigning it inside DOMContentLoaded meant it was  //
-      // set after the load event had already fired — GSI never initialized. //
-      // ------------------------------------------------------------------ //
+      // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
       window.addEventListener('load', function () {
           // Session restore: re-populate profile dropdown on hard refresh
           var savedEmail = sessionStorage.getItem('vaultUserEmail');

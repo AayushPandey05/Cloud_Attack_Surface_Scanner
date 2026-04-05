@@ -1,9 +1,12 @@
+// SLACK WORKSPACE TELEMETRY API — SaaS Threat Intelligence Endpoint
+
 const SLACK_API = "https://slack.com/api";
 
-// ── Regex for secret detection ────────────────────────────────────────────────
+// Credential detection signature: AWS IAM Access Key ID (AKIA*) and
+// Stripe live secret key (sk_live_*) — highest-severity exfiltration patterns
 const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}/g;
 
-// ── Generic Slack fetch helper ────────────────────────────────────────────────
+// AUTHENTICATED SLACK FETCH HELPER
 async function slackFetch(endpoint, params = {}) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token)
@@ -28,9 +31,13 @@ async function slackFetch(endpoint, params = {}) {
   return json;
 }
 
-// ── Scanner ───────────────────────────────────────────────────────────────────
+// AUDIT ORCHESTRATOR
 async function runScan() {
-  // ── 1. USERS AUDIT ────────────────────────────────────────────────────────
+  // MODULE 1: IDENTITY & ACCESS AUDIT
+  // Zero-Trust posture evaluation: every human identity in scope must satisfy
+  // both MFA enrollment and profile integrity requirements. Any identity
+  // failing either check is classified as non-compliant and emitted as a
+  // Weak Identity → Account Takeover risk signal.
   let nonCompliant = 0;
   let totalUsers = 0;
   let humans = [];
@@ -38,7 +45,8 @@ async function runScan() {
   try {
     const { members } = await slackFetch("users.list", { limit: 200 });
 
-    // Exclude bots, deleted accounts, and Slackbot itself
+    // Scope reduction: service accounts, bots, and deleted identities are
+    // outside the human identity audit boundary — exclude from compliance count
     humans = members.filter(
       (u) => !u.is_bot && !u.deleted && u.id !== "USLACKBOT",
     );
@@ -49,7 +57,7 @@ async function runScan() {
       const noPhoto =
         !u.profile?.image_24 || u.profile.image_24.includes("gravatar");
 
-      // Add this debug log!
+      // Emit identity-level compliance event for operator audit trail
       if (noMfa || noPhoto) {
         console.log(
           `[AUDIT] Flagged User: ${u.real_name} | Missing MFA: ${noMfa} | Missing Photo: ${noPhoto}`,
@@ -60,20 +68,25 @@ async function runScan() {
     }).length;
   } catch (e) {
     console.error("[scan-slack] users.list failed:", e.message);
-    // Non-fatal — continue to message scan
+    // Non-fatal: identity audit failure degrades gracefully — credential
+    // scan proceeds with an empty human roster (anonymous attribution only)
   }
 
-  // ── 2. MESSAGE SCAN ───────────────────────────────────────────────────────
+  // MODULE 2: CREDENTIAL EXPOSURE SCAN
+  // Message-layer telemetry scan targeting high-value credential patterns.
+  // Channel scope is operator-configurable via SLACK_CHANNEL_ID env var;
+  // absent that, the 10 most recent public channels are auto-discovered.
   let secrets = 0;
   let detailedAlerts = [];
 
   try {
-    // Use SLACK_CHANNEL_ID env var if set; otherwise scan first 10 public channels
+    // Operator-specified channel takes precedence over auto-discovery;
+    // single-channel mode reduces API surface and token permission scope.
     const channelId = process.env.SLACK_CHANNEL_ID;
     let rawChannels = [];
 
     if (channelId) {
-      // Manual object creation to maintain consistency for single channel scan
+      // Synthesize a minimal channel descriptor for iteration consistency
       rawChannels = [{ id: channelId, name: "specified-channel" }];
     } else {
       const { channels } = await slackFetch("conversations.list", {
@@ -101,19 +114,23 @@ async function runScan() {
           if (matches) {
             secrets += matches.length;
 
-            // ── IDENTITY LOOKUP ─────────────────────────────────────────────
+            // SaaS-to-IaaS Identity Correlation
+            // Map the posting user's Slack ID to a human-readable identity.
+            // If the user is outside the audit roster (e.g. a guest or deleted
+            // account), the attribution falls back to "Unknown Entity" — this
+            // is itself a security signal indicating Shadow IT credential leakage.
             const offender = humans.find((u) => u.id === msg.user);
             const userName = offender
               ? offender.real_name || offender.name
               : "Unknown Entity";
 
-            // Build the Attack Path string
+            // Serialize as a full attack chain: access vector → payload → identity
             const path = `Initial Access → Credential Theft → #${channelName} → User(${userName})`;
             detailedAlerts.push(path);
           }
         }
       } catch (chanErr) {
-        // Bot not in channel — skip silently
+        // Channel access denied: bot lacks membership — skip without failing scan
         console.warn(
           `[scan-slack] Skipping channel ${channel}: ${chanErr.message}`,
         );
@@ -126,9 +143,8 @@ async function runScan() {
   return { secrets, nonCompliant, totalUsers, detailedAlerts };
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
+// VERCEL SERVERLESS HANDLER — GET /api/scan-slack
 export default async function handler(req, res) {
-  // Only allow GET
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }

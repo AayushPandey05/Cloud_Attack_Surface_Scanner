@@ -1,5 +1,4 @@
-// window.processAuthSuccess  — GLOBAL ENTRY POINT
-
+//! IDENTITY GATEWAY BOOTSTRAP — Pre-Boot Stub
 window.processAuthSuccess = function (email) {
   console.warn(
     "[processAuthSuccess] Pre-boot stub called. This means the inline script " +
@@ -30,7 +29,7 @@ window.processAuthSuccess = function (email) {
   });
 };
 
-// window.sendOtpEmail  — EMAILJS WRAPPER (Failsafe)
+//! TRANSACTIONAL MFA DELIVERY — EmailJS Dispatch Layer
 window.sendOtpEmail = function (userEmail, otpCode) {
   if (typeof emailjs === "undefined") {
     console.error(
@@ -68,21 +67,17 @@ window.sendOtpEmail = function (userEmail, otpCode) {
     })
     .catch(function (error) {
       console.error("[sendOtpEmail] FAILED to send OTP:", error);
-      // Do NOT alert here — the UI is already on the MFA screen.
-      // A failed email send should not block the verification flow for demos.
     });
 };
 
-// --------------------------------------------------------------------------
-// window.handleCredentialResponse  — GOOGLE ONE TAP JWT HANDLER
-
+//! GSI CREDENTIAL HANDLER — Google Identity Services JWT Verification
 window.handleCredentialResponse = function (response) {
   try {
     if (!response || !response.credential) {
       throw new Error("No credential in GSI response.");
     }
 
-    // Decode the JWT payload (Base64url middle segment)
+    // Extract and decode the JWT payload segment (Base64url → Base64 → JSON)
     var parts = response.credential.split(".");
     var payload = JSON.parse(
       atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
@@ -107,8 +102,7 @@ window.handleCredentialResponse = function (response) {
   }
 };
 
-// --------------------------------------------------------------------------
-// window.handleGoogleLogin  — GOOGLE OAUTH2 TOKEN FLOW (Popup)
+//! GSI OAUTH2 POPUP FLOW — Token Client Entry Point
 window.handleGoogleLogin = function (e) {
   if (e && typeof e.preventDefault === "function") e.preventDefault();
   console.log("[GSI] handleGoogleLogin triggered.");
@@ -130,11 +124,8 @@ console.log(
   "[logic.js v3.0] Auth pipeline companion module loaded. Deadlock patch applied.",
 );
 
-// ==========================================================================
-// window.fetchLiveSlackData — SLACK TELEMETRY ENGINE v1.2
-
+//! SLACK TELEMETRY ENGINE v1.2 — SaaS Workspace Threat Intelligence Stream
 window.fetchLiveSlackData = async function () {
-  // ── 1. Loading state ──────────────────────────────────────────────────────
   var setKpi = function (id, val, sub, color) {
     var valEl = document.getElementById("kpi-" + id + "-val");
     var subEl = document.getElementById("kpi-" + id + "-sub");
@@ -149,22 +140,25 @@ window.fetchLiveSlackData = async function () {
     if (el) el.innerText = text;
   };
 
+  // Bind KPI headers to the Slack threat model taxonomy
   setTitle(2, "Exposed Secrets");
   setTitle(3, "MFA Enforced");
   setTitle(4, "Non-Compliant Users");
   setTitle(5, "Total Users");
 
-  // ── Clear stale terminal logs immediately ─────────────────────────────────
+  // Purge stale telemetry — cross-environment log contamination is a
+  // data integrity violation in a forensic audit context.
   var terminalEl = document.getElementById("terminal-feed");
   if (terminalEl) terminalEl.innerHTML = "";
 
+  // Place all KPIs in indeterminate state for the duration of the scan
   setKpi(1, "—", "Scanning workspace…", "var(--gray)");
   setKpi(2, "—", "Scanning messages…", "var(--gray)");
   setKpi(3, "—", "Checking users…", "var(--gray)");
   setKpi(4, "—", "MFA & profile audit", "var(--gray)");
   setKpi(5, "—", "Querying API…", "var(--gray)");
 
-  // Log initiation in terminal (calls addLog defined in the inline script)
+  // Emit scan initiation event to the telemetry stream
   if (typeof window._slackAddLog === "function") {
     window._slackAddLog(
       "SLACK",
@@ -173,7 +167,6 @@ window.fetchLiveSlackData = async function () {
     );
   }
 
-  // ── 2. Fetch ──────────────────────────────────────────────────────────────
   try {
     var res = await fetch("/api/scan-slack");
 
@@ -185,20 +178,18 @@ window.fetchLiveSlackData = async function () {
     }
 
     var data = await res.json();
-
-    // ── 3. Apply results ──────────────────────────────────────────────────
     var secrets = typeof data.secrets === "number" ? data.secrets : 0;
     var nonCompliant =
       typeof data.nonCompliant === "number" ? data.nonCompliant : 0;
     var totalUsers = typeof data.totalUsers === "number" ? data.totalUsers : 0;
 
-    // MFA % = (compliant / total) * 100  — clamp between 0 and 100
+    //! MFA compliance rate: (compliant / total) × 100, clamped [0, 100]
     var mfaPct =
       totalUsers > 0
         ? Math.round(((totalUsers - nonCompliant) / totalUsers) * 100)
         : 100;
 
-    // KPI 1 — attack surface (secrets = entry points)
+    //! KPI 1 — Credential exposure surface (secrets as primary attack vectors)
     setKpi(
       1,
       String(secrets),
@@ -206,7 +197,7 @@ window.fetchLiveSlackData = async function () {
       secrets > 0 ? "var(--red)" : "var(--green)",
     );
 
-    // KPI 2 — Exposed Secrets count
+    //! KPI 2 — Exposed credential count mapped to MITRE Initial Access
     setKpi(
       2,
       String(secrets),
@@ -214,7 +205,7 @@ window.fetchLiveSlackData = async function () {
       secrets > 0 ? "var(--red)" : "var(--green)",
     );
 
-    // KPI 3 — MFA Enforced %
+    //! KPI 3 — MFA enforcement rate: threshold <90% triggers alert state
     setKpi(
       3,
       mfaPct + "%",
@@ -224,7 +215,7 @@ window.fetchLiveSlackData = async function () {
       mfaPct >= 90 ? "var(--green)" : "var(--red)",
     );
 
-    // KPI 4 — Non-compliant count
+    //! KPI 4 — Identity posture: users failing MFA or profile integrity checks
     setKpi(
       4,
       String(nonCompliant),
@@ -232,10 +223,8 @@ window.fetchLiveSlackData = async function () {
       nonCompliant > 0 ? "var(--red)" : "var(--green)",
     );
 
-    // KPI 5 — Total users audited
+    //! KPI 5 — Total identity scope of the audit (human accounts only)
     setKpi(5, String(totalUsers), "Users audited", "#3B82F6");
-
-    // ── Persist scan results globally for CSV/JSON export ─────────────────
     window.latestSlackData = {
       scannedAt: new Date().toISOString(),
       secrets: secrets,
@@ -245,10 +234,9 @@ window.fetchLiveSlackData = async function () {
       detailedAlerts: Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
         : [],
-      raw: data, // full API payload — used by JSON export
+      raw: data,
     };
 
-    // ── Terminal log real findings ────────────────────────────────────────
     if (typeof window._slackAddLog === "function") {
       window._slackAddLog(
         "SLACK",
@@ -259,14 +247,11 @@ window.fetchLiveSlackData = async function () {
           " secret(s) detected.",
         "SYSTEM",
       );
-
-      // ── Secrets / detailedAlerts ──────────────────────────────────────────
       var alerts = Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
         : [];
 
       if (alerts.length > 0) {
-        // Print one CRITICAL entry per identity-aware attack path
         alerts.forEach(function (alertPath) {
           window._slackAddLog(
             "SLACK",
@@ -277,7 +262,7 @@ window.fetchLiveSlackData = async function () {
           );
         });
       } else if (secrets > 0) {
-        // Older API response without detailedAlerts — fallback to count
+        // Older API schema without per-channel resolution — emit aggregate
         window._slackAddLog(
           "SLACK",
           secrets +
@@ -294,6 +279,7 @@ window.fetchLiveSlackData = async function () {
         );
       }
 
+      // ── MFA Posture Signal ────────────────────────────────────────────
       if (nonCompliant > 0) {
         window._slackAddLog(
           "SLACK",
@@ -311,7 +297,6 @@ window.fetchLiveSlackData = async function () {
       }
     }
   } catch (err) {
-    // ── 4. Graceful degradation ───────────────────────────────────────────
     console.error("[fetchLiveSlackData] API call failed:", err.message);
 
     var isOffline =
@@ -349,46 +334,30 @@ window.fetchLiveSlackData = async function () {
   }
 };
 
-
-
 console.log(
   "[logic.js v3.1] Slack Telemetry Engine loaded — fetchLiveSlackData ready.",
 );
 
-// ==========================================================================
-// CSPM AUDIT ENGINE v1.0 — AWS Infrastructure
-// ==========================================================================
-
-/**
- * clearTerminal()
- * Wipes all entries from the forensic terminal feed.
- * Called before an AWS scan so Slack telemetry doesn't pollute the view.
- */
+//! CSPM AUDIT ENGINE v1.0 — AWS Infrastructure
 window.clearTerminal = function () {
   var terminalEl = document.getElementById("terminal-feed");
   if (terminalEl) terminalEl.innerHTML = "";
 };
 
-/**
- * triggerAwsScan()
- * Async CSPM orchestration function.
- * Clears the terminal, fetches /api/scan-aws, and renders:
- *   - Total S3 bucket count
- *   - CRITICAL ALERT if any public buckets detected
- *   - Each detailedAlert prefixed with the ↳ forensic arrow
- */
 window.triggerAwsScan = async function () {
-  // Guard: addLog must be available (set by the inline script on DOMContentLoaded)
+  // Verify telemetry sink is available before initiating the scan cycle.
+  // slackAddLog is registered by the inline DOMContentLoaded script and
+  // must be present before the first terminal write attempt.
   var log = window._slackAddLog;
   if (typeof log !== "function") {
     console.warn("[triggerAwsScan] _slackAddLog not ready — aborting.");
     return;
   }
 
-  // 1. Wipe any residual Slack telemetry from the terminal
+  // Cross-surface isolation: purge Slack telemetry from the feed
   window.clearTerminal();
 
-  // 2. Announce scan initiation with a localized timestamp in the message body
+  // Emit scan initiation with localized 24h timestamp for audit trail integrity
   var initTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
   log(
     "AWS",
@@ -398,7 +367,7 @@ window.triggerAwsScan = async function () {
     "SYSTEM",
   );
 
-  // 3. Fetch CSPM telemetry from the deployed API endpoint
+  //! CSPM Telemetry Fetch
   try {
     var res = await fetch("/api/scan-aws");
 
@@ -411,6 +380,7 @@ window.triggerAwsScan = async function () {
 
     var data = await res.json();
 
+    // Defensive normalisation — guards against schema drift in the API response
     var totalBuckets =
       typeof data.totalBuckets === "number" ? data.totalBuckets : 0;
     var publicBuckets =
@@ -419,7 +389,7 @@ window.triggerAwsScan = async function () {
       ? data.detailedAlerts
       : [];
 
-    // 4a. Render total S3 bucket count
+    // S3 enumeration summary with localized audit timestamp
     var scanTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
     log(
       "AWS",
@@ -431,7 +401,7 @@ window.triggerAwsScan = async function () {
       "SYSTEM",
     );
 
-    // 4b. CRITICAL ALERT if any public buckets detected
+    // Public bucket exposure: maps to MITRE ATT&CK T1530 (Data from Cloud Storage)
     if (publicBuckets > 0) {
       log(
         "AWS",
@@ -450,12 +420,19 @@ window.triggerAwsScan = async function () {
       );
     }
 
-    // 4c. Loop through detailedAlerts and print each with the ↳ forensic prefix
+    // Per-bucket attack path enumeration — each entry encodes the full
+    // Initial Access → Data Exfiltration → Resource(name) → Policy(state) chain
     detailedAlerts.forEach(function (alert) {
-      log("AWS", "↳ " + alert, "CRITICAL", "Initial Access", "Data Exfiltration");
+      log(
+        "AWS",
+        "↳ " + alert,
+        "CRITICAL",
+        "Initial Access",
+        "Data Exfiltration",
+      );
     });
 
-    // 4d. Persist scan snapshot globally (mirrors latestSlackData pattern)
+    // Immutable scan snapshot — mirrors window.latestSlackData commit pattern
     window.latestAwsData = {
       scannedAt: new Date().toISOString(),
       totalBuckets: totalBuckets,
@@ -464,7 +441,9 @@ window.triggerAwsScan = async function () {
       raw: data,
     };
   } catch (err) {
-    // 5. Forensic error — surface credential/connectivity diagnosis
+    // ── Credential / Connectivity Fault — Forensic Diagnosis Chain ───────────
+    // Structured error emission provides actionable remediation steps without
+    // exposing raw stack traces to the operator terminal.
     console.error("[triggerAwsScan] Fetch failed:", err.message);
 
     var errTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
@@ -490,7 +469,7 @@ window.triggerAwsScan = async function () {
   }
 };
 
-// 6. Event binding — wire triggerAwsScan to the AWS Infrastructure toggle
+// EVENT BINDING — CSPM Engine Registration
 (function bindAwsBtn() {
   function attachListener() {
     var awsBtn = document.getElementById("aws-btn");
@@ -502,7 +481,7 @@ window.triggerAwsScan = async function () {
         "[logic.js v3.2] CSPM Engine bound to #aws-btn — triggerAwsScan ready.",
       );
     } else {
-      // Retry once DOM is fully parsed (handles deferred script injection)
+      // Deferred attachment: DOM not yet available at script parse time
       document.addEventListener("DOMContentLoaded", function () {
         var btn = document.getElementById("aws-btn");
         if (btn) {
@@ -520,6 +499,15 @@ window.triggerAwsScan = async function () {
     attachListener();
   }
 })();
+
+// Initialization: Auto-run the AWS CSPM audit on page load
+document.addEventListener("DOMContentLoaded", () => {
+  // Make sure the AWS tab is visually highlighted
+  setActiveTab("aws");
+
+  // Automatically trigger the real AWS scan so the terminal is never static
+  triggerAwsScan();
+});
 
 console.log(
   "[logic.js v3.2] AWS CSPM Audit Engine loaded — triggerAwsScan ready.",
