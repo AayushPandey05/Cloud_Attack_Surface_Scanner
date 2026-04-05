@@ -502,10 +502,7 @@ window.triggerAwsScan = async function () {
 
 // Initialization: Auto-run the AWS CSPM audit on page load
 document.addEventListener("DOMContentLoaded", () => {
-  // Make sure the AWS tab is visually highlighted
-  setActiveTab("aws");
-
-  // Automatically trigger the real AWS scan so the terminal is never static
+  // Just trigger the scan directly. No UI manipulation needed here.
   triggerAwsScan();
 });
 
