@@ -1682,7 +1682,6 @@
                       var savedEnv = sessionStorage.getItem('vaultActiveEnv');
                       if (savedEnv === 'slack' || savedEnv === 'aws') {
                           currentEnv = savedEnv;
-                          // Synchronise segment button active state with restored context
                           segmentBtns.forEach(function(b) {
                               b.classList.toggle('active', b.dataset.view === currentEnv);
                           });
@@ -1693,6 +1692,8 @@
                           stopTerminal();
                       } else {
                           startTerminal();
+                          // Initialize live telemetry post-auth
+                          if (typeof window.triggerAwsScan === 'function') window.triggerAwsScan();
                       }
                   }
 

@@ -500,26 +500,7 @@ window.triggerAwsScan = async function () {
   }
 })();
 
-// Dashboard Auto-Initialization — Authenticated Sessions Only
-// Fires a programmatic click on #aws-btn after DOMContentLoaded, but ONLY
-// when the user is already authenticated (sessionStorage flag is present).
-// On unauthenticated loads (#login route), initializeApp() in index.html
-// handles visibility via showState(stateLogin) — no click needed here.
-// Firing the auto-click unconditionally would invoke triggerAwsScan before
-// _slackAddLog is registered by the inline script, wasting a round-trip.
-document.addEventListener("DOMContentLoaded", function () {
-  var isAuth = sessionStorage.getItem("isVaultAuthenticated") === "true";
-  if (!isAuth) return; // Login view — let index.html's initializeApp() handle it
 
-  var awsBtn = document.getElementById("aws-btn");
-  if (awsBtn) {
-    awsBtn.click();
-  } else {
-    console.error(
-      "[logic.js] DOMContentLoaded: #aws-btn not found — dashboard auto-initialization skipped.",
-    );
-  }
-});
 
 console.log(
   "[logic.js v3.2] AWS CSPM Audit Engine loaded — triggerAwsScan ready.",
