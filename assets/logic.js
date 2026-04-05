@@ -488,23 +488,31 @@ window.triggerAwsScan = async function () {
 
 
 
-// WYSIWYG EXPORT ENGINE — Strict Environment Isolation via DOM Scraping
-(function initWysiwygExport() {
+// STRUCTURED TELEMETRY PARSER — Regex-Driven Tokenisation & Tabular Export
+(function initStructuredExport() {
   function downloadAuditLogs(format) {
     const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
-    const terminal = document.getElementById("terminal-feed");
-    const rawText = terminal ? terminal.innerText : "";
-    const lines = rawText.split("\n").filter((l) => l.trim() !== "");
+    const rawText = document.getElementById("terminal-feed")?.innerText || "";
+    const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
+
+    const parsed = rawText.split("\n").filter(l => l.trim() !== "").map(line => {
+      const m = line.match(logRegex);
+      if (m) return { timestamp: m[1], environment: m[2], severity: m[3], message: m[4] };
+      if (line.trim().startsWith("↳")) return { timestamp: "", environment: "", severity: "", message: line.trim() };
+      return { timestamp: "", environment: "", severity: "", message: line };
+    });
 
     let content, mimeType;
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      content = `Telemetry Environment: ${env.toUpperCase()}\n` + lines.join("\n");
+      const csvRows = ["Timestamp,Environment,Severity,Message"];
+      parsed.forEach(r => csvRows.push(`${r.timestamp},${r.environment},${r.severity},"${r.message.replace(/"/g, '""')}"`));
+      content = csvRows.join("\n");
       mimeType = "text/csv";
     } else {
-      content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: lines }, null, 2);
+      content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
       mimeType = "application/json";
     }
 
@@ -518,11 +526,10 @@ window.triggerAwsScan = async function () {
 
   const csvBtn = document.getElementById("export-csv-btn");
   const jsonBtn = document.getElementById("export-json-btn");
-
   if (csvBtn) csvBtn.addEventListener("click", () => downloadAuditLogs("csv"));
   if (jsonBtn) jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
 })();
 
 console.log(
-  "[logic.js v3.3] WYSIWYG Export Engine Active — Strict Environment isolation reinforced.",
+  "[logic.js v3.4] Structured Telemetry Parser Active — CSV/JSON schemas strictly reinforced.",
 );
