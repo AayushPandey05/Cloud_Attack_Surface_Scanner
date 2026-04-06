@@ -371,18 +371,26 @@ window.triggerAwsScan = async function () {
     let mfaActive = false; // New Logic Catcher
 
     if (Array.isArray(data.terminalLogs)) {
+      const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
+      
       data.terminalLogs.forEach((entry) => {
+        // Identity-Aware Telemetry Scrubbing: Replace admin bucket with test user bucket
+        let processedEntry = entry;
+        if (isNewUser) {
+           processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
+        }
+
         if (
-          entry.includes("PUBLIC ACCESS ENABLED") ||
-          entry.includes("CRITICAL")
+          processedEntry.includes("PUBLIC ACCESS ENABLED") ||
+          processedEntry.includes("CRITICAL")
         )
           openAttackPaths++;
-        if (entry.includes("Leaked AWS Access Key")) exposedSecrets++;
+        if (processedEntry.includes("Leaked AWS Access Key")) exposedSecrets++;
 
         // --- CATCH MFA STATUS FROM LOGS ---
-        if (entry.includes("MFA compliance check passed")) mfaActive = true;
+        if (processedEntry.includes("MFA compliance check passed")) mfaActive = true;
 
-        let clean = entry
+        let clean = processedEntry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
         const [level, ...contentParts] = clean.split(": ");

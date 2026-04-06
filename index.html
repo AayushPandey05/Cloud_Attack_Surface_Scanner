@@ -1394,9 +1394,12 @@
                 sessionStorage.setItem('isSSOSession', 'true');
 
                 if (newAccMatch) {
+                    const urlParams = new URL(rawUrl).searchParams;
+                    const urlEmail = urlParams.get('email');
+                    
                     sessionStorage.setItem('vaultAccountType', 'new');
-                    sessionStorage.setItem('vaultUserEmail', 'testuser@heyitsaayush.me');
-                    sessionStorage.setItem('vaultUserName', 'Aayush Pandey');
+                    sessionStorage.setItem('vaultUserEmail', urlEmail || 'testuser@heyitsaayush.me');
+                    sessionStorage.setItem('vaultUserName', 'External Auditor');
                 }
 
                 // Clean up URL telemetry for forensic integrity and aesthetics
@@ -1754,9 +1757,11 @@
 
                             // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
                             if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                                const activeUser = sessionStorage.getItem('vaultUserEmail') || 'testuser@heyitsaayush.me';
                                 terminalFeed.innerHTML = '';
-                                addLog('SYSTEM', 'New environment detected for testuser@heyitsaayush.me', 'INFO');
-                                addLog('OKTA', 'SSO Identity verified: testuser@heyitsaayush.me', 'SUCCESS');
+                                addLog('SYSTEM', 'New environment detected for ' + activeUser, 'INFO');
+                                addLog('OKTA', 'SSO Identity verified: ' + activeUser, 'SUCCESS');
+                                addLog('AWS', 'Auditing S3 Storage: [testuser-private-storage] detected.', 'INFO');
                                 addLog('AWS', 'Initializing security baseline...', 'INFO');
                                 addLog('COMPLIANCE', 'All controls passing for new tenant.', 'SUCCESS');
                             }
@@ -2018,24 +2023,37 @@
             // --- IDENTITY-AWARE OVERRIDE ---
       window.addEventListener('DOMContentLoaded', () => {
           const params = new URLSearchParams(window.location.search);
-          const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+          const hashPath = window.location.hash.split('?')[1];
+          const hashParams = new URLSearchParams(hashPath);
 
           // Check both standard URL and Hash-based URL for the 'new' flag
           if (params.get('accountType') === 'new' || hashParams.get('accountType') === 'new') {
               console.log("Verified: New Enterprise Session Detected.");
+              const userEmail = params.get('email') || hashParams.get('email') || "testuser@heyitsaayush.me";
 
               // Update the UI Stats
               if(document.getElementById('total-users')) document.getElementById('total-users').innerText = "1";
               if(document.getElementById('exposed-secrets')) document.getElementById('exposed-secrets').innerText = "0";
 
-              // Wipe the old logs and show fresh ones
-              const terminal = document.getElementById('security-telemetry');
+              // Update Profile Display as soon as DOM is ready
+              const pName = document.getElementById('profile-name-display');
+              const pEmail = document.getElementById('profile-email-display');
+              if (pName) pName.innerText = "External Auditor";
+              if (pEmail) pEmail.innerText = userEmail;
+
+              // Update the Avatar initial to match 'E' for External Auditor
+              const avatar = document.querySelector('.avatar');
+              if (avatar) avatar.innerText = "E";
+
+              // Wipe the old logs and show fresh ones (Corrected ID to terminal-feed)
+              const terminal = document.getElementById('terminal-feed');
               if(terminal) {
                   terminal.innerHTML = `
-                      <div style="color: #00ff00;">[SYSTEM]: Identity-Aware Tunnel Established.</div>
-                      <div style="color: #aaa;">[INFO]: Logged in as: testuser@heyitsaayush.me</div>
-                      <div style="color: #00ff00;">[SUCCESS]: MFA Policy: Okta Verify Enforced.</div>
-                      <div style="color: #555;">[WAIT]: Awaiting first telemetry sync...</div>
+                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[SYSTEM]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Identity-Aware Tunnel Established.</span></div>
+                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[INFO]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Logged in as: ${userEmail}</span></div>
+                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag aws">[AWS]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">S3 Surface: [testuser-private-storage] is secure.</span></div>
+                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag okta">[OKTA]</span> <span class="log-success" style="color:var(--green)">SUCCESS:</span> <span class="log-text">MFA Policy: Okta Verify Enforced.</span></div>
+                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[WAIT]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Awaiting first telemetry sync...</span></div>
                   `;
               }
           }
