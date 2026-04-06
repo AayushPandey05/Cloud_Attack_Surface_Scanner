@@ -436,31 +436,22 @@ window.triggerAwsScan = async function () {
     document.addEventListener("DOMContentLoaded", initScanTrigger);
     return;
   }
-
   triggerBtn.addEventListener("click", async () => {
-    // 1. Determine active environment (Default to AWS if not set)
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
 
-    // 2. Reset ALL 5 KPI counters for a clean forensic audit
-    // This prevents "stale" data from showing while the new scan is working
-    for (let i = 1; i <= 5; i++) {
-      const val = document.getElementById(`kpi-${i}-val`);
-      const sub = document.getElementById(`kpi-${i}-sub`);
-      if (val) {
-        val.innerText = "0";
-        val.style.color = "var(--gray)"; // Set to gray while loading
-      }
-      if (sub) sub.innerText = "Scanning...";
-    }
+    // 1. Reset KPI counters (Your existing reset logic goes here)
+    // ...
 
-    // 3. Update button state to "Loading"
+    // 2. UPDATE THIS LINE RIGHT HERE:
     triggerBtn.disabled = true;
     const originalContent = triggerBtn.innerHTML;
+
+    // REPLACE YOUR OLD MULTI-LINE INNERHTML WITH THIS:
     triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> Auditing...`;
+
     if (window.lucide) window.lucide.createIcons();
 
     try {
-      // 4. Dispatch to the correct Audit Engine
       if (currentModule === "AWS") {
         await window.triggerAwsScan();
       } else if (currentModule === "SLACK") {
@@ -469,7 +460,7 @@ window.triggerAwsScan = async function () {
     } catch (err) {
       console.error("[ScanTrigger] Execution failed:", err);
     } finally {
-      // 5. Restore button state once scan is finished
+      // 3. This restores the button text to "Run Security Audit" after scan finishes
       triggerBtn.disabled = false;
       triggerBtn.innerHTML = originalContent;
       if (window.lucide) window.lucide.createIcons();
