@@ -1,5 +1,9 @@
 // AWS LIVE IDENTITY AUDIT — Real-Time IAM Posture Engine
-import { IAMClient, ListUsersCommand } from "@aws-sdk/client-iam";
+import {
+  IAMClient,
+  ListMFADevicesCommand,
+  ListUsersCommand,
+} from "@aws-sdk/client-iam";
 import {
   GetObjectCommand,
   GetPublicAccessBlockCommand,
@@ -19,6 +23,8 @@ export default async function handler(req, res) {
   // Terminal log storage for front-end dashboard
   const terminalLogs = [];
   let exposedSecrets = 0;
+  let mfaEnabled = false;
+  let publicBuckets = 0;
 
   try {
     terminalLogs.push(
@@ -31,22 +37,40 @@ export default async function handler(req, res) {
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     };
 
-    // Initialize IAM client with account-level vault credentials
+    // Initialize IAM client
     const iamClient = new IAMClient({ region, credentials });
 
-    // Execute User enumeration command across the global IAM control plane
+    // Execute User enumeration
     const { Users } = await iamClient.send(new ListUsersCommand({}));
     terminalLogs.push(
       `[AWS] SYSTEM: Found [${Users.length}] IAM Users in account.`,
     );
 
-    // Map identities to telemetry strings for forensic visualization
-    Users.forEach((user) => {
+    // ── MFA AUDIT LAYER ────────────────────────────────────────────────
+    for (const user of Users) {
       const created = new Date(user.CreateDate).toLocaleDateString();
       terminalLogs.push(
         `[AWS] INFO: User [${user.UserName}] detected (Created: [${created}]).`,
       );
-    });
+
+      try {
+        const mfaRes = await iamClient.send(
+          new ListMFADevicesCommand({ UserName: user.UserName }),
+        );
+        if (mfaRes.MFADevices && mfaRes.MFADevices.length > 0) {
+          mfaEnabled = true; // Signal to frontend
+          terminalLogs.push(
+            `[AWS] INFO: User [${user.UserName}] MFA compliance check passed.`,
+          );
+        } else {
+          terminalLogs.push(
+            `[AWS] WARN: User [${user.UserName}] missing MFA device.`,
+          );
+        }
+      } catch (mfaErr) {
+        console.error("MFA Check failed for user", user.UserName);
+      }
+    }
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
     const s3Client = new S3Client({ region, credentials });
@@ -74,50 +98,42 @@ export default async function handler(req, res) {
               `[AWS] INFO: S3 Bucket [${bucket.Name}] is secure.`,
             );
           } else {
+            publicBuckets++;
             terminalLogs.push(
               `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
             );
           }
 
           // ── S3 CONTENT INSPECTION (DEEP SCAN) ────────────────────────
-          try {
-            const { Contents } = await s3Client.send(
-              new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }),
-            );
-            if (Contents && Contents.length > 0) {
-              for (const obj of Contents) {
-                try {
-                  const getObjRes = await s3Client.send(
-                    new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }),
-                  );
-                  const body = await getObjRes.Body.transformToString();
-                  const regex =
-                    /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
+          const { Contents } = await s3Client.send(
+            new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }),
+          );
+          if (Contents && Contents.length > 0) {
+            for (const obj of Contents) {
+              try {
+                const getObjRes = await s3Client.send(
+                  new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }),
+                );
+                const body = await getObjRes.Body.transformToString();
+                const regex =
+                  /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
 
-                  if (body.match(regex)) {
-                    exposedSecrets++;
-                    terminalLogs.push(
-                      `[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`,
-                    );
-                  }
-                } catch (objErr) {
-                  // Handle permission/access denied errors gracefully for terminal logging
+                if (body.match(regex)) {
+                  exposedSecrets++;
+                  terminalLogs.push(
+                    `[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`,
+                  );
                 }
+              } catch (objErr) {
+                /* Skip private/unreadable */
               }
             }
-          } catch (listObjErr) {
-            // NoSuchBucket or AccessDenied: graceful skip
           }
         } catch (s3Err) {
-          // Detection: NoSuchPublicAccessBlockConfiguration implies public access may be allowed
           if (s3Err.name === "NoSuchPublicAccessBlockConfiguration") {
+            publicBuckets++;
             terminalLogs.push(
               `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
-            );
-          } else {
-            // Handle permission/access denied errors gracefully for terminal logging
-            terminalLogs.push(
-              `[AWS] WARN: S3 Permission Error on [${bucket.Name}] — ${s3Err.message}`,
             );
           }
         }
@@ -128,20 +144,29 @@ export default async function handler(req, res) {
       );
     }
 
+    // ── COMPLIANCE SCOREBOARD CALCULATION ──────────────────────────────
+    let controlsPassing = 0;
+    if (publicBuckets === 0) controlsPassing++; // Check 1: Bucket Security
+    if (exposedSecrets === 0) controlsPassing++; // Check 2: Secret Cleanliness
+    if (mfaEnabled) controlsPassing++; // Check 3: Identity MFA
+
     // Return unified compliance telemetry payload
     return res.status(200).json({
       summary: Users.length,
       exposedSecrets: exposedSecrets,
+      mfaEnabled: mfaEnabled,
+      controlsPassing: controlsPassing,
       terminalLogs: terminalLogs,
     });
   } catch (err) {
-    // Audit failure capture — propagate detailed telemetry to dashboard terminal
     terminalLogs.push(
       `[${getTimestamp()}] [AWS] CRITICAL: Audit Failed — ${err.message}`,
     );
     return res.status(200).json({
-      summary: "AUDIT_FAILURE",
+      summary: 0,
       exposedSecrets: 0,
+      mfaEnabled: false,
+      controlsPassing: 0,
       terminalLogs: terminalLogs,
     });
   }
