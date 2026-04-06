@@ -561,6 +561,55 @@ window.triggerAwsScan = async function () {
     jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
 })();
 
+//! OKTA ENTERPRISE SSO — OIDC Identity Gateway
+(function initOktaSSO() {
+  const ssoBtn = document.getElementById("corp-sso");
+
+  if (!ssoBtn) {
+    // If button isn't in DOM yet, wait for it
+    document.addEventListener("DOMContentLoaded", initOktaSSO);
+    return;
+  }
+
+  ssoBtn.addEventListener("click", () => {
+    console.log("[OKTA] Initiating OIDC Authorization Code Flow...");
+
+    // 1. Credentials (Match your Okta screenshot)
+    const oktaDomain = "integrator-7685471.okta.com";
+    const clientId = "0oa11oc1k0aHp6xAa698";
+    const redirectUri = window.location.origin + "/api/auth/callback";
+
+    // 2. Build the "Teleport" URL
+    const authUrl =
+      `https://${oktaDomain}/oauth2/default/v1/authorize?` +
+      `client_id=${clientId}&` +
+      `response_type=code&` +
+      `scope=openid%20profile%20email&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `state=security_vault_init&` +
+      `nonce=${Math.random().toString(36).substring(7)}`;
+
+    // 3. Launch SSO
+    window.location.href = authUrl;
+  });
+
+  // Check if we just returned from a successful SSO login
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("sso") === "success") {
+    console.log("[OKTA] SSO Handshake Verified.");
+    // Optional: Show a "Welcome Aayush" toast or log
+    if (typeof window._slackAddLog === "function") {
+      window._slackAddLog(
+        "SYSTEM",
+        "Enterprise SSO Session Established via Okta.",
+        "SUCCESS",
+      );
+    }
+  }
+})();
+
+console.log("[logic.js v4.0] Okta OIDC Module Integrated.");
+
 console.log(
   "[logic.js v3.9] AWS State Persistence Engine active — Manual triggers enabled.",
 );
