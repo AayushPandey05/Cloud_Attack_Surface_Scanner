@@ -427,36 +427,48 @@ window.triggerAwsScan = async function () {
   }
 };
 
-// EVENT BINDING — CSPM Engine Registration
-(function bindAwsBtn() {
-  function attachListener() {
-    var awsBtn = document.getElementById("aws-btn");
-    if (awsBtn) {
-      awsBtn.addEventListener("click", function () {
-        window.triggerAwsScan();
-      });
-      console.log(
-        "[logic.js v3.2] CSPM Engine bound to #aws-btn — triggerAwsScan ready.",
-      );
-    } else {
-      // Deferred attachment: DOM not yet available at script parse time
-      document.addEventListener("DOMContentLoaded", function () {
-        var btn = document.getElementById("aws-btn");
-        if (btn) {
-          btn.addEventListener("click", function () {
-            window.triggerAwsScan();
-          });
-        }
-      });
-    }
+// SMART SCAN TRIGGER — Unified Orchestration Layer
+(function initScanTrigger() {
+  const triggerBtn = document.getElementById("scan-trigger-btn");
+  if (!triggerBtn) {
+    // Deferred attachment if DOM not ready
+    document.addEventListener("DOMContentLoaded", initScanTrigger);
+    return;
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", attachListener);
-  } else {
-    attachListener();
-  }
+  triggerBtn.addEventListener("click", async () => {
+    const module = (window.currentEnv || "aws").toUpperCase();
+    
+    // Reset KPI counters for a clean forensic audit
+    const kpi1 = document.getElementById("kpi-1-val");
+    const kpi4 = document.getElementById("kpi-4-val");
+    if (kpi1) { kpi1.innerText = "0"; kpi1.style.color = "var(--green)"; }
+    if (kpi4) { kpi4.innerText = "0"; kpi4.style.color = "var(--green)"; }
+
+    // Update button state to prevent double-dispatch and provide feedback
+    triggerBtn.disabled = true;
+    const originalContent = triggerBtn.innerHTML;
+    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> ${module === "AWS" ? "Auditing AWS..." : "Scanning Slack..."}`;
+    if (window.lucide) window.lucide.createIcons();
+
+    try {
+      if (module === "AWS") {
+        await window.triggerAwsScan();
+      } else {
+        await window.fetchLiveSlackData();
+      }
+    } catch (err) {
+      console.error("[ScanTrigger] Execution failed:", err);
+    } finally {
+      // Restore button state
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = originalContent;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  });
 })();
+
+
 
 
 
@@ -528,19 +540,6 @@ window.triggerAwsScan = async function () {
 })();
 
 
-// AUTO-AUDIT REGISTRY — Reinforces session state persistence on hard refresh
-document.addEventListener("DOMContentLoaded", function () {
-  const awsBtn = document.getElementById("aws-btn");
-  // Check if AWS is the active forensic context before dispatching the background audit
-  if (awsBtn && awsBtn.classList.contains("active")) {
-    if (typeof window._slackAddLog === "function") {
-      window._slackAddLog("AWS", "Resuming security session...", "SYSTEM");
-    }
-    // Dispatch the live audit — leverages already initialized IAM client scope
-    if (typeof window.triggerAwsScan === "function") window.triggerAwsScan();
-  }
-});
-
 console.log(
-  "[logic.js v3.8] AWS State Persistence Engine active — Auto-Audit enabled for IaaS context.",
+  "[logic.js v3.9] AWS State Persistence Engine active — Manual triggers enabled.",
 );
