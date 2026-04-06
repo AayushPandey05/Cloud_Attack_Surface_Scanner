@@ -357,7 +357,6 @@ window.triggerAwsScan = async function () {
   const terminal = document.getElementById("terminal-feed");
   if (typeof window._slackAddLog !== "function") return;
 
-  // Clear terminal before dispatching live Identity Audit
   window.clearTerminal();
 
   try {
@@ -365,28 +364,22 @@ window.triggerAwsScan = async function () {
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
 
-    // Ensure terminal is scrubbed of any context-switching ghosts before populating live data
     if (terminal) terminal.innerHTML = "";
 
-    // Sync live telemetry stream to the dashboard terminal
     let openAttackPaths = 0;
     let exposedSecrets = 0;
+    let mfaEnabled = false;
+
     if (Array.isArray(data.terminalLogs)) {
       data.terminalLogs.forEach((entry) => {
-        // UI Telemetry Sync: Identify public exposure findings for attack surface tracking
         if (
           entry.includes("PUBLIC ACCESS ENABLED") ||
           entry.includes("CRITICAL")
-        ) {
+        )
           openAttackPaths++;
-        }
+        if (entry.includes("Leaked AWS Access Key")) exposedSecrets++;
+        if (entry.includes("MFA compliance check passed")) mfaEnabled = true;
 
-        // Credential Posture Sync: Track leaked secrets discovered in Deep Scans
-        if (entry.includes("Leaked AWS Access Key")) {
-          exposedSecrets++;
-        }
-
-        // Strip [HH:MM:SS] if present — the renderer adds its own forensic timestamp
         let clean = entry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
@@ -395,80 +388,79 @@ window.triggerAwsScan = async function () {
       });
     }
 
-    // Bind real-time IAM summary to the identity posture KPI cards
+    // Update Card 2: IAM Identities
     const kpi2 = document.getElementById("kpi-2-val");
-    const kpi2s = document.getElementById("kpi-2-sub");
     if (kpi2) {
       kpi2.innerText = String(data.summary);
       kpi2.style.color = "var(--green)";
     }
-    if (kpi2s) kpi2s.innerText = `Found ${data.summary} IAM Identities`;
 
-    // Update Attack Surface card — real-time scan overrides simulated vulnerabilities
+    // Update Card 1: Attack Paths
     const kpi1 = document.getElementById("kpi-1-val");
-    const kpi1s = document.getElementById("kpi-1-sub");
     if (kpi1) {
       kpi1.innerText = String(openAttackPaths);
       kpi1.style.color = openAttackPaths > 0 ? "var(--red)" : "var(--green)";
     }
-    if (kpi1s) {
-      kpi1s.innerText =
-        openAttackPaths > 0
-          ? `${openAttackPaths} Public Asset Detected`
-          : "No public exposure detected";
+
+    // Update Card 3: MFA Auditor
+    const kpi3 = document.getElementById("kpi-3-val");
+    if (kpi3) {
+      kpi3.innerText = mfaEnabled ? "1" : "0";
+      kpi3.style.color = mfaEnabled ? "var(--green)" : "var(--red)";
     }
 
-    // Update Exposed Secrets card — synchronization with backend Deep Scan engine
+    // Update Card 4: Exposed Secrets
     const kpi4 = document.getElementById("kpi-4-val");
-    const kpi4s = document.getElementById("kpi-4-sub");
     if (kpi4) {
       kpi4.innerText = String(exposedSecrets);
       kpi4.style.color = exposedSecrets > 0 ? "var(--red)" : "var(--green)";
     }
-    if (kpi4s) {
-      kpi4s.innerText =
-        exposedSecrets > 0
-          ? `${exposedSecrets} Credentials Exposed`
-          : "No credentials exposed";
+
+    // Update Card 5: Controls Passing (Scoreboard)
+    const kpi5 = document.getElementById("kpi-5-val");
+    const score = data.controlsPassing || 0;
+    if (kpi5) {
+      kpi5.innerText = String(score);
+      kpi5.style.color = score > 2 ? "var(--green)" : "var(--red)";
     }
   } catch (err) {
-    // Audit failure capture — propagate detailed telemetry to dashboard terminal
     window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
-    console.error("[triggerAwsScan] Fetch failed:", err.message);
   }
 };
 
 // SMART SCAN TRIGGER — Unified Orchestration Layer
+// SMART SCAN TRIGGER — Unified Orchestration Layer
 (function initScanTrigger() {
   const triggerBtn = document.getElementById("scan-trigger-btn");
   if (!triggerBtn) {
-    // Deferred attachment if DOM not ready
     document.addEventListener("DOMContentLoaded", initScanTrigger);
     return;
   }
 
   triggerBtn.addEventListener("click", async () => {
+    // 1. Determine active environment (Default to AWS if not set)
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
 
-    // Reset KPI counters for a clean forensic audit
-    const kpi1 = document.getElementById("kpi-1-val");
-    const kpi4 = document.getElementById("kpi-4-val");
-    if (kpi1) {
-      kpi1.innerText = "0";
-      kpi1.style.color = "var(--green)";
-    }
-    if (kpi4) {
-      kpi4.innerText = "0";
-      kpi4.style.color = "var(--green)";
+    // 2. Reset ALL 5 KPI counters for a clean forensic audit
+    // This prevents "stale" data from showing while the new scan is working
+    for (let i = 1; i <= 5; i++) {
+      const val = document.getElementById(`kpi-${i}-val`);
+      const sub = document.getElementById(`kpi-${i}-sub`);
+      if (val) {
+        val.innerText = "0";
+        val.style.color = "var(--gray)"; // Set to gray while loading
+      }
+      if (sub) sub.innerText = "Scanning...";
     }
 
-    // Update button state to prevent double-dispatch and provide feedback
+    // 3. Update button state to "Loading"
     triggerBtn.disabled = true;
     const originalContent = triggerBtn.innerHTML;
-    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> ${currentModule === "AWS" ? "Auditing AWS..." : "Scanning Slack..."}`;
+    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> Auditing...`;
     if (window.lucide) window.lucide.createIcons();
 
     try {
+      // 4. Dispatch to the correct Audit Engine
       if (currentModule === "AWS") {
         await window.triggerAwsScan();
       } else if (currentModule === "SLACK") {
@@ -477,7 +469,7 @@ window.triggerAwsScan = async function () {
     } catch (err) {
       console.error("[ScanTrigger] Execution failed:", err);
     } finally {
-      // Restore button state
+      // 5. Restore button state once scan is finished
       triggerBtn.disabled = false;
       triggerBtn.innerHTML = originalContent;
       if (window.lucide) window.lucide.createIcons();

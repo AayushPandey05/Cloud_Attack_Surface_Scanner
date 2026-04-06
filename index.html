@@ -1717,11 +1717,7 @@
                       }
 
                       updateDashboardContext();
-                      if (window.currentEnv === 'slack') {
-                          stopTerminal();
-                      } else {
-                          if (typeof window.triggerAwsScan === 'function') window.triggerAwsScan();
-                      }
+                      stopTerminal();
                   }
 
                   // Attack Surface Context Switch
@@ -1741,7 +1737,7 @@
 
                           // Enforce cross-surface telemetry isolation before emitting context event
                           terminalFeed.innerHTML = '';
-                          addLog(view.toUpperCase() === 'SLACK' ? 'SLACK' : 'AWS', 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
+                          addLog(view.toUpperCase(), 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
 
                           // AWS: boot the static attack path rotation engine
                           // Slack: telemetry fetch is dispatched inside updateDashboardContext()
