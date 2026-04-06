@@ -1,7 +1,8 @@
 # Cloud Attack Surface Scanner 🛡️⚡
 
-**Developed by:** Aayush Pandey  
-**Focus:** Cloud Security, Attack Surface Management, and Identity Threat Detection
+**Developed by:** Aayush Pandey  
+**Focus:** Cloud Security, Attack Surface Management, and Identity Threat Detection  
+**🔴 Live Dashboard:** [Click here to view the live project]([https://vault.heyitsaayush.me/#login])
 
 ---
 
@@ -25,7 +26,7 @@ In the modern threat landscape, identity is the new perimeter. This tool automat
 Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing security without infrastructure overhead:
 
 - **The Identity Gateway:** A custom B2B-styled SSO frontend interface utilizing robust session management and MFA challenge logic.
-- **The Detection Engine:** Python-based automation (`mfa_auditor.py`) that actively scans the cloud environment for critical access violations.
+- **The Detection Engine:** Python/Node.js based automation that actively scans the cloud environment for critical access violations and public storage exposure.
 - **The Telemetry Vault:** S3 buckets configured for immutable log storage to ensure complete visibility during security incidents.
 - **The Response Matrix:** Cloud infrastructure ready to execute automated containment workflows and alert security teams.
 
@@ -33,9 +34,9 @@ Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing sec
 
 ## 📂 Repository Structure
 
-- `/assets` - Core frontend logic (`logic.js`), UI styling, and AWS SDK configurations.
+- `/assets` - Core frontend logic, UI styling, and AWS SDK configurations.
 - `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors (`vulnerability_vectors.md`) and sample threat telemetry.
-- `/backend-functions` - Python threat-hunting scripts and automated auditors.
+- `/backend-functions` - Threat-hunting scripts, secret scanners, and automated cloud auditors.
 - `/iam-policies` - Hardened JSON policies enforcing the principle of "Least Privilege".
 - `/infrastructure` - Setup files and YAML templates for rapid, secure deployment.
 
