@@ -443,12 +443,21 @@ window.triggerAwsScan = async function () {
     rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
       const match = line.match(logRegex);
       if (match) {
-        // Strict Cleaner — Extraction strips [], :, and trailing whitespace from keys
-        lastLog = { timestamp: match[1], environment: match[2], severity: match[3], message: match[4] };
+        // Standard Log Record — Initialize with Attack_Chain: None
+        lastLog = { 
+          timestamp: match[1], 
+          environment: match[2], 
+          severity: match[3], 
+          message: match[4],
+          attack_chain: "None" 
+        };
         parsed.push(lastLog);
       } else if (line.trim().startsWith("↳") && lastLog) {
-        // Child Row Merger — Consolidation via pipe (|) to maintain 1:1 terminal-to-row ratio
-        lastLog.message += " | " + line.trim();
+        // Hierarchical Merger — Extract the chain and update previous row's 5th slot
+        const chainMatch = line.match(/↳ Attack Path:\s*(.*)/);
+        if (chainMatch) {
+          lastLog.attack_chain = chainMatch[1].trim();
+        }
       }
     });
 
@@ -456,17 +465,17 @@ window.triggerAwsScan = async function () {
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      // Professional EXCEL-safe header with explicit double-quote encapsulation
-      const csvRows = ['"Timestamp","Environment","Severity","Message"'];
+      // Enterprise CSV Header: Timestamp,Environment,Severity,Event_Description,Attack_Chain
+      const csvRows = ['"Timestamp","Environment","Severity","Event_Description","Attack_Chain"'];
       // Every single value wrapped in double quotes for 100% Sheets/Excel alignment
       parsed.forEach(r => {
-        const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}"`;
+        const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}","${r.attack_chain.replace(/"/g, '""')}"`;
         csvRows.push(row);
       });
       content = csvRows.join("\n");
       mimeType = "text/csv;charset=utf-8;";
     } else {
-      // JSON Parity: ensures the same 4 clean forensic keys are used for SaaS/IaaS data
+      // JSON Parity: Includes the new attack_chain field for backend forensic analysis
       content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
       mimeType = "application/json";
     }
