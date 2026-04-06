@@ -9,6 +9,6 @@ export default async function handler(req, res) {
 
   // 2. Teleport the user to the dashboard
   // We use 302 to force a redirect to the authenticated view
-  res.writeHead(302, { Location: "/#dashboard?sso=success" });
+  res.writeHead(302, { Location: "/?sso=success#dashboard" });
   res.end();
 }

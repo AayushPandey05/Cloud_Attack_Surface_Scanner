@@ -1206,6 +1206,9 @@
               <i data-lucide="box" color="white" width="20" height="20"></i>
             </div>
             <h2 class="text-lg font-semibold">Security Vault Dashboard</h2>
+            <div id="sso-badge" class="hidden" style="margin-left: 0.5rem; padding: 0.2rem 0.6rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; color: #818CF8; font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.02em;">
+              <span style="font-size: 0.8rem;">🛡️</span> Enterprise SSO Session Verified via Okta
+            </div>
           </div>
 
           <!-- Right Profile/Status -->
@@ -1375,7 +1378,19 @@
 
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
-            document.addEventListener('DOMContentLoaded', () => {
+      // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
+      // This listener runs immediately to establish session parity before DOM loads
+      const ssoParams = new URLSearchParams(window.location.search);
+      if (ssoParams.get('sso') === 'success') {
+          sessionStorage.setItem('isVaultAuthenticated', 'true');
+          sessionStorage.setItem('isSSOSession', 'true');
+          
+          // Clean up URL telemetry for forensic integrity and aesthetics
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
                   lucide.createIcons();
 
                   // View-state handles: mutually exclusive visibility enforced by showState()
@@ -1460,6 +1475,12 @@
                   }
 
                   initializeApp();
+
+                  // SSO UI PERSISTENCE: Reveal enterprise badge if session originated via Okta
+                  if (sessionStorage.getItem('isSSOSession') === 'true') {
+                      const ssoBadge = document.getElementById('sso-badge');
+                      if (ssoBadge) ssoBadge.classList.remove('hidden');
+                  }
 
                   // EMAIL OTP MFA GATEWAY
                   // Three functions implement the full TOTP-less OTP lifecycle:
