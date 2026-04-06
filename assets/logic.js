@@ -253,17 +253,22 @@ window.fetchLiveSlackData = async function () {
 
       if (alerts.length > 0) {
         alerts.forEach(function (alertPath) {
-          // Identify cross-environment Slack tokens for forensic tag upgrade
-          var tag = alertPath.indexOf("Slack Bot Token") !== -1 ? "AWS/SLACK" : "SLACK";
-          var message = alertPath.indexOf("Slack Bot Token") !== -1 ? alertPath.split(" | ")[0] : "Credential pattern matched — " + alertPath;
-          var subtext = alertPath.indexOf(" | ") !== -1 ? alertPath.split(" | ")[1] : null;
+          var parts = alertPath.split(" | ");
+          var message = parts[0];
+          var subtext = parts[1] || "Credential Theft";
+          var type = parts[2] || "Credential";
+
+          // Forensic tag upgrade: identify AWS keys or Slack Bot Tokens as hybrid threats
+          var isAwsThreat =
+            type.indexOf("AWS") !== -1 || type.indexOf("Slack Bot Token") !== -1;
+          var tag = isAwsThreat ? "AWS/SLACK" : "SLACK";
 
           window._slackAddLog(
             tag,
             message,
             "CRITICAL",
             "Initial Access",
-            subtext || "Credential Theft",
+            subtext,
           );
         });
       } else if (secrets > 0) {

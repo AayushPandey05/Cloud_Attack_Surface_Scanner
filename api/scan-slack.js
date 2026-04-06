@@ -122,7 +122,7 @@ async function runScan() {
               if (m.startsWith("xoxb-")) type = "Slack Bot Token";
               else if (m.startsWith("AKIA")) type = "AWS Access Key";
               else if (m.startsWith("sk_live_")) type = "Stripe Secret Key";
-              detailedAlerts.push(`${type} Leaked in #${channelName}! | ↳ Initial Access → Credential Theft → User(${userName})`);
+              detailedAlerts.push(`Credential pattern matched in #${channelName} by User(${userName}) | Credential Theft | ${type}`);
             });
           }
         }
