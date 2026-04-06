@@ -368,11 +368,17 @@ window.triggerAwsScan = async function () {
 
     // Sync live telemetry stream to the dashboard terminal
     let openAttackPaths = 0;
+    let exposedSecrets = 0;
     if (Array.isArray(data.terminalLogs)) {
       data.terminalLogs.forEach(entry => {
         // UI Telemetry Sync: Identify public exposure findings for attack surface tracking
         if (entry.includes("PUBLIC ACCESS ENABLED") || entry.includes("CRITICAL")) {
           openAttackPaths++;
+        }
+
+        // Credential Posture Sync: Track leaked secrets discovered in Deep Scans
+        if (entry.includes("Leaked AWS Access Key")) {
+          exposedSecrets++;
         }
 
         // Strip [HH:MM:SS] if present — the renderer adds its own forensic timestamp
@@ -399,6 +405,19 @@ window.triggerAwsScan = async function () {
       kpi1s.innerText = openAttackPaths > 0 
         ? `${openAttackPaths} Public Asset Detected` 
         : "No public exposure detected";
+    }
+
+    // Update Exposed Secrets card — synchronization with backend Deep Scan engine
+    const kpi4 = document.getElementById("kpi-4-val");
+    const kpi4s = document.getElementById("kpi-4-sub");
+    if (kpi4) {
+      kpi4.innerText = String(exposedSecrets);
+      kpi4.style.color = exposedSecrets > 0 ? "var(--red)" : "var(--green)";
+    }
+    if (kpi4s) {
+      kpi4s.innerText = exposedSecrets > 0 
+        ? `${exposedSecrets} Credentials Exposed` 
+        : "No credentials exposed";
     }
 
   } catch (err) {
