@@ -1379,14 +1379,23 @@
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
       // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
-      // This listener runs immediately to establish session parity before DOM loads
-      const ssoParams = new URLSearchParams(window.location.search);
-      if (ssoParams.get('sso') === 'success') {
+      // This listener parses both search and hash to support various redirect formats
+      const rawUrl = window.location.href;
+      const ssoMatch = rawUrl.match(/[?&]sso=success/);
+      const newAccMatch = rawUrl.match(/[?&]accountType=new/);
+
+      if (ssoMatch) {
           sessionStorage.setItem('isVaultAuthenticated', 'true');
           sessionStorage.setItem('isSSOSession', 'true');
           
+          if (newAccMatch) {
+              sessionStorage.setItem('vaultAccountType', 'new');
+              sessionStorage.setItem('vaultUserEmail', 'testuser@heyitsaayush.me');
+              sessionStorage.setItem('vaultUserName', 'Aayush Pandey');
+          }
+
           // Clean up URL telemetry for forensic integrity and aesthetics
-          const cleanUrl = window.location.pathname + window.location.hash;
+          const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
           window.history.replaceState({}, document.title, cleanUrl);
       }
 
@@ -1738,6 +1747,15 @@
                           });
                       }
 
+                      // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
+                      if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                          terminalFeed.innerHTML = '';
+                          addLog('SYSTEM', 'New environment detected for testuser@heyitsaayush.me', 'INFO');
+                          addLog('OKTA', 'SSO Identity verified: testuser@heyitsaayush.me', 'SUCCESS');
+                          addLog('AWS', 'Initializing security baseline...', 'INFO');
+                          addLog('COMPLIANCE', 'All controls passing for new tenant.', 'SUCCESS');
+                      }
+
                       updateDashboardContext();
                       stopTerminal();
                   }
@@ -1820,6 +1838,25 @@
                            document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
 
                            titleTerm.innerText = 'security-telemetry — Slack Workspace';
+                      }
+
+                      // Identity-Aware Override: Force 'Fresh Account' state if accountType=new is active
+                      if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                          if (window.currentEnv === 'aws') {
+                              document.getElementById('kpi-2-val').innerText = '1';
+                              document.getElementById('kpi-3-val').innerText = '100%';
+                              document.getElementById('kpi-4-val').innerText = '0';
+                              document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                              document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                              document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                          } else {
+                              document.getElementById('kpi-5-val').innerText = '1';
+                              document.getElementById('kpi-3-val').innerText = '100%';
+                              document.getElementById('kpi-2-val').innerText = '0';
+                              document.getElementById('kpi-5-val').style.color = 'var(--green)';
+                              document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                              document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                          }
                       }
                   }
 
