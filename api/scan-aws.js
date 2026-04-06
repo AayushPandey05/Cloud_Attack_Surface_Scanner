@@ -1,6 +1,6 @@
 // AWS LIVE IDENTITY AUDIT — Real-Time IAM Posture Engine
 import { IAMClient, ListUsersCommand } from "@aws-sdk/client-iam";
-import { S3Client, ListBucketsCommand, GetPublicAccessBlockCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListBucketsCommand, GetPublicAccessBlockCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
 // Get current timestamp in local 24-hour format
 const getTimestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -10,6 +10,7 @@ export default async function handler(req, res) {
 
   // Terminal log storage for front-end dashboard
   const terminalLogs = [];
+  let exposedSecrets = 0;
 
   try {
     terminalLogs.push(`[${getTimestamp()}] [AWS] SYSTEM: Identity Audit initiated.`);
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
       terminalLogs.push(`[AWS] INFO: User [${user.UserName}] detected (Created: [${created}]).`);
     });
 
-    // ── MODULE 3: S3 STORAGE AUDIT ─────────────────────────────────────
+    // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
     const s3Client = new S3Client({ region, credentials });
     terminalLogs.push(`[${getTimestamp()}] [AWS] SYSTEM: S3 Storage Audit initiated.`);
 
@@ -52,6 +53,30 @@ export default async function handler(req, res) {
           } else {
             terminalLogs.push(`[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`);
           }
+
+          // ── S3 CONTENT INSPECTION (DEEP SCAN) ────────────────────────
+          try {
+            const { Contents } = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }));
+            if (Contents && Contents.length > 0) {
+              for (const obj of Contents) {
+                try {
+                  const getObjRes = await s3Client.send(new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }));
+                  const body = await getObjRes.Body.transformToString();
+                  const regex = /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
+
+                  if (body.match(regex)) {
+                    exposedSecrets++;
+                    terminalLogs.push(`[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`);
+                  }
+                } catch (objErr) {
+                  // Handle permission/access denied errors gracefully for terminal logging
+                }
+              }
+            }
+          } catch (listObjErr) {
+            // NoSuchBucket or AccessDenied: graceful skip
+          }
+
         } catch (s3Err) {
           // Detection: NoSuchPublicAccessBlockConfiguration implies public access may be allowed
           if (s3Err.name === "NoSuchPublicAccessBlockConfiguration") {
@@ -69,6 +94,7 @@ export default async function handler(req, res) {
     // Return unified compliance telemetry payload
     return res.status(200).json({
       summary: Users.length,
+      exposedSecrets: exposedSecrets,
       terminalLogs: terminalLogs
     });
   } catch (err) {
@@ -76,6 +102,7 @@ export default async function handler(req, res) {
     terminalLogs.push(`[${getTimestamp()}] [AWS] CRITICAL: Audit Failed — ${err.message}`);
     return res.status(200).json({ 
       summary: "AUDIT_FAILURE", 
+      exposedSecrets: 0,
       terminalLogs: terminalLogs 
     });
   }
