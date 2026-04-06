@@ -256,12 +256,9 @@ window.fetchLiveSlackData = async function () {
           var parts = alertPath.split(" | ");
           var message = parts[0];
           var subtext = parts[1] || "Credential Theft";
-          var type = parts[2] || "Credential";
 
-          // Forensic tag upgrade: identify AWS keys or Slack Bot Tokens as hybrid threats
-          var isAwsThreat =
-            type.indexOf("AWS") !== -1 || type.indexOf("Slack Bot Token") !== -1;
-          var tag = isAwsThreat ? "AWS/SLACK" : "SLACK";
+          // Dynamic Environment Tagging: Labels alerts based on active scan context (SLACK/AWS)
+          var tag = window.currentEnv ? window.currentEnv.toUpperCase() : "SLACK";
 
           window._slackAddLog(
             tag,
@@ -467,14 +464,15 @@ window.triggerAwsScan = async function () {
         csvRows.push(row);
       });
       content = csvRows.join("\n");
-      mimeType = "text/csv";
+      mimeType = "text/csv;charset=utf-8;";
     } else {
       // JSON Parity: ensures the same 4 clean forensic keys are used for SaaS/IaaS data
       content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
       mimeType = "application/json";
     }
 
-    const blob = new Blob([content], { type: mimeType });
+    const finalContent = (format === "csv") ? "\uFEFF" + content : content;
+    const blob = new Blob([finalContent], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = filename;
