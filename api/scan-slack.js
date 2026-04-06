@@ -4,7 +4,8 @@ const SLACK_API = "https://slack.com/api";
 
 // Credential detection signature: AWS IAM Access Key ID (AKIA*),
 // Stripe live secret key (sk_live_*), and Slack Bot Tokens (xoxb-)
-const SECRET_REGEX = /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}|xoxb-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]+/g;
+const SECRET_REGEX =
+  /AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24}|xoxb-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]+/g;
 
 // AUTHENTICATED SLACK FETCH HELPER
 async function slackFetch(endpoint, params = {}) {
@@ -114,15 +115,19 @@ async function runScan() {
           if (matches) {
             secrets += matches.length;
             const offender = humans.find((u) => u.id === msg.user);
-            const userName = offender ? offender.real_name || offender.name : "Unknown Entity";
+            const userName = offender
+              ? offender.real_name || offender.name
+              : "Unknown Entity";
 
             // Categorize findings based on pattern match
-            matches.forEach(m => {
+            matches.forEach((m) => {
               let type = "Credential";
               if (m.startsWith("xoxb-")) type = "Slack Bot Token";
               else if (m.startsWith("AKIA")) type = "AWS Access Key";
               else if (m.startsWith("sk_live_")) type = "Stripe Secret Key";
-              detailedAlerts.push(`Credential pattern matched in #${channelName} by User(${userName}) | Credential Theft | ${type}`);
+              detailedAlerts.push(
+                `Credential pattern matched in #${channelName} by User(${userName}) | Credential Theft | ${type}`,
+              );
             });
           }
         }

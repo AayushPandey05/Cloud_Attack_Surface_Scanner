@@ -125,7 +125,7 @@ console.log(
 );
 
 //! SLACK TELEMETRY ENGINE v1.2 — SaaS Workspace Threat Intelligence Stream
-window.fetchLiveSlackData = async function () {
+window.runSlackAudit = async function () {
   var setKpi = function (id, val, sub, color) {
     var valEl = document.getElementById("kpi-" + id + "-val");
     var subEl = document.getElementById("kpi-" + id + "-sub");
@@ -258,7 +258,9 @@ window.fetchLiveSlackData = async function () {
           var subtext = parts[1] || "Credential Theft";
 
           // Dynamic Environment Tagging: Labels alerts based on active scan context (SLACK/AWS)
-          var tag = window.currentEnv ? window.currentEnv.toUpperCase() : "SLACK";
+          var tag = window.currentEnv
+            ? window.currentEnv.toUpperCase()
+            : "SLACK";
 
           window._slackAddLog(
             tag,
@@ -304,7 +306,7 @@ window.fetchLiveSlackData = async function () {
       }
     }
   } catch (err) {
-    console.error("[fetchLiveSlackData] API call failed:", err.message);
+    console.error("[runSlackAudit] API call failed:", err.message);
 
     var isOffline =
       err.message.includes("Failed to fetch") ||
@@ -342,7 +344,7 @@ window.fetchLiveSlackData = async function () {
 };
 
 console.log(
-  "[logic.js v3.1] Slack Telemetry Engine loaded — fetchLiveSlackData ready.",
+  "[logic.js v3.1] Slack Telemetry Engine loaded — runSlackAudit ready.",
 );
 
 //! CSPM AUDIT ENGINE v1.0 — AWS Infrastructure
@@ -370,9 +372,12 @@ window.triggerAwsScan = async function () {
     let openAttackPaths = 0;
     let exposedSecrets = 0;
     if (Array.isArray(data.terminalLogs)) {
-      data.terminalLogs.forEach(entry => {
+      data.terminalLogs.forEach((entry) => {
         // UI Telemetry Sync: Identify public exposure findings for attack surface tracking
-        if (entry.includes("PUBLIC ACCESS ENABLED") || entry.includes("CRITICAL")) {
+        if (
+          entry.includes("PUBLIC ACCESS ENABLED") ||
+          entry.includes("CRITICAL")
+        ) {
           openAttackPaths++;
         }
 
@@ -382,16 +387,21 @@ window.triggerAwsScan = async function () {
         }
 
         // Strip [HH:MM:SS] if present — the renderer adds its own forensic timestamp
-        let clean = entry.replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, '').replace(/^\[AWS\]\s+/, '');
-        const [level, ...contentParts] = clean.split(': ');
-        window._slackAddLog("AWS", contentParts.join(': '), level || "SYSTEM");
+        let clean = entry
+          .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
+          .replace(/^\[AWS\]\s+/, "");
+        const [level, ...contentParts] = clean.split(": ");
+        window._slackAddLog("AWS", contentParts.join(": "), level || "SYSTEM");
       });
     }
 
     // Bind real-time IAM summary to the identity posture KPI cards
     const kpi2 = document.getElementById("kpi-2-val");
     const kpi2s = document.getElementById("kpi-2-sub");
-    if (kpi2) { kpi2.innerText = String(data.summary); kpi2.style.color = "var(--green)"; }
+    if (kpi2) {
+      kpi2.innerText = String(data.summary);
+      kpi2.style.color = "var(--green)";
+    }
     if (kpi2s) kpi2s.innerText = `Found ${data.summary} IAM Identities`;
 
     // Update Attack Surface card — real-time scan overrides simulated vulnerabilities
@@ -402,9 +412,10 @@ window.triggerAwsScan = async function () {
       kpi1.style.color = openAttackPaths > 0 ? "var(--red)" : "var(--green)";
     }
     if (kpi1s) {
-      kpi1s.innerText = openAttackPaths > 0 
-        ? `${openAttackPaths} Public Asset Detected` 
-        : "No public exposure detected";
+      kpi1s.innerText =
+        openAttackPaths > 0
+          ? `${openAttackPaths} Public Asset Detected`
+          : "No public exposure detected";
     }
 
     // Update Exposed Secrets card — synchronization with backend Deep Scan engine
@@ -415,11 +426,11 @@ window.triggerAwsScan = async function () {
       kpi4.style.color = exposedSecrets > 0 ? "var(--red)" : "var(--green)";
     }
     if (kpi4s) {
-      kpi4s.innerText = exposedSecrets > 0 
-        ? `${exposedSecrets} Credentials Exposed` 
-        : "No credentials exposed";
+      kpi4s.innerText =
+        exposedSecrets > 0
+          ? `${exposedSecrets} Credentials Exposed`
+          : "No credentials exposed";
     }
-
   } catch (err) {
     // Audit failure capture — propagate detailed telemetry to dashboard terminal
     window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
@@ -437,25 +448,31 @@ window.triggerAwsScan = async function () {
   }
 
   triggerBtn.addEventListener("click", async () => {
-    const module = (window.currentEnv || "aws").toUpperCase();
-    
+    const currentModule = (window.currentEnv || "AWS").toUpperCase();
+
     // Reset KPI counters for a clean forensic audit
     const kpi1 = document.getElementById("kpi-1-val");
     const kpi4 = document.getElementById("kpi-4-val");
-    if (kpi1) { kpi1.innerText = "0"; kpi1.style.color = "var(--green)"; }
-    if (kpi4) { kpi4.innerText = "0"; kpi4.style.color = "var(--green)"; }
+    if (kpi1) {
+      kpi1.innerText = "0";
+      kpi1.style.color = "var(--green)";
+    }
+    if (kpi4) {
+      kpi4.innerText = "0";
+      kpi4.style.color = "var(--green)";
+    }
 
     // Update button state to prevent double-dispatch and provide feedback
     triggerBtn.disabled = true;
     const originalContent = triggerBtn.innerHTML;
-    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> ${module === "AWS" ? "Auditing AWS..." : "Scanning Slack..."}`;
+    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> ${currentModule === "AWS" ? "Auditing AWS..." : "Scanning Slack..."}`;
     if (window.lucide) window.lucide.createIcons();
 
     try {
-      if (module === "AWS") {
+      if (currentModule === "AWS") {
         await window.triggerAwsScan();
-      } else {
-        await window.fetchLiveSlackData();
+      } else if (currentModule === "SLACK") {
+        await window.runSlackAudit();
       }
     } catch (err) {
       console.error("[ScanTrigger] Execution failed:", err);
@@ -468,14 +485,12 @@ window.triggerAwsScan = async function () {
   });
 })();
 
-
-
-
-
 // SANITIZED HIERARCHICAL PARSER — Clean Columns & Merged Findings
 (function initSanitizedExport() {
   function downloadAuditLogs(format) {
-    const activeBtn = document.querySelector(".segmented-control .segment-btn.active");
+    const activeBtn = document.querySelector(
+      ".segmented-control .segment-btn.active",
+    );
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
     const rawText = document.getElementById("terminal-feed")?.innerText || "";
     // Strict A, B, C, D tokenizing regex: Matches [Timestamp] [Env] Severity: Message
@@ -484,35 +499,40 @@ window.triggerAwsScan = async function () {
     const parsed = [];
     let lastLog = null;
 
-    rawText.split("\n").filter(l => l.trim() !== "").forEach(line => {
-      const match = line.match(logRegex);
-      if (match) {
-        // Standard Log Record — Initialize with Attack_Chain: None
-        lastLog = { 
-          timestamp: match[1], 
-          environment: match[2], 
-          severity: match[3], 
-          message: match[4],
-          attack_chain: "None" 
-        };
-        parsed.push(lastLog);
-      } else if (line.trim().startsWith("↳") && lastLog) {
-        // Hierarchical Merger — Extract the chain and update previous row's 5th slot
-        const chainMatch = line.match(/↳ Attack Path:\s*(.*)/);
-        if (chainMatch) {
-          lastLog.attack_chain = chainMatch[1].trim();
+    rawText
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .forEach((line) => {
+        const match = line.match(logRegex);
+        if (match) {
+          // Standard Log Record — Initialize with Attack_Chain: None
+          lastLog = {
+            timestamp: match[1],
+            environment: match[2],
+            severity: match[3],
+            message: match[4],
+            attack_chain: "None",
+          };
+          parsed.push(lastLog);
+        } else if (line.trim().startsWith("↳") && lastLog) {
+          // Hierarchical Merger — Extract the chain and update previous row's 5th slot
+          const chainMatch = line.match(/↳ Attack Path:\s*(.*)/);
+          if (chainMatch) {
+            lastLog.attack_chain = chainMatch[1].trim();
+          }
         }
-      }
-    });
+      });
 
     let content, mimeType;
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
       // Enterprise CSV Header: Timestamp,Environment,Severity,Event_Description,Attack_Chain
-      const csvRows = ['"Timestamp","Environment","Severity","Event_Description","Attack_Chain"'];
+      const csvRows = [
+        '"Timestamp","Environment","Severity","Event_Description","Attack_Chain"',
+      ];
       // Every single value wrapped in double quotes for 100% Sheets/Excel alignment
-      parsed.forEach(r => {
+      parsed.forEach((r) => {
         const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}","${r.attack_chain.replace(/"/g, '""')}"`;
         csvRows.push(row);
       });
@@ -520,25 +540,32 @@ window.triggerAwsScan = async function () {
       mimeType = "text/csv;charset=utf-8;";
     } else {
       // JSON Parity: Includes the new attack_chain field for backend forensic analysis
-      content = JSON.stringify({ target_environment: env.toUpperCase(), scan_data: parsed }, null, 2);
+      content = JSON.stringify(
+        { target_environment: env.toUpperCase(), scan_data: parsed },
+        null,
+        2,
+      );
       mimeType = "application/json";
     }
 
-    const finalContent = (format === "csv") ? "\uFEFF" + content : content;
+    const finalContent = format === "csv" ? "\uFEFF" + content : content;
     const blob = new Blob([finalContent], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   const csvBtn = document.getElementById("export-csv-btn");
   const jsonBtn = document.getElementById("export-json-btn");
   if (csvBtn) csvBtn.addEventListener("click", () => downloadAuditLogs("csv"));
-  if (jsonBtn) jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
+  if (jsonBtn)
+    jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
 })();
-
 
 console.log(
   "[logic.js v3.9] AWS State Persistence Engine active — Manual triggers enabled.",

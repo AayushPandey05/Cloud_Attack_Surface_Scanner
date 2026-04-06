@@ -1340,7 +1340,9 @@
           </div>
         </div>
 
-        <div style="display:flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+        <div
+          style="display:flex; justify-content: flex-end; margin-bottom: 0.5rem;"
+        >
           <button id="scan-trigger-btn" class="btn-scan-trigger">
             <i data-lucide="shield-check" width="16" height="16"></i>
             Run Security Audit
@@ -1800,11 +1802,6 @@
                            document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
 
                            titleTerm.innerText = 'security-telemetry — Slack Workspace';
-
-                           // Dispatch live Slack telemetry fetch via the CSPM engine in logic.js
-                           if (typeof window.fetchLiveSlackData === 'function') {
-                               window.fetchLiveSlackData();
-                           }
                       }
                   }
 

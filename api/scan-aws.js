@@ -1,19 +1,29 @@
 // AWS LIVE IDENTITY AUDIT — Real-Time IAM Posture Engine
 import { IAMClient, ListUsersCommand } from "@aws-sdk/client-iam";
-import { S3Client, ListBucketsCommand, GetPublicAccessBlockCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  GetPublicAccessBlockCommand,
+  ListBucketsCommand,
+  ListObjectsV2Command,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 // Get current timestamp in local 24-hour format
-const getTimestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+const getTimestamp = () =>
+  new Date().toLocaleTimeString("en-GB", { hour12: false });
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "GET")
+    return res.status(405).json({ error: "Method not allowed" });
 
   // Terminal log storage for front-end dashboard
   const terminalLogs = [];
   let exposedSecrets = 0;
 
   try {
-    terminalLogs.push(`[${getTimestamp()}] [AWS] SYSTEM: Identity Audit initiated.`);
+    terminalLogs.push(
+      `[${getTimestamp()}] [AWS] SYSTEM: Identity Audit initiated.`,
+    );
 
     const region = process.env.AWS_REGION || "ap-south-1";
     const credentials = {
@@ -26,47 +36,69 @@ export default async function handler(req, res) {
 
     // Execute User enumeration command across the global IAM control plane
     const { Users } = await iamClient.send(new ListUsersCommand({}));
-    terminalLogs.push(`[AWS] SYSTEM: Found [${Users.length}] IAM Users in account.`);
+    terminalLogs.push(
+      `[AWS] SYSTEM: Found [${Users.length}] IAM Users in account.`,
+    );
 
     // Map identities to telemetry strings for forensic visualization
-    Users.forEach(user => {
+    Users.forEach((user) => {
       const created = new Date(user.CreateDate).toLocaleDateString();
-      terminalLogs.push(`[AWS] INFO: User [${user.UserName}] detected (Created: [${created}]).`);
+      terminalLogs.push(
+        `[AWS] INFO: User [${user.UserName}] detected (Created: [${created}]).`,
+      );
     });
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
     const s3Client = new S3Client({ region, credentials });
-    terminalLogs.push(`[${getTimestamp()}] [AWS] SYSTEM: S3 Storage Audit initiated.`);
+    terminalLogs.push(
+      `[${getTimestamp()}] [AWS] SYSTEM: S3 Storage Audit initiated.`,
+    );
 
     try {
       const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
-      terminalLogs.push(`[AWS] SYSTEM: Found [${Buckets.length}] S3 Buckets in ${region}.`);
+      terminalLogs.push(
+        `[AWS] SYSTEM: Found [${Buckets.length}] S3 Buckets in ${region}.`,
+      );
 
       for (const bucket of Buckets) {
         try {
           const { PublicAccessBlockConfiguration } = await s3Client.send(
-            new GetPublicAccessBlockCommand({ Bucket: bucket.Name })
+            new GetPublicAccessBlockCommand({ Bucket: bucket.Name }),
           );
 
-          if (PublicAccessBlockConfiguration && PublicAccessBlockConfiguration.BlockPublicAcls === true) {
-            terminalLogs.push(`[AWS] INFO: S3 Bucket [${bucket.Name}] is secure.`);
+          if (
+            PublicAccessBlockConfiguration &&
+            PublicAccessBlockConfiguration.BlockPublicAcls === true
+          ) {
+            terminalLogs.push(
+              `[AWS] INFO: S3 Bucket [${bucket.Name}] is secure.`,
+            );
           } else {
-            terminalLogs.push(`[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`);
+            terminalLogs.push(
+              `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
+            );
           }
 
           // ── S3 CONTENT INSPECTION (DEEP SCAN) ────────────────────────
           try {
-            const { Contents } = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }));
+            const { Contents } = await s3Client.send(
+              new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }),
+            );
             if (Contents && Contents.length > 0) {
               for (const obj of Contents) {
                 try {
-                  const getObjRes = await s3Client.send(new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }));
+                  const getObjRes = await s3Client.send(
+                    new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }),
+                  );
                   const body = await getObjRes.Body.transformToString();
-                  const regex = /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
+                  const regex =
+                    /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
 
                   if (body.match(regex)) {
                     exposedSecrets++;
-                    terminalLogs.push(`[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`);
+                    terminalLogs.push(
+                      `[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`,
+                    );
                   }
                 } catch (objErr) {
                   // Handle permission/access denied errors gracefully for terminal logging
@@ -76,34 +108,41 @@ export default async function handler(req, res) {
           } catch (listObjErr) {
             // NoSuchBucket or AccessDenied: graceful skip
           }
-
         } catch (s3Err) {
           // Detection: NoSuchPublicAccessBlockConfiguration implies public access may be allowed
           if (s3Err.name === "NoSuchPublicAccessBlockConfiguration") {
-            terminalLogs.push(`[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`);
+            terminalLogs.push(
+              `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
+            );
           } else {
             // Handle permission/access denied errors gracefully for terminal logging
-            terminalLogs.push(`[AWS] WARN: S3 Permission Error on [${bucket.Name}] — ${s3Err.message}`);
+            terminalLogs.push(
+              `[AWS] WARN: S3 Permission Error on [${bucket.Name}] — ${s3Err.message}`,
+            );
           }
         }
       }
     } catch (listErr) {
-      terminalLogs.push(`[AWS] WARN: S3 Surface Discovery Failed — ${listErr.message}`);
+      terminalLogs.push(
+        `[AWS] WARN: S3 Surface Discovery Failed — ${listErr.message}`,
+      );
     }
 
     // Return unified compliance telemetry payload
     return res.status(200).json({
       summary: Users.length,
       exposedSecrets: exposedSecrets,
-      terminalLogs: terminalLogs
+      terminalLogs: terminalLogs,
     });
   } catch (err) {
     // Audit failure capture — propagate detailed telemetry to dashboard terminal
-    terminalLogs.push(`[${getTimestamp()}] [AWS] CRITICAL: Audit Failed — ${err.message}`);
-    return res.status(200).json({ 
-      summary: "AUDIT_FAILURE", 
+    terminalLogs.push(
+      `[${getTimestamp()}] [AWS] CRITICAL: Audit Failed — ${err.message}`,
+    );
+    return res.status(200).json({
+      summary: "AUDIT_FAILURE",
       exposedSecrets: 0,
-      terminalLogs: terminalLogs 
+      terminalLogs: terminalLogs,
     });
   }
 }
