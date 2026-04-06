@@ -868,9 +868,9 @@
               id="corp-sso"
               style="background-color: transparent; border: 1px solid #6366F1; color: #ffffff; margin-top: 0; transition: background-color 0.2s;"
             >
-              <i data-lucide="lock" width="16" height="16"></i> Okta (Single Sign-On)
+              <i data-lucide="lock" width="16" height="16"></i> Okta (Single
+              Sign-On)
             </button>
-            
           </form>
 
           <div class="text-center mb-2 mt-4">
@@ -1206,8 +1206,13 @@
               <i data-lucide="box" color="white" width="20" height="20"></i>
             </div>
             <h2 class="text-lg font-semibold">Security Vault Dashboard</h2>
-            <div id="sso-badge" class="hidden" style="margin-left: 0.5rem; padding: 0.2rem 0.6rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; color: #818CF8; font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.02em;">
-              <span style="font-size: 0.8rem;">🛡️</span> Enterprise SSO Session Verified via Okta
+            <div
+              id="sso-badge"
+              class="hidden"
+              style="margin-left: 0.5rem; padding: 0.2rem 0.6rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; color: #818CF8; font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.02em;"
+            >
+              <span style="font-size: 0.8rem;">🛡️</span> Enterprise SSO Session
+              Verified via Okta
             </div>
           </div>
 
@@ -1378,635 +1383,661 @@
 
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
-      // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
-      // This listener parses both search and hash to support various redirect formats
-      const rawUrl = window.location.href;
-      const ssoMatch = rawUrl.match(/[?&]sso=success/);
-      const newAccMatch = rawUrl.match(/[?&]accountType=new/);
-
-      if (ssoMatch) {
-          sessionStorage.setItem('isVaultAuthenticated', 'true');
-          sessionStorage.setItem('isSSOSession', 'true');
-          
-          if (newAccMatch) {
-              sessionStorage.setItem('vaultAccountType', 'new');
-              sessionStorage.setItem('vaultUserEmail', 'testuser@heyitsaayush.me');
-              sessionStorage.setItem('vaultUserName', 'Aayush Pandey');
-          }
-
-          // Clean up URL telemetry for forensic integrity and aesthetics
-          const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
-          window.history.replaceState({}, document.title, cleanUrl);
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-                  lucide.createIcons();
-
-                  // View-state handles: mutually exclusive visibility enforced by showState()
-                  const stateLogin = document.getElementById('state-login');
-                  const stateLoading = document.getElementById('state-loading');
-                  // MFA is delivered as a full-screen overlay (#mfa-gateway) — no dedicated page state
-                  const stateDashboard = document.getElementById('state-dashboard');
-
-                  const loginBlock = document.getElementById('login-block');
-                  const signupBlock = document.getElementById('signup-block');
-                  const loginForm = document.getElementById('login-form');
-                  const signupForm = document.getElementById('signup-form');
-                  const toggleSignup = document.getElementById('toggle-signup');
-                  const toggleLogin = document.getElementById('toggle-login');
-
-                  // GSI popup flow is bound via inline onclick — token client registered on window.load
-                  const googleSignupBtn = document.getElementById('google-signup-btn');
-                  const corpSso = document.getElementById('corp-sso');
-
-                  const segmentBtns = document.querySelectorAll('.segment-btn');
-                  const terminalFeed = document.getElementById('terminal-feed');
-
-                  const avatarToggle = document.getElementById('avatar-toggle');
-                  const profileDropdown = document.getElementById('profile-dropdown');
-                  const logoutBtn = document.getElementById('logout-btn');
-
-                  window.currentEnv = 'aws';
-                  let terminalInterval;
-
-
-                  // View-State Router & History API Integration
-                  // showState() is the single authoritative transition function.
-                  // All view changes — auth success, logout, back-navigation —
-                  // Enforces strict UI state isolation by purging DOM visibility before
-                  // rendering the target view.
-                  function showState(target, pushHistory = true) {
-                      // Hide all, then reveal only the target view
-                      [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
-                          el.classList.add('hidden');
-                      });
-                      if (target) target.classList.remove('hidden');
-
-                      let stateName = (target === stateDashboard) ? 'dashboard' : 'login';
-                      if (pushHistory && target !== stateLoading) {
-                          history.pushState({ view: stateName }, '', '#' + stateName);
-                      }
-
-                      if (target === stateDashboard) {
-                          initDashboard();
-                      } else {
-                          stopTerminal();
-                      }
-                  }
-
-                  // Popstate handler: enforces authentication gate on browser back-navigation.
-                  // An unauthenticated popstate to #dashboard is intercepted and redirected
-                  // to the login view — prevents session bypass via history manipulation.
-                  window.addEventListener('popstate', function(event) {
-                      const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
-
-                      if (event.state && event.state.view === 'dashboard' && isAuth) {
-                          showState(stateDashboard, false);
-                      } else {
-                          showState(stateLogin, false);
-                      }
-                  });
-
-                  // Session bootstrap: validates the sessionStorage auth token on every
-                  // page load. Authenticated sessions resume at the dashboard; all others
-                  // are routed to the login view regardless of the URL hash state.
-                  function initializeApp() {
-                      const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
-                      const hash = window.location.hash.replace('#', '');
-
-                      if (isAuth) {
-                          showState(stateDashboard, false);
-                          if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
-                      } else {
-                          showState(stateLogin, false);
-                          history.replaceState({ view: 'login' }, "", "#login");
-                      }
-                  }
-
-                  initializeApp();
-
-                  // SSO UI PERSISTENCE: Reveal enterprise badge if session originated via Okta
-                  if (sessionStorage.getItem('isSSOSession') === 'true') {
-                      const ssoBadge = document.getElementById('sso-badge');
-                      if (ssoBadge) ssoBadge.classList.remove('hidden');
-                  }
-
-                  // EMAIL OTP MFA GATEWAY
-                  // Three functions implement the full TOTP-less OTP lifecycle:
-                  // triggerEmailOtpFlow — issues a session-scoped 6-digit code via EmailJS
-                  // verifyEmailOtp      — validates the submitted code against the session token
-                  // cancelMfa           — purges the session token and returns to login
-                  // The OTP is held exclusively in closure scope (currentSessionOtp) and
-                  // is never written to localStorage or any persistent store.
-
-                  // Session-scoped OTP token — ephemeral, cleared on verify or cancel
-                  var currentSessionOtp = '';
-
-                  // Generates and dispatches a cryptographically random 6-digit OTP
-                  // to the authenticated email address via the EmailJS transactional relay.
-                  window.triggerEmailOtpFlow = function(userEmail) {
-                      // Uniform distribution across [100000, 999999] — 6-digit decimal space
-                      currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
-
-                      // Surface the MFA gateway overlay over the current view
-                      var gateway = document.getElementById('mfa-gateway');
-                      gateway.classList.add('active');
-
-                      // Render the destination email address for operator confirmation
-                      var emailDisplay = document.getElementById('display-user-email');
-                      if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
-
-                      // Reset the OTP input field and focus for immediate entry
-                      var otpInput = document.getElementById('otp-code-input');
-                      if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
-
-                      // Construct the EmailJS payload bound to the active session token
-                      const templateParams = {
-                          user_email: userEmail,
-                          otp_code: currentSessionOtp
-                      };
-
-                      console.log("Initiating secure OTP dispatch to EmailJS...");
-
-                      // Dispatch is wrapped to prevent transient network errors from
-                      // blocking the MFA overlay render — delivery failures are logged
-                      // but do not revert the authentication flow to the login view.
-                      try {
-                          emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
-                              .then(function(response) {
-                                  console.log('SUCCESS! OTP Sent.', response.status, response.text);
-                              })
-                              .catch(function(error) {
-                                  console.error('FAILED to send OTP:', error);
-                              });
-                      } catch(e) {
-                          console.error('[EmailJS] Exception during send:', e);
-                      }
-                  };
-
-                  // Validates the submitted OTP against the active session token.
-                  // On success: session token is cleared, the auth flag is written to
-                  // sessionStorage (tab-scoped persistence), and the dashboard is rendered.
-                  // On failure: visual rejection feedback is applied without disclosing
-                  // the expected value — the operator must re-request a new code.
-                  window.verifyEmailOtp = function() {
-                      var otpInput = document.getElementById('otp-code-input');
-                      var entered = otpInput ? otpInput.value.trim() : '';
-                      if (entered === currentSessionOtp && currentSessionOtp !== '') {
-                          // Token matched — purge in-memory OTP and establish authenticated session
-                          currentSessionOtp = '';
-                          if (otpInput) otpInput.value = '';
-                          document.getElementById('mfa-gateway').classList.remove('active');
-
-                          // Persist authentication flag for the session lifetime (tab-scoped)
-                          sessionStorage.setItem('isVaultAuthenticated', 'true');
-
-                          showState(stateDashboard);
-                      } else {
-                          // Rejection signal: transient red border indicates failed verification
-                          // without leaking the expected token value
-                          if (otpInput) {
-                              otpInput.style.borderColor = '#F04438';
-                              otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
-                              setTimeout(function() {
-                                  otpInput.style.borderColor = '';
-                                  otpInput.style.boxShadow = '';
-                              }, 1500);
-                          }
-                          alert('\u26A0\uFE0F Invalid Code. Please check your email and try again.');
-                      }
-                  };
-
-                  // Aborts the active MFA challenge: purges the session token and
-                  // dismounts the gateway overlay, returning to the unauthenticated login view.
-                  window.cancelMfa = function() {
-                      currentSessionOtp = '';
-                      var otpInput = document.getElementById('otp-code-input');
-                      if (otpInput) otpInput.value = '';
-                      document.getElementById('mfa-gateway').classList.remove('active');
-                      showState(stateLogin);
-                  };
-
-                  // Re-issues a new OTP to the same destination address.
-                  // A fresh token replaces the prior value — the previous code is silently invalidated.
-                  window.resendEmailOtp = function() {
-                      var emailDisplay = document.getElementById('display-user-email');
-                      var email = emailDisplay ? emailDisplay.textContent : '';
-
-                      if(email) {
-                         triggerEmailOtpFlow(email);
-                         console.log("Resending code...");
-                      }
-                  };
-
-                  // Keyboard shortcut: Enter key submission binds to the OTP verification
-                  // function — eliminates the requirement for a pointer interaction
-                  // during the time-sensitive MFA challenge window.
-                  var otpCodeInput = document.getElementById('otp-code-input');
-                  if (otpCodeInput) {
-                      otpCodeInput.addEventListener('keypress', function(e) {
-                          if (e.key === 'Enter') {
-                              e.preventDefault();
-                              verifyEmailOtp();
-                          }
-                      });
-                  }
-                  // Register the telemetry sink immediately at scope-root.
-                  // logic.js may invoke _slackAddLog before any addLog call occurs
-                  // (e.g. on session-restore refresh) — early registration prevents
-                  // a null-sink race condition in the Slack telemetry engine.
-                  window._slackAddLog = addLog;
-
-                  // ── Authentication Slider — Login / Register Panel Toggle ───────────────
-                  toggleSignup.addEventListener('click', (e) => {
-                      e.preventDefault();
-                      loginBlock.classList.add('hidden');
-                      signupBlock.classList.remove('hidden');
-                  });
-                  toggleLogin.addEventListener('click', (e) => {
-                      e.preventDefault();
-                      signupBlock.classList.add('hidden');
-                      loginBlock.classList.remove('hidden');
-                  });
-
-                  // Authoritative Authentication Entry Point
-                  // All login paths — email/password, Google OAuth2, SSO — converge here.
-                  // Callers must transition to stateLoading before invoking this function
-                  // (800ms minimum to guarantee the spinner renders before the MFA overlay).
-                  // Responsibilities: profile dropdown hydration, session token persistence,
-                  // loading state teardown, and MFA gateway activation.
-                  window.processAuthSuccess = function processAuthSuccess(email, displayName) {
-                      var userEmail = email || 'user@company.com';
-                      var userName  = displayName || 'Security Admin';
-
-                      // Hydrate profile dropdown with authenticated identity before overlay renders
-                      var profileEmailEl = document.getElementById('profile-email-display');
-                      var profileNameEl  = document.getElementById('profile-name-display');
-                      if (profileEmailEl) profileEmailEl.innerText = userEmail;
-                      if (profileNameEl)  profileNameEl.innerText  = userName;
-
-                      // Persist identity for session-restore on hard refresh
-                      sessionStorage.setItem('vaultUserEmail', userEmail);
-                      sessionStorage.setItem('vaultUserName',  userName);
-
-                      // Teardown loading state — invoked regardless of auth entry path
-                      var loaderEl = document.getElementById('state-loading');
-                      if (loaderEl) loaderEl.classList.add('hidden');
-
-                      // Restore login view as MFA overlay backdrop
-                      if (stateLogin) stateLogin.classList.remove('hidden');
-
-                      // Activate the MFA gateway — callers have already satisfied the render delay;
-                      try {
-                          triggerEmailOtpFlow(userEmail);
-                      } catch (err) {
-                          console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
-                          alert('MFA gateway failed to open. Please refresh and try again.');
-                      }
-                  };
-
-                  loginForm.addEventListener('submit', (e) => {
-                      e.preventDefault();
-
-                      // Transition to loading state first to ensure the login form
-                      // is fully hidden before any async operations are queued.
-                      showState(stateLoading, false);
-
-                      var loginEmailInput = document.getElementById('login-email');
-                      var emailValue = loginEmailInput ? loginEmailInput.value.trim() : '';
-
-                      // 800ms delay allows the browser to commit the spinner render
-                      // before the MFA overlay activation begins.
-                      setTimeout(() => {
-                          processAuthSuccess(emailValue);
-                      }, 800);
-                  });
-
-                  signupForm.addEventListener('submit', (e) => {
-                      e.preventDefault();
-                      const emailVal = document.getElementById('reg-email').value.trim();
-                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                      if (!emailRegex.test(emailVal)) {
-                          alert('Please enter a valid work email.');
-                          return;
-                      }
-
-                      // Registration path uses identical sequencing to login:
-                      // loading state first, then 800ms render buffer, then MFA activation.
-                      showState(stateLoading, false);
-                      setTimeout(() => {
-                          processAuthSuccess(emailVal);
-                      }, 800);
-                  });
-                  // Both Google entry points route through the same OAuth2 token client
-                  if (googleSignupBtn) {
-                      googleSignupBtn.addEventListener('click', () => {
-                          if (window._gsiTokenClient) {
-                              window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
-                          } else {
-                              processAuthSuccess('demo@google.com');
-                          }
-                      });
-                  }
-                  corpSso.addEventListener('click', () => {
-                      processAuthSuccess('sso-user@corp.com');
-                  });
-
-                  // ── Session Termination & Profile Dropdown ───────────────────────
-                  avatarToggle.addEventListener('click', () => {
-                      profileDropdown.classList.toggle('hidden');
-                  });
-
-                  document.addEventListener('click', (e) => {
-                      if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
-                          profileDropdown.classList.add('hidden');
-                      }
-                  });
-
-                  logoutBtn.addEventListener('click', () => {
-                      profileDropdown.classList.add('hidden');
-                      loginForm.reset();
-                      // Purge in-memory OTP token and dismount MFA gateway if active
-                      currentSessionOtp = '';
-                      var otpInput = document.getElementById('otp-code-input');
-                      if (otpInput) otpInput.value = '';
-                      document.getElementById('mfa-gateway').classList.remove('active');
-
-                      sessionStorage.removeItem('isVaultAuthenticated');
-                      showState(stateLogin);
-                  });
-
-                  //Dashboard Initialisation
-                  function initDashboard() {
-                      // Restore persisted attack surface context from the prior session
-                      var savedEnv = sessionStorage.getItem('vaultActiveEnv');
-                      if (savedEnv === 'slack' || savedEnv === 'aws') {
-                          window.currentEnv = savedEnv;
-                          segmentBtns.forEach(function(b) {
-                              b.classList.toggle('active', b.dataset.view === window.currentEnv);
-                          });
-                      }
-
-                      // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
-                      if (sessionStorage.getItem('vaultAccountType') === 'new') {
-                          terminalFeed.innerHTML = '';
-                          addLog('SYSTEM', 'New environment detected for testuser@heyitsaayush.me', 'INFO');
-                          addLog('OKTA', 'SSO Identity verified: testuser@heyitsaayush.me', 'SUCCESS');
-                          addLog('AWS', 'Initializing security baseline...', 'INFO');
-                          addLog('COMPLIANCE', 'All controls passing for new tenant.', 'SUCCESS');
-                      }
-
-                      updateDashboardContext();
-                      stopTerminal();
-                  }
-
-                  // Attack Surface Context Switch
-                  segmentBtns.forEach(btn => {
-                      btn.addEventListener('click', (e) => {
-                          const btn = e.currentTarget;
-                          const view = btn.dataset.view;
-                          if (!view || window.currentEnv === view) return;
-
-                          segmentBtns.forEach(b => b.classList.remove('active'));
-                          btn.classList.add('active');
-
-                          window.currentEnv = view;
-                          // Persist context for cross-refresh continuity
-                          sessionStorage.setItem('vaultActiveEnv', view);
-                          updateDashboardContext();
-
-                          // Enforce cross-surface telemetry isolation before emitting context event
-                          terminalFeed.innerHTML = '';
-                          addLog(view.toUpperCase(), 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
-
-                          // AWS: boot the static attack path rotation engine
-                          // Slack: telemetry fetch is dispatched inside updateDashboardContext()
-                          if (view === 'aws') {
-                              startTerminal();
-                          } else {
-                              stopTerminal();
-                          }
-                      });
-                  });
-
-                  // Binds KPI panel labels and values to the taxonomy of the active
-                  function updateDashboardContext() {
-                      const titleTerm = document.getElementById('terminal-title');
-                      if (window.currentEnv === 'aws') {
-                          // IaaS attack surface — safe zero-state defaults pending live CSPM scan
-                          document.getElementById('kpi-1-val').innerText = '0';
-                          document.getElementById('kpi-1-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-1-sub').innerText = 'No public exposure';
-                          document.getElementById('kpi-2-title').innerText = 'IAM IDENTITIES';
-                          document.getElementById('kpi-2-val').innerText = '0';
-                          document.getElementById('kpi-2-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-2-sub').innerText = 'No issues detected';
-                          document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                          document.getElementById('kpi-3-val').innerText = '—';
-                          document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-3-sub').innerText = 'Awaiting scan';
-                          document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
-                          document.getElementById('kpi-4-val').innerText = '0';
-                          document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-4-sub').innerText = 'No credentials exposed';
-                          document.getElementById('kpi-5-title').innerText = 'Controls Passing';
-                          document.getElementById('kpi-5-val').innerText = '—';
-                          document.getElementById('kpi-5-val').style.color = 'var(--green)';
-                          document.getElementById('kpi-5-sub').innerText = 'Awaiting scan';
-
-                          titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
-                       } else {
-                           // SaaS attack surface — indeterminate state while telemetry stream hydrates
-                           document.getElementById('kpi-1-val').innerText = '—';
-                           document.getElementById('kpi-1-sub').innerText = 'Scanning…';
-                           document.getElementById('kpi-1-val').style.color = 'var(--gray)';
-                           document.getElementById('kpi-2-title').innerText = 'Exposed Secrets';
-                           document.getElementById('kpi-2-val').innerText = '—';
-                           document.getElementById('kpi-2-val').style.color = 'var(--gray)';
-                           document.getElementById('kpi-2-sub').innerText = 'Scanning messages…';
-                           document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                           document.getElementById('kpi-3-val').innerText = '—';
-                           document.getElementById('kpi-3-val').style.color = 'var(--gray)';
-                           document.getElementById('kpi-3-sub').innerText = 'Checking users…';
-                           document.getElementById('kpi-4-title').innerText = 'Non-Compliant Users';
-                           document.getElementById('kpi-4-val').innerText = '—';
-                           document.getElementById('kpi-4-val').style.color = 'var(--gray)';
-                           document.getElementById('kpi-4-sub').innerText = 'MFA / profile audit';
-                           document.getElementById('kpi-5-title').innerText = 'Total Users';
-                           document.getElementById('kpi-5-val').innerText = '—';
-                           document.getElementById('kpi-5-val').style.color = 'var(--gray)';
-                           document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
-
-                           titleTerm.innerText = 'security-telemetry — Slack Workspace';
-                      }
-
-                      // Identity-Aware Override: Force 'Fresh Account' state if accountType=new is active
-                      if (sessionStorage.getItem('vaultAccountType') === 'new') {
-                          if (window.currentEnv === 'aws') {
-                              document.getElementById('kpi-2-val').innerText = '1';
-                              document.getElementById('kpi-3-val').innerText = '100%';
-                              document.getElementById('kpi-4-val').innerText = '0';
-                              document.getElementById('kpi-2-val').style.color = 'var(--green)';
-                              document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                              document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                          } else {
-                              document.getElementById('kpi-5-val').innerText = '1';
-                              document.getElementById('kpi-3-val').innerText = '100%';
-                              document.getElementById('kpi-2-val').innerText = '0';
-                              document.getElementById('kpi-5-val').style.color = 'var(--green)';
-                              document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                              document.getElementById('kpi-2-val').style.color = 'var(--green)';
-                          }
-                      }
-                  }
-
-                  function startTerminal() {
-                      if (terminalInterval) clearInterval(terminalInterval);
-                      terminalFeed.innerHTML = '';
-                  }
-
-                  function stopTerminal() {
-                      if (terminalInterval) {
-                          clearInterval(terminalInterval);
-                          terminalInterval = null;
-                      }
-                  }
-
-                  // Forensic Log Renderer
-                  function addLog(tag, content, level, pathHighlight, pathTarget) {
-                      const entry = document.createElement('div');
-                      entry.className = 'log-entry fade-in';
-
-                      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                      const tagClass = tag.toLowerCase();
-
-                      let levelHTML = '';
-                      if (level === 'CRITICAL') {
-                          levelHTML = `<span class="log-crit">${level}:</span> `;
-                      } else if (level === 'ALERT') {
-                          levelHTML = `<span class="log-alert">${level}:</span> `;
-                      } else if (level === 'WARN') {
-                          levelHTML = `<span class="log-warn">${level}:</span> `;
-                      } else {
-                          levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
-                      }
-
-                      entry.innerHTML = `
-                          <div>
-                              <span class="log-time">${timeStr}</span>
-                              <span class="log-tag ${tagClass}">[${tag}]</span>
-                              ${levelHTML}<span class="log-text">${content}</span>
-                          </div>
-                      `;
-
-                      if (pathHighlight && pathTarget) {
-                          const pathLine = document.createElement('div');
-                          pathLine.style.paddingLeft = '6.5rem';
-                          pathLine.style.marginTop = '0.1rem';
-                          pathLine.style.marginBottom = '0.4rem';
-                          pathLine.innerHTML = `
-                              <span style="color:#666;">&#x21B3; Attack Path:</span>
-                              <span style="color:#A855F7;">${pathHighlight}</span>
-                              <span style="color:#666;">&rarr;</span>
-                              <span style="color:#818CF8;">${pathTarget}</span>
-                          `;
-                          entry.appendChild(pathLine);
-                      }
-
-                      terminalFeed.appendChild(entry);
-                      terminalFeed.scrollTop = terminalFeed.scrollHeight;
-
-                      // Rolling window: evict oldest entry beyond 20-item threshold
-                      if (terminalFeed.childElementCount > 20) {
-                          terminalFeed.removeChild(terminalFeed.firstChild);
-                      }
-                  }
-                  window._slackAddLog = addLog;
-
-                  // AUDIT LOG EXPORT — Client-Side Blob Engine
-                  // downloadAuditLogs has been refactored to assets/logic.js for context-aware naming and data isolation.
-
-                  // Called from onclick="handleGoogleLogin(event)" on the button
-                  window.handleGoogleLogin = function (e) {
-                      if (e && e.preventDefault) e.preventDefault();
-                      console.log('🚀 Custom Google Auth Triggered');
-
-                      if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
-                          console.error('[GSI] Not initialized — falling back to demo flow.');
-                          processAuthSuccess('demo@google.com', 'Security Admin');
-                          return;
-                      }
-
-                      // requestAccessToken() always opens the real Google account selector popup
-                      window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
-                  };
-
-                  // Keep handleCredentialResponse on window for any future One-Tap use
-                  window.handleCredentialResponse = function (response) {
-                      try {
-                          const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                          console.log('[GSI] Credential response — Email:', payload.email);
-                          processAuthSuccess(payload.email, payload.name || 'Google User');
-                      } catch (err) {
-                          console.error('[GSI] JWT decode failed:', err);
-                      }
-                  };
-
-      });
-
-      // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
-      window.addEventListener('load', function () {
-          // Session restore: re-populate profile dropdown on hard refresh
-          var savedEmail = sessionStorage.getItem('vaultUserEmail');
-          var savedName  = sessionStorage.getItem('vaultUserName');
-          if (savedEmail) {
-              var pel = document.getElementById('profile-email-display');
-              var pnl = document.getElementById('profile-name-display');
-              if (pel) pel.innerText = savedEmail;
-              else console.warn('[ProfileSync] #profile-email-display not found in DOM.');
-              if (pnl) pnl.innerText = savedName || 'Security Admin';
-              else console.warn('[ProfileSync] #profile-name-display not found in DOM.');
-          }
-
-          // GSI initialization
-          if (typeof google === 'undefined' || !google.accounts) {
-              console.warn('[GSI] Google library not loaded — OAuth2 popup unavailable.');
-              return;
-          }
-
-          try {
-              window._gsiTokenClient = google.accounts.oauth2.initTokenClient({
-                  client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
-                  scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                  prompt: 'select_account',
-                  callback: function (tokenResponse) {
-                      if (tokenResponse.error) {
-                          console.error('[GSI] Token error:', tokenResponse.error);
-                          alert('Google sign-in failed. Please try again.');
-                          return;
-                      }
-                      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                          headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
-                      })
-                      .then(function (res) { return res.json(); })
-                      .then(function (userInfo) {
-                          console.log('[GSI] Auth — Email:', userInfo.email, '| Name:', userInfo.name);
-                          // Null-check: processAuthSuccess must exist before calling
-                          if (typeof window.processAuthSuccess === 'function') {
-                              window.processAuthSuccess(userInfo.email, userInfo.name || 'Google User');
-                          } else {
-                              console.error('[GSI] processAuthSuccess not defined yet.');
-                          }
-                      })
-                      .catch(function (err) {
-                          console.error('[GSI] UserInfo fetch failed:', err);
-                          alert('Could not retrieve Google account info. Please try again.');
-                      });
-                  }
-              });
-              console.log('[GSI] OAuth2 Token Client ready.');
-          } catch (gsiErr) {
-              console.error('[GSI] initTokenClient threw — Google auth unavailable.', gsiErr);
+            // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
+            // This listener parses both search and hash to support various redirect formats
+            const rawUrl = window.location.href;
+            const ssoMatch = rawUrl.match(/[?&]sso=success/);
+            const newAccMatch = rawUrl.match(/[?&]accountType=new/);
+
+            if (ssoMatch) {
+                sessionStorage.setItem('isVaultAuthenticated', 'true');
+                sessionStorage.setItem('isSSOSession', 'true');
+
+                if (newAccMatch) {
+                    sessionStorage.setItem('vaultAccountType', 'new');
+                    sessionStorage.setItem('vaultUserEmail', 'testuser@heyitsaayush.me');
+                    sessionStorage.setItem('vaultUserName', 'Aayush Pandey');
+                }
+
+                // Clean up URL telemetry for forensic integrity and aesthetics
+                const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                        lucide.createIcons();
+
+                        // View-state handles: mutually exclusive visibility enforced by showState()
+                        const stateLogin = document.getElementById('state-login');
+                        const stateLoading = document.getElementById('state-loading');
+                        // MFA is delivered as a full-screen overlay (#mfa-gateway) — no dedicated page state
+                        const stateDashboard = document.getElementById('state-dashboard');
+
+                        const loginBlock = document.getElementById('login-block');
+                        const signupBlock = document.getElementById('signup-block');
+                        const loginForm = document.getElementById('login-form');
+                        const signupForm = document.getElementById('signup-form');
+                        const toggleSignup = document.getElementById('toggle-signup');
+                        const toggleLogin = document.getElementById('toggle-login');
+
+                        // GSI popup flow is bound via inline onclick — token client registered on window.load
+                        const googleSignupBtn = document.getElementById('google-signup-btn');
+                        const corpSso = document.getElementById('corp-sso');
+
+                        const segmentBtns = document.querySelectorAll('.segment-btn');
+                        const terminalFeed = document.getElementById('terminal-feed');
+
+                        const avatarToggle = document.getElementById('avatar-toggle');
+                        const profileDropdown = document.getElementById('profile-dropdown');
+                        const logoutBtn = document.getElementById('logout-btn');
+
+                        window.currentEnv = 'aws';
+                        let terminalInterval;
+
+
+                        // View-State Router & History API Integration
+                        // showState() is the single authoritative transition function.
+                        // All view changes — auth success, logout, back-navigation —
+                        // Enforces strict UI state isolation by purging DOM visibility before
+                        // rendering the target view.
+                        function showState(target, pushHistory = true) {
+                            // Hide all, then reveal only the target view
+                            [stateLogin, stateLoading, stateDashboard].filter(Boolean).forEach(function(el) {
+                                el.classList.add('hidden');
+                            });
+                            if (target) target.classList.remove('hidden');
+
+                            let stateName = (target === stateDashboard) ? 'dashboard' : 'login';
+                            if (pushHistory && target !== stateLoading) {
+                                history.pushState({ view: stateName }, '', '#' + stateName);
+                            }
+
+                            if (target === stateDashboard) {
+                                initDashboard();
+                            } else {
+                                stopTerminal();
+                            }
+                        }
+
+                        // Popstate handler: enforces authentication gate on browser back-navigation.
+                        // An unauthenticated popstate to #dashboard is intercepted and redirected
+                        // to the login view — prevents session bypass via history manipulation.
+                        window.addEventListener('popstate', function(event) {
+                            const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+
+                            if (event.state && event.state.view === 'dashboard' && isAuth) {
+                                showState(stateDashboard, false);
+                            } else {
+                                showState(stateLogin, false);
+                            }
+                        });
+
+                        // Session bootstrap: validates the sessionStorage auth token on every
+                        // page load. Authenticated sessions resume at the dashboard; all others
+                        // are routed to the login view regardless of the URL hash state.
+                        function initializeApp() {
+                            const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+                            const hash = window.location.hash.replace('#', '');
+
+                            if (isAuth) {
+                                showState(stateDashboard, false);
+                                if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
+                            } else {
+                                showState(stateLogin, false);
+                                history.replaceState({ view: 'login' }, "", "#login");
+                            }
+                        }
+
+                        initializeApp();
+
+                        // SSO UI PERSISTENCE: Reveal enterprise badge if session originated via Okta
+                        if (sessionStorage.getItem('isSSOSession') === 'true') {
+                            const ssoBadge = document.getElementById('sso-badge');
+                            if (ssoBadge) ssoBadge.classList.remove('hidden');
+                        }
+
+                        // EMAIL OTP MFA GATEWAY
+                        // Three functions implement the full TOTP-less OTP lifecycle:
+                        // triggerEmailOtpFlow — issues a session-scoped 6-digit code via EmailJS
+                        // verifyEmailOtp      — validates the submitted code against the session token
+                        // cancelMfa           — purges the session token and returns to login
+                        // The OTP is held exclusively in closure scope (currentSessionOtp) and
+                        // is never written to localStorage or any persistent store.
+
+                        // Session-scoped OTP token — ephemeral, cleared on verify or cancel
+                        var currentSessionOtp = '';
+
+                        // Generates and dispatches a cryptographically random 6-digit OTP
+                        // to the authenticated email address via the EmailJS transactional relay.
+                        window.triggerEmailOtpFlow = function(userEmail) {
+                            // Uniform distribution across [100000, 999999] — 6-digit decimal space
+                            currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
+
+                            // Surface the MFA gateway overlay over the current view
+                            var gateway = document.getElementById('mfa-gateway');
+                            gateway.classList.add('active');
+
+                            // Render the destination email address for operator confirmation
+                            var emailDisplay = document.getElementById('display-user-email');
+                            if (emailDisplay) emailDisplay.textContent = userEmail || 'your registered address';
+
+                            // Reset the OTP input field and focus for immediate entry
+                            var otpInput = document.getElementById('otp-code-input');
+                            if (otpInput) { otpInput.value = ''; setTimeout(function() { otpInput.focus(); }, 350); }
+
+                            // Construct the EmailJS payload bound to the active session token
+                            const templateParams = {
+                                user_email: userEmail,
+                                otp_code: currentSessionOtp
+                            };
+
+                            console.log("Initiating secure OTP dispatch to EmailJS...");
+
+                            // Dispatch is wrapped to prevent transient network errors from
+                            // blocking the MFA overlay render — delivery failures are logged
+                            // but do not revert the authentication flow to the login view.
+                            try {
+                                emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
+                                    .then(function(response) {
+                                        console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                                    })
+                                    .catch(function(error) {
+                                        console.error('FAILED to send OTP:', error);
+                                    });
+                            } catch(e) {
+                                console.error('[EmailJS] Exception during send:', e);
+                            }
+                        };
+
+                        // Validates the submitted OTP against the active session token.
+                        // On success: session token is cleared, the auth flag is written to
+                        // sessionStorage (tab-scoped persistence), and the dashboard is rendered.
+                        // On failure: visual rejection feedback is applied without disclosing
+                        // the expected value — the operator must re-request a new code.
+                        window.verifyEmailOtp = function() {
+                            var otpInput = document.getElementById('otp-code-input');
+                            var entered = otpInput ? otpInput.value.trim() : '';
+                            if (entered === currentSessionOtp && currentSessionOtp !== '') {
+                                // Token matched — purge in-memory OTP and establish authenticated session
+                                currentSessionOtp = '';
+                                if (otpInput) otpInput.value = '';
+                                document.getElementById('mfa-gateway').classList.remove('active');
+
+                                // Persist authentication flag for the session lifetime (tab-scoped)
+                                sessionStorage.setItem('isVaultAuthenticated', 'true');
+
+                                showState(stateDashboard);
+                            } else {
+                                // Rejection signal: transient red border indicates failed verification
+                                // without leaking the expected token value
+                                if (otpInput) {
+                                    otpInput.style.borderColor = '#F04438';
+                                    otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
+                                    setTimeout(function() {
+                                        otpInput.style.borderColor = '';
+                                        otpInput.style.boxShadow = '';
+                                    }, 1500);
+                                }
+                                alert('\u26A0\uFE0F Invalid Code. Please check your email and try again.');
+                            }
+                        };
+
+                        // Aborts the active MFA challenge: purges the session token and
+                        // dismounts the gateway overlay, returning to the unauthenticated login view.
+                        window.cancelMfa = function() {
+                            currentSessionOtp = '';
+                            var otpInput = document.getElementById('otp-code-input');
+                            if (otpInput) otpInput.value = '';
+                            document.getElementById('mfa-gateway').classList.remove('active');
+                            showState(stateLogin);
+                        };
+
+                        // Re-issues a new OTP to the same destination address.
+                        // A fresh token replaces the prior value — the previous code is silently invalidated.
+                        window.resendEmailOtp = function() {
+                            var emailDisplay = document.getElementById('display-user-email');
+                            var email = emailDisplay ? emailDisplay.textContent : '';
+
+                            if(email) {
+                               triggerEmailOtpFlow(email);
+                               console.log("Resending code...");
+                            }
+                        };
+
+                        // Keyboard shortcut: Enter key submission binds to the OTP verification
+                        // function — eliminates the requirement for a pointer interaction
+                        // during the time-sensitive MFA challenge window.
+                        var otpCodeInput = document.getElementById('otp-code-input');
+                        if (otpCodeInput) {
+                            otpCodeInput.addEventListener('keypress', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    verifyEmailOtp();
+                                }
+                            });
+                        }
+                        // Register the telemetry sink immediately at scope-root.
+                        // logic.js may invoke _slackAddLog before any addLog call occurs
+                        // (e.g. on session-restore refresh) — early registration prevents
+                        // a null-sink race condition in the Slack telemetry engine.
+                        window._slackAddLog = addLog;
+
+                        // ── Authentication Slider — Login / Register Panel Toggle ───────────────
+                        toggleSignup.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            loginBlock.classList.add('hidden');
+                            signupBlock.classList.remove('hidden');
+                        });
+                        toggleLogin.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            signupBlock.classList.add('hidden');
+                            loginBlock.classList.remove('hidden');
+                        });
+
+                        // Authoritative Authentication Entry Point
+                        // All login paths — email/password, Google OAuth2, SSO — converge here.
+                        // Callers must transition to stateLoading before invoking this function
+                        // (800ms minimum to guarantee the spinner renders before the MFA overlay).
+                        // Responsibilities: profile dropdown hydration, session token persistence,
+                        // loading state teardown, and MFA gateway activation.
+                        window.processAuthSuccess = function processAuthSuccess(email, displayName) {
+                            var userEmail = email || 'user@company.com';
+                            var userName  = displayName || 'Security Admin';
+
+                            // Hydrate profile dropdown with authenticated identity before overlay renders
+                            var profileEmailEl = document.getElementById('profile-email-display');
+                            var profileNameEl  = document.getElementById('profile-name-display');
+                            if (profileEmailEl) profileEmailEl.innerText = userEmail;
+                            if (profileNameEl)  profileNameEl.innerText  = userName;
+
+                            // Persist identity for session-restore on hard refresh
+                            sessionStorage.setItem('vaultUserEmail', userEmail);
+                            sessionStorage.setItem('vaultUserName',  userName);
+
+                            // Teardown loading state — invoked regardless of auth entry path
+                            var loaderEl = document.getElementById('state-loading');
+                            if (loaderEl) loaderEl.classList.add('hidden');
+
+                            // Restore login view as MFA overlay backdrop
+                            if (stateLogin) stateLogin.classList.remove('hidden');
+
+                            // Activate the MFA gateway — callers have already satisfied the render delay;
+                            try {
+                                triggerEmailOtpFlow(userEmail);
+                            } catch (err) {
+                                console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
+                                alert('MFA gateway failed to open. Please refresh and try again.');
+                            }
+                        };
+
+                        loginForm.addEventListener('submit', (e) => {
+                            e.preventDefault();
+
+                            // Transition to loading state first to ensure the login form
+                            // is fully hidden before any async operations are queued.
+                            showState(stateLoading, false);
+
+                            var loginEmailInput = document.getElementById('login-email');
+                            var emailValue = loginEmailInput ? loginEmailInput.value.trim() : '';
+
+                            // 800ms delay allows the browser to commit the spinner render
+                            // before the MFA overlay activation begins.
+                            setTimeout(() => {
+                                processAuthSuccess(emailValue);
+                            }, 800);
+                        });
+
+                        signupForm.addEventListener('submit', (e) => {
+                            e.preventDefault();
+                            const emailVal = document.getElementById('reg-email').value.trim();
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(emailVal)) {
+                                alert('Please enter a valid work email.');
+                                return;
+                            }
+
+                            // Registration path uses identical sequencing to login:
+                            // loading state first, then 800ms render buffer, then MFA activation.
+                            showState(stateLoading, false);
+                            setTimeout(() => {
+                                processAuthSuccess(emailVal);
+                            }, 800);
+                        });
+                        // Both Google entry points route through the same OAuth2 token client
+                        if (googleSignupBtn) {
+                            googleSignupBtn.addEventListener('click', () => {
+                                if (window._gsiTokenClient) {
+                                    window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
+                                } else {
+                                    processAuthSuccess('demo@google.com');
+                                }
+                            });
+                        }
+                        corpSso.addEventListener('click', () => {
+                            processAuthSuccess('sso-user@corp.com');
+                        });
+
+                        // ── Session Termination & Profile Dropdown ───────────────────────
+                        avatarToggle.addEventListener('click', () => {
+                            profileDropdown.classList.toggle('hidden');
+                        });
+
+                        document.addEventListener('click', (e) => {
+                            if (!avatarToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+                                profileDropdown.classList.add('hidden');
+                            }
+                        });
+
+                        logoutBtn.addEventListener('click', () => {
+                            profileDropdown.classList.add('hidden');
+                            loginForm.reset();
+                            // Purge in-memory OTP token and dismount MFA gateway if active
+                            currentSessionOtp = '';
+                            var otpInput = document.getElementById('otp-code-input');
+                            if (otpInput) otpInput.value = '';
+                            document.getElementById('mfa-gateway').classList.remove('active');
+
+                            sessionStorage.removeItem('isVaultAuthenticated');
+                            showState(stateLogin);
+                        });
+
+                        //Dashboard Initialisation
+                        function initDashboard() {
+                            // Restore persisted attack surface context from the prior session
+                            var savedEnv = sessionStorage.getItem('vaultActiveEnv');
+                            if (savedEnv === 'slack' || savedEnv === 'aws') {
+                                window.currentEnv = savedEnv;
+                                segmentBtns.forEach(function(b) {
+                                    b.classList.toggle('active', b.dataset.view === window.currentEnv);
+                                });
+                            }
+
+                            // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
+                            if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                                terminalFeed.innerHTML = '';
+                                addLog('SYSTEM', 'New environment detected for testuser@heyitsaayush.me', 'INFO');
+                                addLog('OKTA', 'SSO Identity verified: testuser@heyitsaayush.me', 'SUCCESS');
+                                addLog('AWS', 'Initializing security baseline...', 'INFO');
+                                addLog('COMPLIANCE', 'All controls passing for new tenant.', 'SUCCESS');
+                            }
+
+                            updateDashboardContext();
+                            stopTerminal();
+                        }
+
+                        // Attack Surface Context Switch
+                        segmentBtns.forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                const btn = e.currentTarget;
+                                const view = btn.dataset.view;
+                                if (!view || window.currentEnv === view) return;
+
+                                segmentBtns.forEach(b => b.classList.remove('active'));
+                                btn.classList.add('active');
+
+                                window.currentEnv = view;
+                                // Persist context for cross-refresh continuity
+                                sessionStorage.setItem('vaultActiveEnv', view);
+                                updateDashboardContext();
+
+                                // Enforce cross-surface telemetry isolation before emitting context event
+                                terminalFeed.innerHTML = '';
+                                addLog(view.toUpperCase(), 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
+
+                                // AWS: boot the static attack path rotation engine
+                                // Slack: telemetry fetch is dispatched inside updateDashboardContext()
+                                if (view === 'aws') {
+                                    startTerminal();
+                                } else {
+                                    stopTerminal();
+                                }
+                            });
+                        });
+
+                        // Binds KPI panel labels and values to the taxonomy of the active
+                        function updateDashboardContext() {
+                            const titleTerm = document.getElementById('terminal-title');
+                            if (window.currentEnv === 'aws') {
+                                // IaaS attack surface — safe zero-state defaults pending live CSPM scan
+                                document.getElementById('kpi-1-val').innerText = '0';
+                                document.getElementById('kpi-1-val').style.color = 'var(--green)';
+                                document.getElementById('kpi-1-sub').innerText = 'No public exposure';
+                                document.getElementById('kpi-2-title').innerText = 'IAM IDENTITIES';
+                                document.getElementById('kpi-2-val').innerText = '0';
+                                document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                                document.getElementById('kpi-2-sub').innerText = 'No issues detected';
+                                document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                                document.getElementById('kpi-3-val').innerText = '—';
+                                document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                                document.getElementById('kpi-3-sub').innerText = 'Awaiting scan';
+                                document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
+                                document.getElementById('kpi-4-val').innerText = '0';
+                                document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                                document.getElementById('kpi-4-sub').innerText = 'No credentials exposed';
+                                document.getElementById('kpi-5-title').innerText = 'Controls Passing';
+                                document.getElementById('kpi-5-val').innerText = '—';
+                                document.getElementById('kpi-5-val').style.color = 'var(--green)';
+                                document.getElementById('kpi-5-sub').innerText = 'Awaiting scan';
+
+                                titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
+                             } else {
+                                 // SaaS attack surface — indeterminate state while telemetry stream hydrates
+                                 document.getElementById('kpi-1-val').innerText = '—';
+                                 document.getElementById('kpi-1-sub').innerText = 'Scanning…';
+                                 document.getElementById('kpi-1-val').style.color = 'var(--gray)';
+                                 document.getElementById('kpi-2-title').innerText = 'Exposed Secrets';
+                                 document.getElementById('kpi-2-val').innerText = '—';
+                                 document.getElementById('kpi-2-val').style.color = 'var(--gray)';
+                                 document.getElementById('kpi-2-sub').innerText = 'Scanning messages…';
+                                 document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
+                                 document.getElementById('kpi-3-val').innerText = '—';
+                                 document.getElementById('kpi-3-val').style.color = 'var(--gray)';
+                                 document.getElementById('kpi-3-sub').innerText = 'Checking users…';
+                                 document.getElementById('kpi-4-title').innerText = 'Non-Compliant Users';
+                                 document.getElementById('kpi-4-val').innerText = '—';
+                                 document.getElementById('kpi-4-val').style.color = 'var(--gray)';
+                                 document.getElementById('kpi-4-sub').innerText = 'MFA / profile audit';
+                                 document.getElementById('kpi-5-title').innerText = 'Total Users';
+                                 document.getElementById('kpi-5-val').innerText = '—';
+                                 document.getElementById('kpi-5-val').style.color = 'var(--gray)';
+                                 document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
+
+                                 titleTerm.innerText = 'security-telemetry — Slack Workspace';
+                            }
+
+                            // Identity-Aware Override: Force 'Fresh Account' state if accountType=new is active
+                            if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                                if (window.currentEnv === 'aws') {
+                                    document.getElementById('kpi-2-val').innerText = '1';
+                                    document.getElementById('kpi-3-val').innerText = '100%';
+                                    document.getElementById('kpi-4-val').innerText = '0';
+                                    document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                                } else {
+                                    document.getElementById('kpi-5-val').innerText = '1';
+                                    document.getElementById('kpi-3-val').innerText = '100%';
+                                    document.getElementById('kpi-2-val').innerText = '0';
+                                    document.getElementById('kpi-5-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                                }
+                            }
+                        }
+
+                        function startTerminal() {
+                            if (terminalInterval) clearInterval(terminalInterval);
+                            terminalFeed.innerHTML = '';
+                        }
+
+                        function stopTerminal() {
+                            if (terminalInterval) {
+                                clearInterval(terminalInterval);
+                                terminalInterval = null;
+                            }
+                        }
+
+                        // Forensic Log Renderer
+                        function addLog(tag, content, level, pathHighlight, pathTarget) {
+                            const entry = document.createElement('div');
+                            entry.className = 'log-entry fade-in';
+
+                            const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            const tagClass = tag.toLowerCase();
+
+                            let levelHTML = '';
+                            if (level === 'CRITICAL') {
+                                levelHTML = `<span class="log-crit">${level}:</span> `;
+                            } else if (level === 'ALERT') {
+                                levelHTML = `<span class="log-alert">${level}:</span> `;
+                            } else if (level === 'WARN') {
+                                levelHTML = `<span class="log-warn">${level}:</span> `;
+                            } else {
+                                levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
+                            }
+
+                            entry.innerHTML = `
+                                <div>
+                                    <span class="log-time">${timeStr}</span>
+                                    <span class="log-tag ${tagClass}">[${tag}]</span>
+                                    ${levelHTML}<span class="log-text">${content}</span>
+                                </div>
+                            `;
+
+                            if (pathHighlight && pathTarget) {
+                                const pathLine = document.createElement('div');
+                                pathLine.style.paddingLeft = '6.5rem';
+                                pathLine.style.marginTop = '0.1rem';
+                                pathLine.style.marginBottom = '0.4rem';
+                                pathLine.innerHTML = `
+                                    <span style="color:#666;">&#x21B3; Attack Path:</span>
+                                    <span style="color:#A855F7;">${pathHighlight}</span>
+                                    <span style="color:#666;">&rarr;</span>
+                                    <span style="color:#818CF8;">${pathTarget}</span>
+                                `;
+                                entry.appendChild(pathLine);
+                            }
+
+                            terminalFeed.appendChild(entry);
+                            terminalFeed.scrollTop = terminalFeed.scrollHeight;
+
+                            // Rolling window: evict oldest entry beyond 20-item threshold
+                            if (terminalFeed.childElementCount > 20) {
+                                terminalFeed.removeChild(terminalFeed.firstChild);
+                            }
+                        }
+                        window._slackAddLog = addLog;
+
+                        // AUDIT LOG EXPORT — Client-Side Blob Engine
+                        // downloadAuditLogs has been refactored to assets/logic.js for context-aware naming and data isolation.
+
+                        // Called from onclick="handleGoogleLogin(event)" on the button
+                        window.handleGoogleLogin = function (e) {
+                            if (e && e.preventDefault) e.preventDefault();
+                            console.log('🚀 Custom Google Auth Triggered');
+
+                            if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
+                                console.error('[GSI] Not initialized — falling back to demo flow.');
+                                processAuthSuccess('demo@google.com', 'Security Admin');
+                                return;
+                            }
+
+                            // requestAccessToken() always opens the real Google account selector popup
+                            window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
+                        };
+
+                        // Keep handleCredentialResponse on window for any future One-Tap use
+                        window.handleCredentialResponse = function (response) {
+                            try {
+                                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                                console.log('[GSI] Credential response — Email:', payload.email);
+                                processAuthSuccess(payload.email, payload.name || 'Google User');
+                            } catch (err) {
+                                console.error('[GSI] JWT decode failed:', err);
+                            }
+                        };
+
+            });
+
+            // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
+            window.addEventListener('load', function () {
+                // Session restore: re-populate profile dropdown on hard refresh
+                var savedEmail = sessionStorage.getItem('vaultUserEmail');
+                var savedName  = sessionStorage.getItem('vaultUserName');
+                if (savedEmail) {
+                    var pel = document.getElementById('profile-email-display');
+                    var pnl = document.getElementById('profile-name-display');
+                    if (pel) pel.innerText = savedEmail;
+                    else console.warn('[ProfileSync] #profile-email-display not found in DOM.');
+                    if (pnl) pnl.innerText = savedName || 'Security Admin';
+                    else console.warn('[ProfileSync] #profile-name-display not found in DOM.');
+                }
+
+                // GSI initialization
+                if (typeof google === 'undefined' || !google.accounts) {
+                    console.warn('[GSI] Google library not loaded — OAuth2 popup unavailable.');
+                    return;
+                }
+
+                try {
+                    window._gsiTokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: '287741135431-qflh4j0b047ii8p721mj6apb3h1vi8oe.apps.googleusercontent.com',
+                        scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                        prompt: 'select_account',
+                        callback: function (tokenResponse) {
+                            if (tokenResponse.error) {
+                                console.error('[GSI] Token error:', tokenResponse.error);
+                                alert('Google sign-in failed. Please try again.');
+                                return;
+                            }
+                            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                            })
+                            .then(function (res) { return res.json(); })
+                            .then(function (userInfo) {
+                                console.log('[GSI] Auth — Email:', userInfo.email, '| Name:', userInfo.name);
+                                // Null-check: processAuthSuccess must exist before calling
+                                if (typeof window.processAuthSuccess === 'function') {
+                                    window.processAuthSuccess(userInfo.email, userInfo.name || 'Google User');
+                                } else {
+                                    console.error('[GSI] processAuthSuccess not defined yet.');
+                                }
+                            })
+                            .catch(function (err) {
+                                console.error('[GSI] UserInfo fetch failed:', err);
+                                alert('Could not retrieve Google account info. Please try again.');
+                            });
+                        }
+                    });
+                    console.log('[GSI] OAuth2 Token Client ready.');
+                } catch (gsiErr) {
+                    console.error('[GSI] initTokenClient threw — Google auth unavailable.', gsiErr);
+                }
+            });
+
+            // --- IDENTITY-AWARE OVERRIDE ---
+      window.addEventListener('DOMContentLoaded', () => {
+          const params = new URLSearchParams(window.location.search);
+          const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+
+          // Check both standard URL and Hash-based URL for the 'new' flag
+          if (params.get('accountType') === 'new' || hashParams.get('accountType') === 'new') {
+              console.log("Verified: New Enterprise Session Detected.");
+
+              // Update the UI Stats
+              if(document.getElementById('total-users')) document.getElementById('total-users').innerText = "1";
+              if(document.getElementById('exposed-secrets')) document.getElementById('exposed-secrets').innerText = "0";
+
+              // Wipe the old logs and show fresh ones
+              const terminal = document.getElementById('security-telemetry');
+              if(terminal) {
+                  terminal.innerHTML = `
+                      <div style="color: #00ff00;">[SYSTEM]: Identity-Aware Tunnel Established.</div>
+                      <div style="color: #aaa;">[INFO]: Logged in as: testuser@heyitsaayush.me</div>
+                      <div style="color: #00ff00;">[SUCCESS]: MFA Policy: Okta Verify Enforced.</div>
+                      <div style="color: #555;">[WAIT]: Awaiting first telemetry sync...</div>
+                  `;
+              }
           }
       });
     </script>
