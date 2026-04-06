@@ -367,8 +367,14 @@ window.triggerAwsScan = async function () {
     if (terminal) terminal.innerHTML = "";
 
     // Sync live telemetry stream to the dashboard terminal
+    let openAttackPaths = 0;
     if (Array.isArray(data.terminalLogs)) {
       data.terminalLogs.forEach(entry => {
+        // UI Telemetry Sync: Identify public exposure findings for attack surface tracking
+        if (entry.includes("PUBLIC ACCESS ENABLED") || entry.includes("CRITICAL")) {
+          openAttackPaths++;
+        }
+
         // Strip [HH:MM:SS] if present — the renderer adds its own forensic timestamp
         let clean = entry.replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, '').replace(/^\[AWS\]\s+/, '');
         const [level, ...contentParts] = clean.split(': ');
@@ -382,11 +388,18 @@ window.triggerAwsScan = async function () {
     if (kpi2) { kpi2.innerText = String(data.summary); kpi2.style.color = "var(--green)"; }
     if (kpi2s) kpi2s.innerText = `Found ${data.summary} IAM Identities`;
 
-    // Reset attack path counters — real-time scan overrides simulated vulnerabilities
+    // Update Attack Surface card — real-time scan overrides simulated vulnerabilities
     const kpi1 = document.getElementById("kpi-1-val");
     const kpi1s = document.getElementById("kpi-1-sub");
-    if (kpi1) { kpi1.innerText = "0"; kpi1.style.color = "var(--green)"; }
-    if (kpi1s) kpi1s.innerText = "No public exposure detected";
+    if (kpi1) {
+      kpi1.innerText = String(openAttackPaths);
+      kpi1.style.color = openAttackPaths > 0 ? "var(--red)" : "var(--green)";
+    }
+    if (kpi1s) {
+      kpi1s.innerText = openAttackPaths > 0 
+        ? `${openAttackPaths} Public Asset Detected` 
+        : "No public exposure detected";
+    }
 
   } catch (err) {
     // Audit failure capture — propagate detailed telemetry to dashboard terminal
