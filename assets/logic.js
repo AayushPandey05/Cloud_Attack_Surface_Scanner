@@ -368,7 +368,7 @@ window.triggerAwsScan = async function () {
 
     let openAttackPaths = 0;
     let exposedSecrets = 0;
-    let mfaEnabled = false;
+    let mfaActive = false; // New Logic Catcher
 
     if (Array.isArray(data.terminalLogs)) {
       data.terminalLogs.forEach((entry) => {
@@ -378,7 +378,9 @@ window.triggerAwsScan = async function () {
         )
           openAttackPaths++;
         if (entry.includes("Leaked AWS Access Key")) exposedSecrets++;
-        if (entry.includes("MFA compliance check passed")) mfaEnabled = true;
+
+        // --- CATCH MFA STATUS FROM LOGS ---
+        if (entry.includes("MFA compliance check passed")) mfaActive = true;
 
         let clean = entry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
@@ -388,47 +390,56 @@ window.triggerAwsScan = async function () {
       });
     }
 
-    // Update Card 2: IAM Identities
-    const kpi2 = document.getElementById("kpi-2-val");
-    if (kpi2) {
-      kpi2.innerText = String(data.summary);
-      kpi2.style.color = "var(--green)";
-    }
-
-    // Update Card 1: Attack Paths
+    // Update KPI 1: Attack Paths
     const kpi1 = document.getElementById("kpi-1-val");
     if (kpi1) {
-      kpi1.innerText = String(openAttackPaths);
+      kpi1.innerText = openAttackPaths;
       kpi1.style.color = openAttackPaths > 0 ? "var(--red)" : "var(--green)";
     }
 
-    // Update Card 3: MFA Auditor
-    const kpi3 = document.getElementById("kpi-3-val");
-    if (kpi3) {
-      kpi3.innerText = mfaEnabled ? "1" : "0";
-      kpi3.style.color = mfaEnabled ? "var(--green)" : "var(--red)";
+    // Update KPI 2: IAM Identities
+    const kpi2 = document.getElementById("kpi-2-val");
+    if (kpi2) {
+      kpi2.innerText = data.summary || "1";
+      kpi2.style.color = "var(--green)";
     }
 
-    // Update Card 4: Exposed Secrets
+    // Update KPI 3: MFA ENFORCED (The one you need!)
+    const kpi3 = document.getElementById("kpi-3-val");
+    const kpi3s = document.getElementById("kpi-3-sub");
+    if (kpi3) {
+      kpi3.innerText = mfaActive ? "1" : "0";
+      kpi3.style.color = mfaActive ? "var(--green)" : "var(--red)";
+      if (kpi3s)
+        kpi3s.innerText = mfaActive ? "MFA Policy Active" : "MFA Not Detected";
+    }
+
+    // Update KPI 4: Exposed Secrets
     const kpi4 = document.getElementById("kpi-4-val");
     if (kpi4) {
-      kpi4.innerText = String(exposedSecrets);
+      kpi4.innerText = exposedSecrets;
       kpi4.style.color = exposedSecrets > 0 ? "var(--red)" : "var(--green)";
     }
 
-    // Update Card 5: Controls Passing (Scoreboard)
+    // Update KPI 5: CONTROLS PASSING (The one you need!)
     const kpi5 = document.getElementById("kpi-5-val");
-    const score = data.controlsPassing || 0;
+    const kpi5s = document.getElementById("kpi-5-sub");
+    // Simple logic: If bucket is secure + no secrets + MFA active = 3 controls
+    let controls =
+      (openAttackPaths === 0 ? 1 : 0) +
+      (exposedSecrets === 0 ? 1 : 0) +
+      (mfaActive ? 1 : 0);
+
     if (kpi5) {
-      kpi5.innerText = String(score);
-      kpi5.style.color = score > 2 ? "var(--green)" : "var(--red)";
+      kpi5.innerText = controls;
+      kpi5.style.color = controls >= 2 ? "var(--green)" : "var(--red)";
+      if (kpi5s) kpi5s.innerText = `${controls}/3 Controls Active`;
     }
   } catch (err) {
     window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
   }
 };
 
-// SMART SCAN TRIGGER — Unified Orchestration Layer
 // SMART SCAN TRIGGER — Unified Orchestration Layer
 (function initScanTrigger() {
   const triggerBtn = document.getElementById("scan-trigger-btn");
