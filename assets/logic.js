@@ -447,6 +447,24 @@ window.triggerAwsScan = async function () {
     sessionStorage.setItem('aws_audit_complete', 'true');
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
+    // S3 THREAT LOGIC: Force a Critical Threat Level (85%) if Public Buckets are detected
+    if (openAttackPaths > 0) {
+        const radiusNum = document.getElementById('blast-radius-val');
+        const radiusDesc = document.getElementById('blast-radius-sub');
+        const soc2Status = document.getElementById('compliance-status-val');
+
+        if (radiusNum && radiusDesc) {
+            radiusNum.innerText = '85%';
+            radiusNum.style.color = '#ff3131'; // Neon Red
+            radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
+        }
+        
+        if (soc2Status) {
+            soc2Status.innerText = 'FAILED (Non-Compliant)';
+            soc2Status.style.color = '#ff3131';
+        }
+    }
+
   } catch (err) {
     window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
   }
