@@ -457,6 +457,15 @@ window.triggerAwsScan = async function () {
   }
   triggerBtn.addEventListener("click", async () => {
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
+    const currentUser = sessionStorage.getItem('loggedInUser') || '';
+    const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+
+    // Zero Trust Security Enforcement: Lock audit triggers to Admin only
+    if (!isAdmin) {
+       console.error("[ZeroTrust] Audit blocked: Unauthorized identity.");
+       alert("⚠ Security Access Denied: Your account does not have an active AWS connection. Please click 'Connect Your Cloud' to begin.");
+       return;
+    }
 
     // 1. Reset KPI counters (Your existing reset logic goes here)
     // ...

@@ -1288,7 +1288,7 @@
         </div>
 
         <!-- Terminal Feed -->
-        <div class="terminal-container">
+        <div class="terminal-container" id="terminal-panel">
           <div class="terminal-header">
             <div class="mac-dots">
               <div class="mac-dot dot-red"></div>
@@ -1306,6 +1306,17 @@
           <div class="terminal-body font-mono" id="terminal-feed">
             <!-- Logs -> JS -->
           </div>
+        </div>
+ 
+        <!-- Zero-State Connect UI (Zero Trust) -->
+        <div id="zero-trust-connect" class="hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; background: rgba(0,0,0,0.1); border: 1px dashed var(--gray); border-radius: 12px; margin-top: 24px; text-align: center; padding: 40px;">
+           <i data-lucide="cloud-off" width="48" height="48" style="color: var(--gray); opacity: 0.5; margin-bottom: 20px;"></i>
+           <h3 style="font-size: 1.5rem; margin-bottom: 12px; color: var(--white);">Identity Verified</h3>
+           <p style="color: var(--gray); max-width: 450px; margin-bottom: 24px; line-height: 1.6; font-size: 0.95rem;">No active telemetry detected for this account. Please link your AWS Environment to begin scanning.</p>
+           <button class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+              <i data-lucide="plus" width="18" height="18"></i>
+              Connect Your Cloud
+           </button>
         </div>
       </div>
     </div>
@@ -1575,7 +1586,9 @@
                         // loading state teardown, and MFA gateway activation.
                         window.processAuthSuccess = function processAuthSuccess(email, displayName, accType = 'existing') {
                             var userEmail = email || 'user@company.com';
-                            var userName  = 'Security Admin';
+                            const adminEmail = 'aayushpandey2905@gmail.com';
+                            const isAdmin = userEmail.toLowerCase() === adminEmail;
+                            var userName  = isAdmin ? 'Security Admin' : 'External Auditor';
 
                             // Hydrate profile dropdown with authenticated identity before overlay renders
                             var profileEmailEl = document.querySelector('#profile-email-display');
@@ -1583,9 +1596,10 @@
                             if (profileEmailEl) profileEmailEl.innerText = userEmail;
                             if (profileNameEl)  profileNameEl.innerText  = userName;
 
-                            // Persist identity for session-restore on hard refresh
+                            // Persist identity for session-restore and data isolation
                             sessionStorage.setItem('email', userEmail);
                             sessionStorage.setItem('name',  userName);
+                            sessionStorage.setItem('loggedInUser', userEmail);
                             sessionStorage.setItem('accountType', accType);
 
                             // Teardown loading state — invoked regardless of auth entry path
@@ -1699,15 +1713,30 @@
                                 });
                             }
 
-                            // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
-                            if (sessionStorage.getItem('accountType') === 'new') {
-                                const activeUser = sessionStorage.getItem('email') || 'admin@security-vault.demo';
-                                terminalFeed.innerHTML = '';
-                                addLog('SYSTEM', 'New environment detected for ' + activeUser, 'INFO');
-                                addLog('OKTA', 'SSO Identity verified: ' + activeUser, 'SUCCESS');
-                                addLog('AWS', 'Auditing S3 Storage: [testuser-private-storage] detected.', 'INFO');
-                                addLog('AWS', 'Initializing security baseline...', 'INFO');
-                                addLog('COMPLIANCE', 'All controls passing for new tenant.', 'SUCCESS');
+                            // Identity-Based Data Isolation (Zero Trust)
+                            const currentUser = sessionStorage.getItem('loggedInUser') || '';
+                            const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+                            const terminalPanel = document.getElementById('terminal-panel');
+                            const zeroStateUI = document.getElementById('zero-trust-connect');
+                            
+                            terminalFeed.innerHTML = '';
+
+                            if (isAdmin) {
+                                // Admin View: Show active telemetry
+                                if (terminalPanel) terminalPanel.classList.remove('hidden');
+                                if (zeroStateUI) zeroStateUI.classList.add('hidden');
+
+                                addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS');
+                                addLog('AWS', 'Auditing S3: [admin-prod-vortex] and [security-audit-logs] detected.', 'INFO');
+                                addLog('AWS', 'Critical Attack Path: IAM Identity -> S3 Exfiltration identified.', 'ERROR');
+                                addLog('OKTA', 'Identity Audit: 3 high-privileged IAM identities found.', 'WARNING');
+                            } else {
+                                // Guest View (Zero Trust): Total isolation
+                                if (terminalPanel) terminalPanel.classList.add('hidden');
+                                if (zeroStateUI) {
+                                  zeroStateUI.classList.remove('hidden');
+                                  if (window.lucide) lucide.createIcons();
+                                }
                             }
 
                             updateDashboardContext();
@@ -1794,22 +1823,39 @@
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                             }
 
-                            // Identity-Aware Override: Force 'Fresh Account' state if accountType=new is active
-                            if (sessionStorage.getItem('accountType') === 'new') {
-                                if (window.currentEnv === 'aws') {
-                                    document.getElementById('kpi-2-val').innerText = '1';
-                                    document.getElementById('kpi-3-val').innerText = '100%';
-                                    document.getElementById('kpi-4-val').innerText = '0';
-                                    document.getElementById('kpi-2-val').style.color = 'var(--green)';
-                                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                                    document.getElementById('kpi-4-val').style.color = 'var(--green)';
+                            // Identity-Aware Data Isolation: Zero Trust Enforcement
+                            const currentUser = sessionStorage.getItem('loggedInUser') || '';
+                            const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+
+                            if (window.currentEnv === 'aws') {
+                                if (isAdmin) {
+                                    // Admin-specific active metrics
+                                    document.getElementById('kpi-2-val').innerText = '3';
+                                    document.getElementById('kpi-3-val').innerText = '66%';
+                                    document.getElementById('kpi-4-val').innerText = '1'; 
+                                    document.getElementById('kpi-4-val').style.color = 'var(--red)';
                                 } else {
-                                    document.getElementById('kpi-5-val').innerText = '1';
-                                    document.getElementById('kpi-3-val').innerText = '100%';
+                                    // Zero Trust Guest Metrics (Locked)
+                                    document.getElementById('kpi-1-val').innerText = '0';
                                     document.getElementById('kpi-2-val').innerText = '0';
-                                    document.getElementById('kpi-5-val').style.color = 'var(--green)';
-                                    document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                                    document.getElementById('kpi-2-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-3-val').innerText = '0%';
+                                    document.getElementById('kpi-4-val').innerText = '0';
+                                    document.getElementById('kpi-5-val').innerText = '0';
+                                    
+                                    document.getElementById('kpi-1-val').style.color = 'var(--gray)';
+                                    document.getElementById('kpi-2-val').style.color = 'var(--gray)';
+                                    document.getElementById('kpi-4-val').style.color = 'var(--gray)';
+                                }
+                            } else {
+                                // Slack Workspace Isolation (Zero Trust)
+                                if (isAdmin) {
+                                    document.getElementById('kpi-5-val').innerText = '12';
+                                    document.getElementById('kpi-2-val').innerText = '4';
+                                } else {
+                                    for(let i=1; i<=5; i++) {
+                                        document.getElementById('kpi-'+i+'-val').innerText = '0';
+                                        document.getElementById('kpi-'+i+'-val').style.color = 'var(--gray)';
+                                    }
                                 }
                             }
                         }
@@ -1917,15 +1963,19 @@
 
                 // Multi-tier resolution: URL Param -> Session Storage -> Admin Default
                 let userEmail = params.get('email') || hashParams.get('email') || 
+                               sessionStorage.getItem('loggedInUser') || 
                                sessionStorage.getItem('email') || 
                                'admin@security-vault.demo';
 
-                // Enforce project requirement: Name is always Security Admin
-                const userName = 'Security Admin';
+                // Enforce Identity-Based Naming
+                const adminEmail = 'aayushpandey2905@gmail.com';
+                const isAdmin = userEmail.toLowerCase() === adminEmail;
+                const userName = isAdmin ? 'Security Admin' : 'External Auditor';
 
                 // Persistence: Commit resolved identity to session storage
                 sessionStorage.setItem('email', userEmail);
                 sessionStorage.setItem('name', userName);
+                sessionStorage.setItem('loggedInUser', userEmail);
 
                 // DOM Injection via document.querySelector
                 const profileEmailEl = document.querySelector('#profile-email-display');
