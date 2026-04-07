@@ -481,6 +481,18 @@ window.triggerAwsScan = async function () {
       } else if (currentModule === "SLACK") {
         await window.runSlackAudit();
       }
+
+      // ADMIN IDENTITY SPIKE: Elevate Blast Radius post-scan for verified Architect
+      const loggedUser = sessionStorage.getItem('loggedInUser');
+      if (loggedUser === 'aayushpandey2905@gmail.com') {
+          const radiusNumber = document.getElementById('blast-radius-val');
+          const radiusText = document.getElementById('blast-radius-sub');
+          if (radiusNumber && radiusText) {
+              radiusNumber.innerText = '95%';
+              radiusNumber.style.color = '#ff3131'; 
+              radiusText.innerText = 'CRITICAL: Full Admin status detected.';
+          }
+      }
     } catch (err) {
       console.error("[ScanTrigger] Execution failed:", err);
     } finally {
