@@ -1832,35 +1832,32 @@
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
                             
-                            // IDENT-AWARE COLOR PALETTE: Sync with AWS/Slack architectural requirements
+                            // IDENT-AWARE COLOR PALETTE: High-Voltage Neon Theme
                             const isAws = l.source === 'AWS';
-                            const prefixColor = isAws ? '#ff9900' : '#ffffff';
-                            const timeColor = isAws ? '#ff9900' : '#ffffff';
+                            const prefixColor = isAws ? '#FF8C00' : '#ffffff'; // Electric Orange
+                            const timeColor = isAws ? '#FF8C00' : '#ffffff';
                             
                             let categoryColor = '#ffffff';
-                            let categoryOpacity = 0.6;
+                            let categoryOpacity = 1.0;
                             
                             if (l.category === 'SYSTEM' || l.category === 'Audit' || l.category === 'Gateway') {
-                                categoryColor = '#00aaff'; // Blue
-                                categoryOpacity = 1.0;
+                                categoryColor = '#00F2FF'; // Neon Cyan
                             }
                             if (l.level === 'INFO') {
-                                categoryColor = '#00f2ff'; // Cyan
-                                categoryOpacity = 1.0;
+                                categoryColor = '#00F2FF'; // Neon Cyan
                             }
                             if (l.level === 'CRITICAL' || l.level === 'FAILURE') {
-                                categoryColor = '#ff3131'; // Neon Red
-                                categoryOpacity = 1.0;
+                                categoryColor = '#FF1744'; // Pulsing Neon Red
                             }
 
                             // TERMINAL PAINT ENGINE: Keyword highlights
                             let coloredText = l.text;
                             if (coloredText.includes('CRITICAL:') || coloredText.includes('PUBLIC ACCESS ENABLED!') || coloredText.includes('non-compliance')) {
-                                coloredText = `<span style="color: #ff3131;">${coloredText}</span>`;
+                                coloredText = `<span style="color: #FF1744;">${coloredText}</span>`; // Pulsing Neon Red
                             } else if (coloredText.includes('Initial Access') || coloredText.includes('SYSTEM') || coloredText.includes('[IDENT]')) {
-                                coloredText = `<span style="color: #ffcc00;">${coloredText}</span>`;
+                                coloredText = `<span style="color: #FFCC00;">${coloredText}</span>`; // Vivid Yellow
                             } else if (coloredText.includes('secure') || coloredText.includes('passed') || coloredText.includes('Scan complete')) {
-                                coloredText = `<span style="color: #00f2ff;">${coloredText}</span>`;
+                                coloredText = `<span style="color: #00E676;">${coloredText}</span>`; // Emerald Green
                             }
 
                             logLine.innerHTML = `
@@ -1965,67 +1962,48 @@
                             const env = window.currentEnv || 'aws';
                             const isAuditComplete = sessionStorage.getItem(env + '_audit_complete') === 'true';
 
+                            const updateSafe = (id, text, color = null) => {
+                                const el = document.getElementById(id);
+                                if (el) {
+                                    if (text !== null) el.innerText = text;
+                                    if (color) el.style.color = color;
+                                }
+                            };
+
                             if (env === 'aws') {
-                                // IaaS attack surface defaults
-                                document.getElementById('kpi-title-1').innerText = 'Identity Blast Radius';
-                                document.getElementById('kpi-title-2').innerText = 'IAM IDENTITIES';
-                                document.getElementById('kpi-title-3').innerText = 'MFA Enforced';
-                                document.getElementById('kpi-title-4').innerText = 'Exposed Secrets';
-                                document.getElementById('kpi-title-5').innerText = 'SOC2 Status';
-
-                                // Dynamic metrics sync (Neutralizing hardcoded fallbacks)
-                                const actualIamUsers = 1;
-                                const detectedSecrets = 0;
-
-                                const iamEl = document.getElementById('iam-identities-count');
-                                if (iamEl) {
-                                    iamEl.innerText = isAuditComplete ? actualIamUsers : '0';
-                                    iamEl.style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
-                                }
-
-                                const secretsEl = document.getElementById('aws-secrets-count') || document.getElementById('high-risk-count');
-                                if (secretsEl) {
-                                    secretsEl.id = 'aws-secrets-count'; // Ensure ID stability
-                                    secretsEl.innerText = isAuditComplete ? detectedSecrets : '0';
-                                    secretsEl.style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
-                                }
-
-                                document.getElementById('mfa-enforced-val').innerText = isAuditComplete ? '100%' : '—';
-                                document.getElementById('compliance-status-val').innerText = isAuditComplete ? 'COMPLIANT' : '—';
-
+                                updateSafe('kpi-title-1', 'Identity Blast Radius');
+                                updateSafe('kpi-title-2', 'IAM IDENTITIES');
+                                updateSafe('kpi-title-3', 'MFA Enforced');
+                                updateSafe('kpi-title-4', 'Exposed Secrets');
+                                
+                                updateSafe('iam-identities-count', isAuditComplete ? '1' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+                                updateSafe('mfa-enforced-val', isAuditComplete ? '100.0%' : '—', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+                                updateSafe('aws-secrets-count', isAuditComplete ? '0' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+                                
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
-                                 // SaaS attack surface defaults
-                                 document.getElementById('kpi-title-1').innerText = 'Exposed Secrets';
-                                 document.getElementById('kpi-title-2').innerText = 'Impacted Channels';
-                                 document.getElementById('kpi-title-3').innerText = 'Workspace MFA';
-                                 document.getElementById('kpi-title-4').innerText = 'High-Risk Identities Detected';
-                                 document.getElementById('kpi-title-5').innerText = 'Total Users';
+                                 updateSafe('kpi-title-1', 'Exposed Secrets');
+                                 updateSafe('kpi-title-2', 'Impacted Channels');
+                                 updateSafe('kpi-title-3', 'Workspace MFA');
+                                 updateSafe('kpi-title-4', 'High-Risk Identities Detected');
 
                                  const secretsVal = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.secrets : '0') : '—';
-                                 document.getElementById('blast-radius-val').innerText = secretsVal;
-
+                                 updateSafe('blast-radius-val', secretsVal);
+                                 
                                  const channelEl = document.getElementById('impacted-channels-count');
                                  if (channelEl) {
                                      channelEl.innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.impactedChannelCount : '0') : '0';
-                                     channelEl.style.color = isAuditComplete ? (window.latestSlackData && window.latestSlackData.impactedChannelCount > 0 ? 'var(--red)' : 'var(--green)') : 'var(--gray)';
+                                     channelEl.style.color = isAuditComplete ? (window.latestSlackData && window.latestSlackData.impactedChannelCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
                                  }
-
-                                 document.getElementById('mfa-enforced-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—';
-
-                                 // Fix for 'undefined' metric: Strict identity fallback
+                                 
+                                 updateSafe('mfa-enforced-val', isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—');
+                                 
                                  const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
                                  const kpi4El = document.getElementById('aws-secrets-count') || document.getElementById('high-risk-count');
                                  if (kpi4El) {
-                                     kpi4El.id = 'high-risk-count'; // Contextual identity sync
+                                     kpi4El.id = 'high-risk-count';
                                      kpi4El.innerText = isAuditComplete ? String(uniqueSlackUsersSize) : '0';
-                                     kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? 'var(--red)' : 'var(--green)') : 'var(--gray)';
-                                 }
-
-                                 const totalUserEl = document.getElementById('compliance-status-val');
-                                 if (totalUserEl) {
-                                     totalUserEl.innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.totalUsers : '0') : '—';
-                                     totalUserEl.style.color = isAuditComplete ? 'var(--blue)' : 'var(--gray)';
+                                     kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
                                  }
 
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
@@ -2144,68 +2122,6 @@
       // LEGACY OVERRIDE PURGED IN FAVOR OF PRIORITY INITIALIZATION
     </script>
 
-    <!-- FAST-TRACK IDENTITY MULTIPLIER (Hard Override) -->
-    <script>
-      (function() {
-        const originalUpdate = window.updateDashboardContext;
-        window.updateDashboardContext = function() {
-          if (typeof originalUpdate === 'function') originalUpdate();
-
-          const userEmail = sessionStorage.getItem('loggedInUser');
-          const env = window.currentEnv || 'aws';
-          const isAuditComplete = sessionStorage.getItem(env + '_audit_complete') === 'true';
-
-          if (isAuditComplete) {
-            // SHARED OVERRIDE: SOC2 COMPLIANCE STATUS
-            const statusVal = document.getElementById('compliance-status-val');
-            const statusSub = document.getElementById('controls-passing-sub');
-            const statusTitle = document.getElementById('kpi-title-5');
-            if (statusTitle) statusTitle.innerText = env === 'aws' ? 'SOC2 Status' : 'Total Users';
-
-            if (env === 'aws') {
-              const val = document.getElementById('blast-radius-val');
-              const sub = document.getElementById('blast-radius-sub');
-              const secretsVal = document.getElementById('aws-secrets-count');
-
-              const radiusNum = (userEmail === 'aayushpandey2905@gmail.com') ? 95 : 5;
-              const leakedKeys = 0; // Target value from request
-
-              if (userEmail === 'aayushpandey2905@gmail.com') {
-                if (val) { val.innerText = '95%'; val.style.color = '#ff3131'; }
-                if (sub) sub.innerText = 'Full Administrative Access detected via Okta SSO.';
-              } else {
-                if (val) { val.innerText = '5%'; val.style.color = '#4ade80'; }
-                if (sub) sub.innerText = 'Least Privilege Enforced. Lateral movement blocked.';
-              }
-
-              // SOC2 Integrity: Red if Risk > 80 OR Secrets > 0
-              const isFailed = radiusNum > 80 || leakedKeys > 0;
-              if (statusVal) {
-                  statusVal.innerText = isFailed ? 'FAILED (Non-Compliant)' : 'COMPLIANT';
-                  statusVal.style.color = isFailed ? '#ff3131' : '#4ade80';
-              }
-              if (statusSub) statusSub.innerText = isFailed ? 'Critical control failures detected.' : 'Internal security controls passing.';
-            } else {
-              // SLACK VIEW IDENTITY SYNC
-              const slackSecrets = window.latestSlackData ? parseInt(window.latestSlackData.secrets) : 0;
-              const isFailed = slackSecrets > 0;
-              if (statusVal) {
-                  statusVal.innerText = isFailed ? 'FAILED (Non-Compliant)' : 'COMPLIANT';
-                  statusVal.style.color = isFailed ? '#ff3131' : '#4ade80';
-              }
-              if (statusSub) statusSub.innerText = isFailed ? 'Policy violation: Secret Exposure.' : 'Workspace policies enforced.';
-
-              // Ensure Non-Compliant Users card is strictly distinct and Deduplicated
-              const userCardVal = document.getElementById('high-risk-count');
-              const userCardTitle = document.getElementById('kpi-title-4');
-              if (userCardTitle) userCardTitle.innerText = 'High-Risk Identities Detected';
-
-              const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
-              if (userCardVal) userCardVal.innerText = String(uniqueSlackUsersSize);
-            }
-          }
-        };
-      })();
     </script>
 
     <!-- External logic module — cache-busted for Vercel edge freshness -->

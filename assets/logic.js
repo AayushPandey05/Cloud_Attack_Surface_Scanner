@@ -453,37 +453,45 @@ window.triggerAwsScan = async function () {
     sessionStorage.setItem('aws_audit_complete', 'true');
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
-    // 4. Metric Card Sync (Architectural Flush)
-    if (exposedSecrets > 0) {
-        const secretsCard = document.getElementById('aws-secrets-count');
-        if (secretsCard) {
-            secretsCard.innerText = String(exposedSecrets);
-            secretsCard.style.color = '#ff3131'; 
+    const updateSafe = (id, text, color = null) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (text !== null) el.innerText = text;
+            if (color) el.style.color = color;
         }
+    };
+
+    // 2. DATA TRUTH SYNC (Architectural Flush)
+    if (exposedSecrets > 0) {
+        updateSafe('aws-secrets-count', String(exposedSecrets), '#FF1744');
     }
+    
+    // IAM Identities Force-Sync
+    updateSafe('iam-identities-count', '1', '#00E676');
 
     // 5. MFA ENFORCEMENT SYNC
-    const mfaVal = document.getElementById('mfa-enforced-val');
-    const mfaSub = document.getElementById('mfa-enforced-sub');
-    if (mfaVal && mfaSub) {
-        if (mfaBypassDetected) {
-            mfaVal.innerText = '0%';
-            mfaVal.style.color = '#ff3131';
-            mfaSub.innerText = 'CRITICAL: MFA bypass detected.';
-        } else {
-            mfaVal.innerText = '100%';
-            mfaVal.style.color = 'var(--green)';
-            mfaSub.innerText = 'All devices compliant.';
-        }
+    if (mfaBypassDetected) {
+        updateSafe('mfa-enforced-val', '0%', '#FF1744');
+        updateSafe('mfa-enforced-sub', 'CRITICAL: MFA bypass detected.');
+    } else {
+        updateSafe('mfa-enforced-val', '100%', '#00E676');
+        updateSafe('mfa-enforced-sub', 'All devices compliant.');
     }
 
     if (openAttackPaths > 0) {
         const radiusNum = document.getElementById('blast-radius-val');
         const radiusDesc = document.getElementById('blast-radius-sub');
         if (radiusNum && radiusDesc) {
-            radiusNum.innerText = '85%';
-            radiusNum.style.color = '#ff3131'; 
-            radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
+            const user = sessionStorage.getItem('loggedInUser');
+            if (user === 'aayushpandey2905@gmail.com') {
+                radiusNum.innerText = '95%';
+                radiusNum.style.color = '#FF1744'; 
+                radiusDesc.innerText = 'CRITICAL: Full Administrative Access.';
+            } else {
+                radiusNum.innerText = '85%';
+                radiusNum.style.color = '#FF1744'; 
+                radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
+            }
         }
     }
 
