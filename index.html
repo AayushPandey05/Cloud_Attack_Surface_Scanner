@@ -970,90 +970,7 @@
                 required
               />
             </div>
-            <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
-              <div class="phone-ext-selector">
-                <button
-                  type="button"
-                  class="phone-ext-btn"
-                  id="reg-phone-ext-btn"
-                >
-                  <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <img
-                      src="https://flagcdn.com/w20/in.png"
-                      width="20"
-                      alt="IN"
-                      id="reg-phone-ext-img"
-                    />
-                    <span id="reg-phone-ext-code">+91</span>
-                  </div>
-                  <i data-lucide="chevron-down" width="16" height="16"></i>
-                </button>
-                <div class="phone-ext-menu hidden" id="reg-phone-ext-menu">
-                  <button
-                    type="button"
-                    class="phone-ext-item"
-                    data-code="+91"
-                    data-flag="in"
-                  >
-                    <img src="https://flagcdn.com/w20/in.png" width="20" /> +91
-                    (IND)
-                  </button>
-                  <button
-                    type="button"
-                    class="phone-ext-item"
-                    data-code="+1"
-                    data-flag="us"
-                  >
-                    <img src="https://flagcdn.com/w20/us.png" width="20" /> +1
-                    (USA)
-                  </button>
-                  <button
-                    type="button"
-                    class="phone-ext-item"
-                    data-code="+44"
-                    data-flag="gb"
-                  >
-                    <img src="https://flagcdn.com/w20/gb.png" width="20" /> +44
-                    (UK)
-                  </button>
-                  <button
-                    type="button"
-                    class="phone-ext-item"
-                    data-code="+61"
-                    data-flag="au"
-                  >
-                    <img src="https://flagcdn.com/w20/au.png" width="20" /> +61
-                    (AUS)
-                  </button>
-                  <button
-                    type="button"
-                    class="phone-ext-item"
-                    data-code="+49"
-                    data-flag="de"
-                  >
-                    <img src="https://flagcdn.com/w20/de.png" width="20" /> +49
-                    (GER)
-                  </button>
-                </div>
-                <input
-                  type="hidden"
-                  id="reg-phone-ext"
-                  name="phone-ext"
-                  value="+91"
-                />
-              </div>
-              <input
-                type="tel"
-                id="reg-phone"
-                name="tel"
-                autocomplete="tel"
-                class="input-light"
-                style="flex: 1;"
-                placeholder="Phone Number"
-                required
-              />
-            </div>
-            <div style="margin-bottom: 0.5rem;">
+            <div style="margin-bottom: 1rem;">
               <input
                 type="password"
                 id="reg-password"
@@ -1064,6 +981,18 @@
                 required
               />
             </div>
+            <div style="margin-bottom: 1rem;">
+              <input
+                type="password"
+                id="reg-confirm-password"
+                name="confirm-password"
+                autocomplete="new-password"
+                class="input-light"
+                placeholder="Confirm Password"
+                required
+              />
+            </div>
+            <div id="signup-error" class="text-red text-sm" style="margin-bottom: 1rem; display: none;"></div>
 
             <button type="submit" class="btn-primary-purple">
               Create Account
@@ -1692,6 +1621,19 @@
 
                         signupForm.addEventListener('submit', (e) => {
                             e.preventDefault();
+
+                            const password = document.getElementById('reg-password').value;
+                            const confirmPassword = document.getElementById('reg-confirm-password').value;
+                            const signupError = document.getElementById('signup-error');
+
+                            if (password !== confirmPassword) {
+                                signupError.innerText = '⚠️ Passwords do not match!';
+                                signupError.style.display = 'block';
+                                return;
+                            } else {
+                                signupError.style.display = 'none';
+                            }
+
                             const emailVal = document.getElementById('reg-email').value.trim();
                             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                             if (!emailRegex.test(emailVal)) {
