@@ -1327,9 +1327,9 @@
                     const urlEmail = urlParams.get('email');
                     const urlName = urlParams.get('name');
                     
-                    sessionStorage.setItem('vaultAccountType', 'new');
-                    sessionStorage.setItem('vaultUserEmail', urlEmail || 'testuser@heyitsaayush.me');
-                    sessionStorage.setItem('vaultUserName', urlName || 'Enterprise User');
+                    sessionStorage.setItem('accountType', 'new');
+                    sessionStorage.setItem('email', urlEmail || 'testuser@heyitsaayush.me');
+                    sessionStorage.setItem('name', urlName || 'Enterprise User');
                 }
 
                 // Clean up URL telemetry for forensic integrity and aesthetics
@@ -1573,19 +1573,20 @@
                         // (800ms minimum to guarantee the spinner renders before the MFA overlay).
                         // Responsibilities: profile dropdown hydration, session token persistence,
                         // loading state teardown, and MFA gateway activation.
-                        window.processAuthSuccess = function processAuthSuccess(email, displayName) {
+                        window.processAuthSuccess = function processAuthSuccess(email, displayName, accType = 'existing') {
                             var userEmail = email || 'user@company.com';
-                            var userName  = displayName || 'Security Admin';
+                            var userName  = 'Security Admin';
 
                             // Hydrate profile dropdown with authenticated identity before overlay renders
-                            var profileEmailEl = document.getElementById('profile-email-display');
-                            var profileNameEl  = document.getElementById('profile-name-display');
+                            var profileEmailEl = document.querySelector('#profile-email-display');
+                            var profileNameEl  = document.querySelector('#profile-name-display');
                             if (profileEmailEl) profileEmailEl.innerText = userEmail;
                             if (profileNameEl)  profileNameEl.innerText  = userName;
 
                             // Persist identity for session-restore on hard refresh
-                            sessionStorage.setItem('vaultUserEmail', userEmail);
-                            sessionStorage.setItem('vaultUserName',  userName);
+                            sessionStorage.setItem('email', userEmail);
+                            sessionStorage.setItem('name',  userName);
+                            sessionStorage.setItem('accountType', accType);
 
                             // Teardown loading state — invoked regardless of auth entry path
                             var loaderEl = document.getElementById('state-loading');
@@ -1616,7 +1617,7 @@
                             // 800ms delay allows the browser to commit the spinner render
                             // before the MFA overlay activation begins.
                             setTimeout(() => {
-                                processAuthSuccess(emailValue);
+                                processAuthSuccess(emailValue, null, 'existing');
                             }, 800);
                         });
 
@@ -1646,7 +1647,7 @@
                             // loading state first, then 800ms render buffer, then MFA activation.
                             showState(stateLoading, false);
                             setTimeout(() => {
-                                processAuthSuccess(emailVal);
+                                processAuthSuccess(emailVal, null, 'new');
                             }, 800);
                         });
                         // Both Google entry points route through the same OAuth2 token client
@@ -1683,7 +1684,7 @@
                             if (otpInput) otpInput.value = '';
                             document.getElementById('mfa-gateway').classList.remove('active');
 
-                            sessionStorage.removeItem('isVaultAuthenticated');
+                            sessionStorage.clear();
                             showState(stateLogin);
                         });
 
@@ -1699,8 +1700,8 @@
                             }
 
                             // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
-                            if (sessionStorage.getItem('vaultAccountType') === 'new') {
-                                const activeUser = sessionStorage.getItem('vaultUserEmail') || 'testuser@heyitsaayush.me';
+                            if (sessionStorage.getItem('accountType') === 'new') {
+                                const activeUser = sessionStorage.getItem('email') || 'testuser@heyitsaayush.me';
                                 terminalFeed.innerHTML = '';
                                 addLog('SYSTEM', 'New environment detected for ' + activeUser, 'INFO');
                                 addLog('OKTA', 'SSO Identity verified: ' + activeUser, 'SUCCESS');
@@ -1794,7 +1795,7 @@
                             }
 
                             // Identity-Aware Override: Force 'Fresh Account' state if accountType=new is active
-                            if (sessionStorage.getItem('vaultAccountType') === 'new') {
+                            if (sessionStorage.getItem('accountType') === 'new') {
                                 if (window.currentEnv === 'aws') {
                                     document.getElementById('kpi-2-val').innerText = '1';
                                     document.getElementById('kpi-3-val').innerText = '100%';
@@ -1909,17 +1910,29 @@
 
             // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
             window.addEventListener('load', function () {
-                // Session restore: re-populate profile dropdown on hard refresh
-                var savedEmail = sessionStorage.getItem('vaultUserEmail');
-                var savedName  = sessionStorage.getItem('vaultUserName');
-                if (savedEmail) {
-                    var pel = document.getElementById('profile-email-display');
-                    var pnl = document.getElementById('profile-name-display');
-                    if (pel) pel.innerText = savedEmail;
-                    else console.warn('[ProfileSync] #profile-email-display not found in DOM.');
-                    if (pnl) pnl.innerText = savedName || 'Security Admin';
-                    else console.warn('[ProfileSync] #profile-name-display not found in DOM.');
-                }
+                // Identity Resolution Pipeline: Resolve active user email
+                const params = new URLSearchParams(window.location.search);
+                const hashPath = window.location.hash.split('?')[1];
+                const hashParams = new URLSearchParams(hashPath);
+
+                // Multi-tier resolution: URL Param -> Session Storage -> Admin Default
+                let userEmail = params.get('email') || hashParams.get('email') || 
+                               sessionStorage.getItem('email') || 
+                               'admin@security-vault.demo';
+
+                // Enforce project requirement: Name is always Security Admin
+                const userName = 'Security Admin';
+
+                // Persistence: Commit resolved identity to session storage
+                sessionStorage.setItem('email', userEmail);
+                sessionStorage.setItem('name', userName);
+
+                // DOM Injection via document.querySelector
+                const profileEmailEl = document.querySelector('#profile-email-display');
+                const profileNameEl  = document.querySelector('#profile-name-display');
+
+                if (profileEmailEl) profileEmailEl.innerText = userEmail;
+                if (profileNameEl)  profileNameEl.innerText  = userName;
 
                 // GSI initialization
                 if (typeof google === 'undefined' || !google.accounts) {
@@ -1980,9 +1993,9 @@
               if(document.getElementById('exposed-secrets')) document.getElementById('exposed-secrets').innerText = "0";
 
               // Update Profile Display as soon as DOM is ready
-              const pName = document.getElementById('profile-name-display');
-              const pEmail = document.getElementById('profile-email-display');
-              if (pName) pName.innerText = userName;
+              const pName = document.querySelector('#profile-name-display');
+              const pEmail = document.querySelector('#profile-email-display');
+              if (pName) pName.innerText = "Security Admin"; // Always Security Admin
               if (pEmail) pEmail.innerText = userEmail;
 
               // Update the Avatar initial to match the first letter of the name
