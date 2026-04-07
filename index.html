@@ -1456,7 +1456,7 @@
                             const avatar = document.querySelector('.avatar');
 
                             if (pEmail) pEmail.innerText = userEmail;
-                            if (pName) pName.innerText = window.isAdmin ? 'Security Admin' : 'External Auditor';
+                            if (pName) pName.innerText = window.isAdmin ? 'Lead Security Architect' : 'External Auditor';
                             
                             const avatarText = window.isAdmin ? 'A' : (userEmail !== 'DEBUG: NO EMAIL FOUND' ? userEmail.charAt(0).toUpperCase() : 'U');
                             if (avatar) avatar.innerText = avatarText;
@@ -1677,7 +1677,7 @@
                             var userEmail = email || 'user@company.com';
                             const adminEmail = 'aayushpandey2905@gmail.com';
                             const isAdmin = userEmail.toLowerCase() === adminEmail;
-                            var userName  = isAdmin ? 'Security Admin' : 'External Auditor';
+                            var userName  = isAdmin ? 'Lead Security Architect' : 'External Auditor';
 
                             // Hydrate profile dropdown (Standardized IDs)
                             var pEmail = document.getElementById('profile-email');
