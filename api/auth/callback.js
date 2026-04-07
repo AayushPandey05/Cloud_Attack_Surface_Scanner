@@ -1,19 +1,19 @@
 export default async function handler(req, res) {
-  const { code, name, email } = req.query;
+  const { code, email, name } = req.query;
 
-  // 1. If Okta didn't send a code, stop.
-  if (!code) return res.status(400).send("No code from Okta");
+  // 1. If Okta didn't provide a code, reject unauthorized attempt.
+  if (!code) return res.status(400).send("No authorization code provided by Okta.");
 
-  // 2. In a real app, we'd exchange 'code' for a 'token' with the user's email.
-  // For your demo, we'll pass along identity info to the frontend via URL parameters.
+  // 2. Map identity to redirect parameters. For the demo, we prioritize the email context.
   const redirectParams = new URLSearchParams({
     sso: "success",
     accountType: "new"
   });
-  
-  if (name) redirectParams.append("name", name);
-  if (email) redirectParams.append("email", email);
 
+  if (email) redirectParams.append("email", email);
+  if (name) redirectParams.append("name", name || "Security Admin");
+
+  // Perform redirect with the dynamic identity context
   res.writeHead(302, { Location: "/#dashboard?" + redirectParams.toString() });
   res.end();
 }

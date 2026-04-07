@@ -1701,7 +1701,7 @@
 
                             // Fresh Account Sequence: Clear legacy logs and provide new tenant baseline
                             if (sessionStorage.getItem('accountType') === 'new') {
-                                const activeUser = sessionStorage.getItem('email') || 'testuser@heyitsaayush.me';
+                                const activeUser = sessionStorage.getItem('email') || 'admin@security-vault.demo';
                                 terminalFeed.innerHTML = '';
                                 addLog('SYSTEM', 'New environment detected for ' + activeUser, 'INFO');
                                 addLog('OKTA', 'SSO Identity verified: ' + activeUser, 'SUCCESS');
@@ -1985,8 +1985,8 @@
           // Check both standard URL and Hash-based URL for the 'new' flag
           if (params.get('accountType') === 'new' || hashParams.get('accountType') === 'new') {
               console.log("Verified: New Enterprise Session Detected.");
-              const userEmail = params.get('email') || hashParams.get('email') || "testuser@heyitsaayush.me";
-              const userName = params.get('name') || hashParams.get('name') || "Enterprise User";
+              const userEmail = params.get('email') || hashParams.get('email') || sessionStorage.getItem('email') || "admin@security-vault.demo";
+              const userName = "Security Admin";
 
               // Update the UI Stats
               if(document.getElementById('total-users')) document.getElementById('total-users').innerText = "1";
