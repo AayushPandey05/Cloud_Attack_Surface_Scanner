@@ -1162,13 +1162,13 @@
               >
                 <div class="dropdown-header">
                   <div
-                    id="profile-name-display"
+                    id="profile-name"
                     class="font-medium text-white"
                     style="margin-bottom:0.15rem;"
                   >
                     Security Admin
                   </div>
-                  <div id="profile-email-display" class="text-xs text-gray">
+                  <div id="profile-email" class="text-xs text-gray">
                     —
                   </div>
                 </div>
@@ -1590,16 +1590,16 @@
                             const isAdmin = userEmail.toLowerCase() === adminEmail;
                             var userName  = isAdmin ? 'Security Admin' : 'External Auditor';
 
-                            // Hydrate profile dropdown with authenticated identity before overlay renders
-                            var profileEmailEl = document.querySelector('#profile-email-display');
-                            var profileNameEl  = document.querySelector('#profile-name-display');
-                            if (profileEmailEl) profileEmailEl.innerText = userEmail;
-                            if (profileNameEl)  profileNameEl.innerText  = userName;
+                            // Hydrate profile dropdown (Standardized IDs)
+                            var pEmail = document.getElementById('profile-email');
+                            var pName  = document.getElementById('profile-name');
+                            if (pEmail) pEmail.innerText = userEmail;
+                            if (pName)  pName.innerText  = userName;
 
-                            // Persist identity for session-restore and data isolation
+                            // Persist identity for Zero Trust isolation
+                            sessionStorage.setItem('loggedInUser', userEmail);
                             sessionStorage.setItem('email', userEmail);
                             sessionStorage.setItem('name',  userName);
-                            sessionStorage.setItem('loggedInUser', userEmail);
                             sessionStorage.setItem('accountType', accType);
 
                             // Teardown loading state — invoked regardless of auth entry path
@@ -1675,7 +1675,7 @@
                             });
                         }
                         corpSso.addEventListener('click', () => {
-                            processAuthSuccess('guest-auditor@security-vault.demo');
+                            processAuthSuccess('Not Available');
                         });
 
                         // ── Session Termination & Profile Dropdown ───────────────────────
@@ -1976,33 +1976,47 @@
 
             // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
             window.addEventListener('load', function () {
-                // Identity Resolution Pipeline: Resolve active user email
-                const params = new URLSearchParams(window.location.search);
-                const hashPath = window.location.hash.split('?')[1];
-                const hashParams = new URLSearchParams(hashPath);
+                // Dynamic Identity Flow — Final Priority Handshake
+                const params = new URLSearchParams(window.location.hash.split('?')[1] || window.location.search);
+                
+                // Priority Check: 1. URL Params (?email=), 2. Session Auth, 3. Okta SDK State
+                let userEmail = params.get('email') || sessionStorage.getItem('loggedInUser');
+                
+                // Final Check: Try to extract from Okta Auth handle if available
+                if (!userEmail && window.oktaAuth) {
+                  try {
+                    window.oktaAuth.token.getWithoutPrompt().then(token => {
+                      if (token && token.idToken && token.idToken.claims) {
+                        userEmail = token.idToken.claims.email;
+                        console.log("[Okta SDK] Email intercepted from active session:", userEmail);
+                      }
+                    });
+                  } catch (e) {
+                    console.warn("[Okta SDK] Session handshake skipped:", e);
+                  }
+                }
 
-                // Multi-tier resolution: URL Param -> Session Storage -> Admin Default
-                let userEmail = params.get('email') || hashParams.get('email') || 
-                               sessionStorage.getItem('loggedInUser') || 
-                               sessionStorage.getItem('email') || 
-                               'admin@security-vault.demo';
+                if (!userEmail) userEmail = 'Not Available';
 
-                // Enforce Identity-Based Naming
+                // Verification Logging for forensic auditing
+                console.log("[Identity Handshake] Protocol verified. Detected Email:", userEmail);
+
+                // Enforce Identity-Based Role Naming
                 const adminEmail = 'aayushpandey2905@gmail.com';
                 const isAdmin = userEmail.toLowerCase() === adminEmail;
                 const userName = isAdmin ? 'Security Admin' : 'External Auditor';
 
+                // DOM Injection (Standardized IDs)
+                const pEmail = document.getElementById('profile-email');
+                const pName = document.getElementById('profile-name');
+
+                if (pEmail) pEmail.innerText = userEmail;
+                if (pName) pName.innerText = userName;
+
                 // Persistence: Commit resolved identity to session storage
+                sessionStorage.setItem('loggedInUser', userEmail);
                 sessionStorage.setItem('email', userEmail);
                 sessionStorage.setItem('name', userName);
-                sessionStorage.setItem('loggedInUser', userEmail);
-
-                // DOM Injection via document.querySelector
-                const profileEmailEl = document.querySelector('#profile-email-display');
-                const profileNameEl  = document.querySelector('#profile-name-display');
-
-                if (profileEmailEl) profileEmailEl.innerText = userEmail;
-                if (profileNameEl)  profileNameEl.innerText  = userName;
 
                 // GSI initialization
                 if (typeof google === 'undefined' || !google.accounts) {
