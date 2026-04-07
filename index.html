@@ -1312,11 +1312,11 @@
         <div id="zero-trust-connect" class="hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; background: rgba(0,0,0,0.1); border: 1px dashed var(--gray); border-radius: 12px; margin-top: 24px; text-align: center; padding: 40px;">
            <i data-lucide="cloud-off" width="48" height="48" style="color: var(--gray); opacity: 0.5; margin-bottom: 20px;"></i>
            <h3 style="font-size: 1.5rem; margin-bottom: 12px; color: var(--white);">Identity Verified</h3>
-           <p style="color: var(--gray); max-width: 450px; margin-bottom: 24px; line-height: 1.6; font-size: 0.95rem;">No active telemetry detected for this account. Please link your AWS and Slack Environment to begin scanning.</p>
-           <button class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+           <p id="zero-trust-msg" style="color: var(--gray); max-width: 450px; margin-bottom: 24px; line-height: 1.6; font-size: 0.95rem;">No active telemetry detected for this account. Please link your AWS Environment to begin scanning.</p>
+           <a id="zero-trust-link" href="https://console.aws.amazon.com" target="_blank" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px; text-decoration: none;">
               <i data-lucide="plus" width="18" height="18"></i>
               Connect Your Cloud
-           </button>
+           </a>
         </div>
       </div>
     </div>
@@ -1827,6 +1827,10 @@
                             const currentUser = sessionStorage.getItem('loggedInUser') || '';
                             const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
 
+                            // Zero Trust UI Redirection (Dynamic Link/Msg)
+                            const zeroMsg = document.getElementById('zero-trust-msg');
+                            const zeroLink = document.getElementById('zero-trust-link');
+
                             if (window.currentEnv === 'aws') {
                                 if (isAdmin) {
                                     // Admin-specific active metrics
@@ -1845,6 +1849,14 @@
                                     document.getElementById('kpi-1-val').style.color = 'var(--gray)';
                                     document.getElementById('kpi-2-val').style.color = 'var(--gray)';
                                     document.getElementById('kpi-4-val').style.color = 'var(--gray)';
+
+                                    // Dynamic Redirection Update: AWS Context
+                                    if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your AWS Environment to begin scanning.';
+                                    if (zeroLink) {
+                                        zeroLink.href = 'https://console.aws.amazon.com';
+                                        zeroLink.innerHTML = `<i data-lucide="plus" width="18" height="18"></i> Connect Your AWS Cloud`;
+                                        if (window.lucide) lucide.createIcons();
+                                    }
                                 }
                             } else {
                                 // Slack Workspace Isolation (Zero Trust)
@@ -1855,6 +1867,14 @@
                                     for(let i=1; i<=5; i++) {
                                         document.getElementById('kpi-'+i+'-val').innerText = '0';
                                         document.getElementById('kpi-'+i+'-val').style.color = 'var(--gray)';
+                                    }
+
+                                    // Dynamic Redirection Update: Slack Context
+                                    if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your Slack Environment to begin scanning.';
+                                    if (zeroLink) {
+                                        zeroLink.href = 'https://vault-audit-workspace.slack.com';
+                                        zeroLink.innerHTML = `<i data-lucide="plus" width="18" height="18"></i> Connect Your Slack Workspace`;
+                                        if (window.lucide) lucide.createIcons();
                                     }
                                 }
                             }
