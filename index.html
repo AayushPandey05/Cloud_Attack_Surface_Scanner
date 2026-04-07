@@ -1389,7 +1389,7 @@
                             const stateName = (target === stateDashboard) ? 'dashboard' : 'login';
                             
                             if (pushHistory && target !== stateLoading) {
-                                // URL Masking: Use history.replaceState to maintain clean URLs without hashes
+                                // URL Masking: Maintain clean path-based routing (/dashboard or /login)
                                 history.replaceState({ view: stateName }, '', '/' + stateName);
                             }
 
@@ -1417,19 +1417,35 @@
                         // page load. Authenticated sessions resume at the dashboard; all others
                         // are routed to the login view regardless of the URL hash state.
                         function initializeApp() {
-                            const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
-                            const path = window.location.pathname.replace('/', '');
+                            // Identity Sync: Ensure the administrator identity is resolved immediately
+                            resolveSessionIdentity();
 
-                            if (isAuth) {
-                                showState(stateDashboard, false);
-                                if (path !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "/dashboard");
+                            const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
+                            const path = window.location.pathname;
+
+                            if (path === '/dashboard') {
+                                if (isAuth) {
+                                    showState(stateDashboard, false);
+                                } else {
+                                    // Unauthorized access: Force return to secure login
+                                    history.replaceState({ view: 'login' }, '', '/login');
+                                    showState(stateLogin, false);
+                                }
+                            } else if (path === '/login' || path === '/' || path === '') {
+                                if (isAuth) {
+                                    // Persistence: Authenticated users resume at the dashboard
+                                    history.replaceState({ view: 'dashboard' }, '', '/dashboard');
+                                    showState(stateDashboard, false);
+                                } else {
+                                    showState(stateLogin, false);
+                                    if (path !== '/login') history.replaceState({ view: 'login' }, '', '/login');
+                                }
                             } else {
-                                showState(stateLogin, false);
-                                if (path !== 'login' && path !== '') history.replaceState({ view: 'login' }, "", "/login");
+                                // Fallback routing for unconventional entry paths
+                                isAuth ? showState(stateDashboard, false) : showState(stateLogin, false);
                             }
                         }
 
-                        resolveSessionIdentity();
                         initializeApp();
 
                         // SSO UI PERSISTENCE: Reveal enterprise badge if session originated via Okta
@@ -1819,15 +1835,18 @@
                             // Global isAdmin switch drives KPI visibility
                             if (window.currentEnv === 'aws') {
                                 if (window.isAdmin) {
-                                    // Full Admin AWS metrics: High Blast Radius
+                                    // Full Admin AWS metrics: High Blast Radius due to identity privilege
                                     document.getElementById('kpi-1-val').innerText = '95%';
                                     document.getElementById('kpi-1-val').style.color = 'var(--red)';
-                                    document.getElementById('kpi-1-sub').innerText = 'Full Administrative Access detected via Okta SSO.';
+                                    document.getElementById('kpi-1-sub').innerText = 'CRITICAL: Full Admin status detected via Okta SSO.';
 
                                     document.getElementById('kpi-2-val').innerText = '3';
                                     document.getElementById('kpi-3-val').innerText = '66%';
+                                    
+                                    // Move secret count telemetry to the appropriate card
                                     document.getElementById('kpi-4-val').innerText = '1'; 
                                     document.getElementById('kpi-4-val').style.color = 'var(--red)';
+                                    document.getElementById('kpi-4-sub').innerText = '1 high-entropy secret leaked in source code.';
                                 } else {
                                     // Zero Trust Guest Metrics: Low Blast Radius
                                     document.getElementById('kpi-1-val').innerText = '5%';

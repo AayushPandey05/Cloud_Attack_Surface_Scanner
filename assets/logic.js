@@ -179,6 +179,16 @@ window.runSlackAudit = async function () {
 
     var data = await res.json();
     var secrets = typeof data.secrets === "number" ? data.secrets : 0;
+    
+    // Identity Deduplication: Identify unique users responsible for findings
+    var uniqueUsers = new Set();
+    var alerts = Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [];
+    alerts.forEach(function(a) {
+        var userName = a.split(" | ")[0];
+        if (userName) uniqueUsers.add(userName);
+    });
+    var uniqueLeakerCount = uniqueUsers.size;
+
     var nonCompliant =
       typeof data.nonCompliant === "number" ? data.nonCompliant : 0;
     var totalUsers = typeof data.totalUsers === "number" ? data.totalUsers : 0;
@@ -215,12 +225,12 @@ window.runSlackAudit = async function () {
       mfaPct >= 90 ? "var(--green)" : "var(--red)",
     );
 
-    //! KPI 4 — Exposed Secrets from the SaaS/IaaS boundary scan
+    //! KPI 4 — Unique Non-Compliant Users responsible for leaks
     setKpi(
       4,
-      String(secrets),
-      secrets > 0 ? "Leaked credentials found" : "No secrets exposed ✓",
-      secrets > 0 ? "var(--red)" : "var(--green)",
+      String(uniqueLeakerCount),
+      uniqueLeakerCount > 0 ? "High-risk identities detected" : "Identity health optimal ✓",
+      uniqueLeakerCount > 0 ? "var(--red)" : "var(--green)",
     );
 
     //! KPI 5 — Total identity scope of the audit (human accounts only)
@@ -269,6 +279,12 @@ window.runSlackAudit = async function () {
             "Initial Access",
             subtext,
           );
+
+          // Forensic Identity Audit: Specific flagging for the non-compliant user
+          const userName = parts[0];
+          if (userName && typeof window._slackAddLog === "function") {
+             window._slackAddLog("SYSTEM", `[IDENT] User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARNING");
+          }
         });
       } else if (secrets > 0) {
         // Older API schema without per-channel resolution — emit aggregate
