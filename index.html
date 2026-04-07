@@ -1325,10 +1325,11 @@
                 if (newAccMatch) {
                     const urlParams = new URL(rawUrl).searchParams;
                     const urlEmail = urlParams.get('email');
+                    const urlName = urlParams.get('name');
                     
                     sessionStorage.setItem('vaultAccountType', 'new');
                     sessionStorage.setItem('vaultUserEmail', urlEmail || 'testuser@heyitsaayush.me');
-                    sessionStorage.setItem('vaultUserName', 'External Auditor');
+                    sessionStorage.setItem('vaultUserName', urlName || 'Enterprise User');
                 }
 
                 // Clean up URL telemetry for forensic integrity and aesthetics
@@ -1972,6 +1973,7 @@
           if (params.get('accountType') === 'new' || hashParams.get('accountType') === 'new') {
               console.log("Verified: New Enterprise Session Detected.");
               const userEmail = params.get('email') || hashParams.get('email') || "testuser@heyitsaayush.me";
+              const userName = params.get('name') || hashParams.get('name') || "Enterprise User";
 
               // Update the UI Stats
               if(document.getElementById('total-users')) document.getElementById('total-users').innerText = "1";
@@ -1980,12 +1982,12 @@
               // Update Profile Display as soon as DOM is ready
               const pName = document.getElementById('profile-name-display');
               const pEmail = document.getElementById('profile-email-display');
-              if (pName) pName.innerText = "External Auditor";
+              if (pName) pName.innerText = userName;
               if (pEmail) pEmail.innerText = userEmail;
 
-              // Update the Avatar initial to match 'E' for External Auditor
+              // Update the Avatar initial to match the first letter of the name
               const avatar = document.querySelector('.avatar');
-              if (avatar) avatar.innerText = "E";
+              if (avatar) avatar.innerText = userName.charAt(0).toUpperCase();
 
               // Wipe the old logs and show fresh ones (Corrected ID to terminal-feed)
               const terminal = document.getElementById('terminal-feed');
