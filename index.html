@@ -1323,26 +1323,52 @@
 
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
+            // Forced Identity Check
+            const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
+            const detectedEmail = params.get('email');
+            if (detectedEmail) {
+                sessionStorage.setItem('loggedInUser', detectedEmail);
+                console.log("Logged in as:", detectedEmail);
+            }
+
+            // CENTRAL IDENTITY REGISTRY
+            const ADMIN_EMAIL = 'aayushpandey2905@gmail.com';
+            window.isAdmin = false;
+
+            /**
+             * Universal Identity Fetcher: Resolves active user from URL params (query/hash) 
+             * or session storage. Ensures the 'Admin' switch is evaluated immediately.
+             */
+            function resolveSessionIdentity() {
+                const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
+                const urlEmail = params.get('email');
+                
+                // Persistence: Commit found URL identity to storage immediately
+                if (urlEmail) {
+                    sessionStorage.setItem('loggedInUser', urlEmail);
+                    sessionStorage.setItem('email', urlEmail);
+                }
+
+                const activeUser = urlEmail || sessionStorage.getItem('loggedInUser') || 'Not Available';
+                
+                // Debugging: Log hash if identity is missing
+                if (activeUser === 'Not Available') {
+                    console.log("[Identity Check] Not Available. Hash:", window.location.hash);
+                }
+
+                window.isAdmin = activeUser.toLowerCase() === ADMIN_EMAIL;
+                return activeUser;
+            }
+
             // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
-            // This listener parses both search and hash to support various redirect formats
             const rawUrl = window.location.href;
             const ssoMatch = rawUrl.match(/[?&]sso=success/);
-            const newAccMatch = rawUrl.match(/[?&]accountType=new/);
 
             if (ssoMatch) {
                 sessionStorage.setItem('isVaultAuthenticated', 'true');
                 sessionStorage.setItem('isSSOSession', 'true');
-
-                if (newAccMatch) {
-                    const urlParams = new URL(rawUrl).searchParams;
-                    const urlEmail = urlParams.get('email');
-                    const urlName = urlParams.get('name');
-                    
-                    sessionStorage.setItem('accountType', 'new');
-                    sessionStorage.setItem('email', urlEmail || 'testuser@heyitsaayush.me');
-                    sessionStorage.setItem('name', urlName || 'Enterprise User');
-                }
-
+                resolveSessionIdentity();
+                
                 // Clean up URL telemetry for forensic integrity and aesthetics
                 const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
                 window.history.replaceState({}, document.title, cleanUrl);
@@ -1432,6 +1458,7 @@
                             }
                         }
 
+                        resolveSessionIdentity();
                         initializeApp();
 
                         // SSO UI PERSISTENCE: Reveal enterprise badge if session originated via Okta
@@ -1713,25 +1740,27 @@
                                 });
                             }
 
-                            // Identity-Based Data Isolation (Zero Trust)
-                            const currentUser = sessionStorage.getItem('loggedInUser') || '';
-                            const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+                            // Identity-Based Data Isolation (Zero Trust Enforcement)
                             const terminalPanel = document.getElementById('terminal-panel');
                             const zeroStateUI = document.getElementById('zero-trust-connect');
-                            
                             terminalFeed.innerHTML = '';
 
-                            if (isAdmin) {
-                                // Admin View: Show active telemetry
+                            // Admin Lock: Ensure the administrator sees metrics immediately
+                            if (sessionStorage.getItem('loggedInUser') === 'aayushpandey2905@gmail.com') {
+                                window.isAdmin = true;
+                            }
+
+                            if (window.isAdmin) {
+                                // Admin View: Show active security telemetry
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
                                 if (zeroStateUI) zeroStateUI.classList.add('hidden');
 
                                 addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS');
-                                addLog('AWS', 'Auditing S3: [admin-prod-vortex] and [security-audit-logs] detected.', 'INFO');
+                                addLog('AWS', 'Auditing S3 Storage: [aayush-publicexposure-test] detected.', 'INFO');
                                 addLog('AWS', 'Critical Attack Path: IAM Identity -> S3 Exfiltration identified.', 'ERROR');
                                 addLog('OKTA', 'Identity Audit: 3 high-privileged IAM identities found.', 'WARNING');
                             } else {
-                                // Guest View (Zero Trust): Total isolation
+                                // Zero Trust View: Hide telemetry and show onboarding
                                 if (terminalPanel) terminalPanel.classList.add('hidden');
                                 if (zeroStateUI) {
                                   zeroStateUI.classList.remove('hidden');
@@ -1819,21 +1848,12 @@
                                  document.getElementById('kpi-5-val').innerText = '—';
                                  document.getElementById('kpi-5-val').style.color = 'var(--gray)';
                                  document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
-
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
-                            }
-
-                            // Identity-Aware Data Isolation: Zero Trust Enforcement
-                            const currentUser = sessionStorage.getItem('loggedInUser') || '';
-                            const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
-
-                            // Zero Trust UI Redirection (Dynamic Link/Msg)
-                            const zeroMsg = document.getElementById('zero-trust-msg');
-                            const zeroLink = document.getElementById('zero-trust-link');
-
+                             }
+                            // Global isAdmin switch drives KPI visibility
                             if (window.currentEnv === 'aws') {
-                                if (isAdmin) {
-                                    // Admin-specific active metrics
+                                if (window.isAdmin) {
+                                    // Full Admin AWS metrics
                                     document.getElementById('kpi-2-val').innerText = '3';
                                     document.getElementById('kpi-3-val').innerText = '66%';
                                     document.getElementById('kpi-4-val').innerText = '1'; 
@@ -1850,7 +1870,8 @@
                                     document.getElementById('kpi-2-val').style.color = 'var(--gray)';
                                     document.getElementById('kpi-4-val').style.color = 'var(--gray)';
 
-                                    // Dynamic Redirection Update: AWS Context
+                                    const zeroMsg = document.getElementById('zero-trust-msg');
+                                    const zeroLink = document.getElementById('zero-trust-link');
                                     if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your AWS Environment to begin scanning.';
                                     if (zeroLink) {
                                         zeroLink.href = 'https://console.aws.amazon.com';
@@ -1860,7 +1881,7 @@
                                 }
                             } else {
                                 // Slack Workspace Isolation (Zero Trust)
-                                if (isAdmin) {
+                                if (window.isAdmin) {
                                     document.getElementById('kpi-5-val').innerText = '12';
                                     document.getElementById('kpi-2-val').innerText = '4';
                                 } else {
@@ -1868,8 +1889,8 @@
                                         document.getElementById('kpi-'+i+'-val').innerText = '0';
                                         document.getElementById('kpi-'+i+'-val').style.color = 'var(--gray)';
                                     }
-
-                                    // Dynamic Redirection Update: Slack Context
+                                    const zeroMsg = document.getElementById('zero-trust-msg');
+                                    const zeroLink = document.getElementById('zero-trust-link');
                                     if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your Slack Environment to begin scanning.';
                                     if (zeroLink) {
                                         zeroLink.href = 'https://vault-audit-workspace.slack.com';
@@ -1976,35 +1997,11 @@
 
             // CRITICAL: window.onload is defined OUTSIDE DOMContentLoaded so it
             window.addEventListener('load', function () {
-                // Dynamic Identity Flow — Final Priority Handshake
-                const params = new URLSearchParams(window.location.hash.split('?')[1] || window.location.search);
+                // Identity Bootstrap: Resolve and Persist authenticated user
+                const userEmail = resolveSessionIdentity();
                 
-                // Priority Check: 1. URL Params (?email=), 2. Session Auth, 3. Okta SDK State
-                let userEmail = params.get('email') || sessionStorage.getItem('loggedInUser');
-                
-                // Final Check: Try to extract from Okta Auth handle if available
-                if (!userEmail && window.oktaAuth) {
-                  try {
-                    window.oktaAuth.token.getWithoutPrompt().then(token => {
-                      if (token && token.idToken && token.idToken.claims) {
-                        userEmail = token.idToken.claims.email;
-                        console.log("[Okta SDK] Email intercepted from active session:", userEmail);
-                      }
-                    });
-                  } catch (e) {
-                    console.warn("[Okta SDK] Session handshake skipped:", e);
-                  }
-                }
-
-                if (!userEmail) userEmail = 'Not Available';
-
-                // Verification Logging for forensic auditing
-                console.log("[Identity Handshake] Protocol verified. Detected Email:", userEmail);
-
                 // Enforce Identity-Based Role Naming
-                const adminEmail = 'aayushpandey2905@gmail.com';
-                const isAdmin = userEmail.toLowerCase() === adminEmail;
-                const userName = isAdmin ? 'Security Admin' : 'External Auditor';
+                const userName = window.isAdmin ? 'Security Admin' : 'External Auditor';
 
                 // DOM Injection (Standardized IDs)
                 const pEmail = document.getElementById('profile-email');
@@ -2013,9 +2010,10 @@
                 if (pEmail) pEmail.innerText = userEmail;
                 if (pName) pName.innerText = userName;
 
-                // Persistence: Commit resolved identity to session storage
-                sessionStorage.setItem('loggedInUser', userEmail);
-                sessionStorage.setItem('email', userEmail);
+                // Final Verification Check
+                console.log("[Identity Persistence] Active User:", userEmail, "| Role:", userName, "| Root Admin:", window.isAdmin);
+
+                // Persistence cleanup
                 sessionStorage.setItem('name', userName);
 
                 // GSI initialization

@@ -19,7 +19,8 @@ export default async function handler(req, res) {
   const isAdmin = userEmail.toLowerCase() === 'aayushpandey2905@gmail.com';
   redirectParams.append("name", isAdmin ? "Security Admin" : "External Auditor");
 
-  // Perform redirect with the dynamic identity context
-  res.writeHead(302, { Location: "/#dashboard?" + redirectParams.toString() });
+  // Perform redirect with explicitly encoded identity context for SSO resolution
+  const redirectUrl = `/#dashboard?sso=success&email=${encodeURIComponent(userEmail)}&name=${encodeURIComponent(isAdmin ? "Security Admin" : "External Auditor")}`;
+  res.writeHead(302, { Location: redirectUrl });
   res.end();
 }
