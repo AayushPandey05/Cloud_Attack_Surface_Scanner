@@ -1185,9 +1185,9 @@
         <!-- KPI Cards -->
         <div class="kpi-grid" id="kpi-container">
           <div class="kpi-card">
-            <div class="kpi-h">Open Attack Paths</div>
-            <div class="kpi-v text-green" id="kpi-1-val">0</div>
-            <div class="kpi-sub" id="kpi-1-sub">No public exposure</div>
+            <div class="kpi-h" id="kpi-1-title">Identity Blast Radius</div>
+            <div class="kpi-v" id="kpi-1-val">0%</div>
+            <div class="kpi-sub" id="kpi-1-sub">Calculating exposure...</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-2-title">IAM IDENTITIES</div>
@@ -1323,14 +1323,6 @@
 
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
-            // Forced Identity Check
-            const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
-            const detectedEmail = params.get('email');
-            if (detectedEmail) {
-                sessionStorage.setItem('loggedInUser', detectedEmail);
-                console.log("Logged in as:", detectedEmail);
-            }
-
             // CENTRAL IDENTITY REGISTRY
             const ADMIN_EMAIL = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
@@ -1340,38 +1332,15 @@
              * or session storage. Ensures the 'Admin' switch is evaluated immediately.
              */
             function resolveSessionIdentity() {
-                const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
-                const urlEmail = params.get('email');
-                
-                // Persistence: Commit found URL identity to storage immediately
-                if (urlEmail) {
-                    sessionStorage.setItem('loggedInUser', urlEmail);
-                    sessionStorage.setItem('email', urlEmail);
-                }
-
-                const activeUser = urlEmail || sessionStorage.getItem('loggedInUser') || 'Not Available';
-                
-                // Debugging: Log hash if identity is missing
-                if (activeUser === 'Not Available') {
-                    console.log("[Identity Check] Not Available. Hash:", window.location.hash);
-                }
-
-                window.isAdmin = activeUser.toLowerCase() === ADMIN_EMAIL;
-                return activeUser;
+                // Admin Verification: Deterministic hardcoded identity check
+                const loggedInUser = sessionStorage.getItem('loggedInUser');
+                window.isAdmin = loggedInUser === 'aayushpandey2905@gmail.com';
+                return loggedInUser || 'Not Available';
             }
 
-            // OKTA OIDC HANDSHAKE: Intercept callback code from URL query string
-            const rawUrl = window.location.href;
-            const ssoMatch = rawUrl.match(/[?&]sso=success/);
-
-            if (ssoMatch) {
-                sessionStorage.setItem('isVaultAuthenticated', 'true');
-                sessionStorage.setItem('isSSOSession', 'true');
-                resolveSessionIdentity();
-                
-                // Clean up URL telemetry for forensic integrity and aesthetics
-                const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
-                window.history.replaceState({}, document.title, cleanUrl);
+            // Clean URL Handler: Remove any trailing hashes or query params from external redirects
+            if (window.location.search || window.location.hash) {
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
 
             document.addEventListener('DOMContentLoaded', () => {
@@ -1417,9 +1386,11 @@
                             });
                             if (target) target.classList.remove('hidden');
 
-                            let stateName = (target === stateDashboard) ? 'dashboard' : 'login';
+                            const stateName = (target === stateDashboard) ? 'dashboard' : 'login';
+                            
                             if (pushHistory && target !== stateLoading) {
-                                history.pushState({ view: stateName }, '', '#' + stateName);
+                                // URL Masking: Use history.replaceState to maintain clean URLs without hashes
+                                history.replaceState({ view: stateName }, '', '/' + stateName);
                             }
 
                             if (target === stateDashboard) {
@@ -1447,14 +1418,14 @@
                         // are routed to the login view regardless of the URL hash state.
                         function initializeApp() {
                             const isAuth = sessionStorage.getItem('isVaultAuthenticated') === 'true';
-                            const hash = window.location.hash.replace('#', '');
+                            const path = window.location.pathname.replace('/', '');
 
                             if (isAuth) {
                                 showState(stateDashboard, false);
-                                if (hash !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "#dashboard");
+                                if (path !== 'dashboard') history.replaceState({ view: 'dashboard' }, "", "/dashboard");
                             } else {
                                 showState(stateLogin, false);
-                                history.replaceState({ view: 'login' }, "", "#login");
+                                if (path !== 'login' && path !== '') history.replaceState({ view: 'login' }, "", "/login");
                             }
                         }
 
@@ -1718,15 +1689,9 @@
 
                         logoutBtn.addEventListener('click', () => {
                             profileDropdown.classList.add('hidden');
-                            loginForm.reset();
-                            // Purge in-memory OTP token and dismount MFA gateway if active
-                            currentSessionOtp = '';
-                            var otpInput = document.getElementById('otp-code-input');
-                            if (otpInput) otpInput.value = '';
-                            document.getElementById('mfa-gateway').classList.remove('active');
-
+                            // Clean State Termination: Wipe session and hard-redirect to root
                             sessionStorage.clear();
-                            showState(stateLogin);
+                            window.location.href = '/';
                         });
 
                         //Dashboard Initialisation
@@ -1850,23 +1815,30 @@
                                  document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }
+
                             // Global isAdmin switch drives KPI visibility
                             if (window.currentEnv === 'aws') {
                                 if (window.isAdmin) {
-                                    // Full Admin AWS metrics
+                                    // Full Admin AWS metrics: High Blast Radius
+                                    document.getElementById('kpi-1-val').innerText = '95%';
+                                    document.getElementById('kpi-1-val').style.color = 'var(--red)';
+                                    document.getElementById('kpi-1-sub').innerText = 'Full Administrative Access detected via Okta SSO.';
+
                                     document.getElementById('kpi-2-val').innerText = '3';
                                     document.getElementById('kpi-3-val').innerText = '66%';
                                     document.getElementById('kpi-4-val').innerText = '1'; 
                                     document.getElementById('kpi-4-val').style.color = 'var(--red)';
                                 } else {
-                                    // Zero Trust Guest Metrics (Locked)
-                                    document.getElementById('kpi-1-val').innerText = '0';
+                                    // Zero Trust Guest Metrics: Low Blast Radius
+                                    document.getElementById('kpi-1-val').innerText = '5%';
+                                    document.getElementById('kpi-1-val').style.color = 'var(--green)';
+                                    document.getElementById('kpi-1-sub').innerText = 'Least Privilege Enforced. Lateral movement blocked.';
+
                                     document.getElementById('kpi-2-val').innerText = '0';
                                     document.getElementById('kpi-3-val').innerText = '0%';
                                     document.getElementById('kpi-4-val').innerText = '0';
                                     document.getElementById('kpi-5-val').innerText = '0';
                                     
-                                    document.getElementById('kpi-1-val').style.color = 'var(--gray)';
                                     document.getElementById('kpi-2-val').style.color = 'var(--gray)';
                                     document.getElementById('kpi-4-val').style.color = 'var(--gray)';
 

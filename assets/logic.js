@@ -360,6 +360,14 @@ window.triggerAwsScan = async function () {
   window.clearTerminal();
 
   try {
+    const currentUser = sessionStorage.getItem('loggedInUser') || 'Not Available';
+    const isAdmin = currentUser === 'aayushpandey2905@gmail.com';
+
+    window._slackAddLog("SYSTEM", `[SEC-AUDIT] Calculating Blast Radius for ${currentUser}...`, "INFO");
+    setTimeout(() => {
+       window._slackAddLog("SYSTEM", `[RESULT] Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session'}.`, isAdmin ? "CRITICAL" : "SUCCESS");
+    }, 600);
+
     const res = await fetch("/api/scan-aws");
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
@@ -612,9 +620,8 @@ window.triggerAwsScan = async function () {
   });
 
   // Check if we just returned from a successful SSO login
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("sso") === "success") {
-    console.log("[OKTA] SSO Handshake Verified.");
+  if (sessionStorage.getItem('isSSOSession') === 'true') {
+    console.log("[OKTA] SSO Handshake Verified via SessionContext.");
     // Optional: Show a "Welcome Aayush" toast or log
     if (typeof window._slackAddLog === "function") {
       window._slackAddLog(
