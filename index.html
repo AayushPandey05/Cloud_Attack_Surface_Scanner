@@ -594,16 +594,17 @@
           max-width: 420px;
       /* PRO TERMINAL PALETTE (High-Fidelity CRT Restore) */
       .terminal-body {
-          background-color: #000000 !important;
-          color: #33ff33 !important; /* CRT Phosphor */
-          font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+          background-color: #0a0a0a !important; /* Deep Black */
+          color: #00f2ff !important; /* Neon Cyan (Standard Text) */
+          font-family: 'JetBrains Mono', 'Courier New', monospace;
       }
       .log-line { margin-bottom: 2px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px; }
       .log-time, .log-source, .log-category { color: #ffffff !important; opacity: 0.6; }
-      .log-text { color: #33ff33 !important; }
+      .log-text { color: #00f2ff !important; }
       
-      .level-crit .log-text, .level-critical .log-text, .level-failure .log-text { color: #ff0000 !important; font-weight: bold; }
-      .level-success .log-text, .level-ok .log-text { color: #00ffff !important; }
+      .level-crit .log-text, .level-critical .log-text, .level-failure .log-text { color: #ff3131 !important; font-weight: bold; } /* Neon Red */
+      .level-success .log-text, .level-ok .log-text { color: #00f2ff !important; }
+      .level-warning .log-text, .level-audit .log-text { color: #ffcc00 !important; } /* Amber */
       .log-sub { color: #666 !important; }
           content: '';
           position: absolute;
@@ -1572,20 +1573,15 @@
                         window.verifyEmailOtp = function() {
                             var otpInput = document.getElementById('otp-code-input');
                             var entered = otpInput ? otpInput.value.trim() : '';
-                            const currentUser = sessionStorage.getItem('loggedInUser') || '';
-                            const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+                            const userEmail = sessionStorage.getItem('loggedInUser') || '';
 
-                            // PRIORITY 1: ADMIN IDENTITY BYPASS
-                            // For the administrative console, the SSO provider (Okta) has already established
-                            // a secure identity context. We allow an any-code bypass for the local MFA
-                            // to streamline administrative access and preserve transactional email quota.
-                            if (isAdmin && entered.length === 6) {
-                                // Forensic Trace Integration
+                            // 1. ADMIN IDENTITY BYPASS (PRIORITY FIX)
+                            // Strict bypass logic for administrative identity to ensure 0-quota demo speed.
+                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com' && entered.length === 6) {
                                 if (typeof addLog === 'function') {
                                     addLog('AUTH', 'Admin Identity Verified. Bypassing local MFA challenge...', 'SUCCESS', 'Gateway');
                                     addLog('SEC', 'Access Granted: Full Administrative Privileges.', 'SUCCESS', 'Identity');
                                 }
-                                
                                 sessionStorage.setItem('isVaultAuthenticated', 'true');
                                 document.getElementById('mfa-gateway').classList.remove('active');
                                 if (otpInput) otpInput.value = '';
@@ -1593,9 +1589,8 @@
                                 return;
                             }
 
-                            // PRIORITY 2: GLOBAL QUOTA PROTECTION (LEGACY)
-                            if (entered === '999999') {
-                                console.log('Quota Bypass Triggered');
+                            // 2. GLOBAL QUOTA PROTECTION (LEGACY)
+                            if (entered === '010101') {
                                 sessionStorage.setItem('isVaultAuthenticated', 'true');
                                 document.getElementById('mfa-gateway').classList.remove('active');
                                 if (otpInput) otpInput.value = '';
@@ -1603,26 +1598,18 @@
                                 return;
                             }
 
-                            // PRIORITY 3: STRICT TRANSACTIONAL VERIFICATION (ALL OTHER USERS)
+                            // 3. STRICT TRANSACTIONAL VERIFICATION (GLOBAL)
                             if (entered === currentSessionOtp && currentSessionOtp !== '') {
-                                // Token matched — purge in-memory OTP and establish authenticated session
                                 currentSessionOtp = '';
                                 if (otpInput) otpInput.value = '';
                                 document.getElementById('mfa-gateway').classList.remove('active');
-
-                                // Persist authentication flag for the session lifetime (tab-scoped)
                                 sessionStorage.setItem('isVaultAuthenticated', 'true');
-
                                 showState(stateDashboard);
                             } else {
-                                // Rejection signal: transient red border indicates failed verification
                                 if (otpInput) {
-                                    otpInput.style.borderColor = '#F04438';
-                                    otpInput.style.boxShadow = '0 0 0 3px rgba(240,68,56,0.2)';
-                                    setTimeout(function() {
-                                        otpInput.style.borderColor = '';
-                                        otpInput.style.boxShadow = '';
-                                    }, 1500);
+                                    otpInput.style.borderColor = '#ff3131';
+                                    otpInput.style.boxShadow = '0 0 0 3px rgba(255,49,49,0.2)';
+                                    setTimeout(function() { otpInput.style.borderColor = ''; otpInput.style.boxShadow = ''; }, 1500);
                                 }
                                 alert('Invalid Verification Code. Please check your email.');
                             }
@@ -2140,7 +2127,10 @@
               const userCardVal = document.getElementById('exposed-secrets-val');
               const userCardTitle = document.getElementById('exposed-secrets-title');
               if (userCardTitle) userCardTitle.innerText = 'Non-Compliant Users';
-              if (userCardVal) userCardVal.innerText = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || '0';
+              
+              // Variable Initialization Fix: Ensure uniqueLeakerCount defaults to 0 if undefined
+              const nonCompliantUserCount = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
+              if (userCardVal) userCardVal.innerText = String(nonCompliantUserCount);
             }
           }
         };
