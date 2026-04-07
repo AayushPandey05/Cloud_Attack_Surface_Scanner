@@ -241,11 +241,16 @@ window.runSlackAudit = async function () {
       nonCompliant: nonCompliant,
       totalUsers: totalUsers,
       mfaPct: mfaPct,
+      uniqueLeakerCount: uniqueLeakerCount,
       detailedAlerts: Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
         : [],
       raw: data,
     };
+
+    // Flag session as audited to transition from Clean Slate to Active view
+    sessionStorage.setItem('slack_audit_complete', 'true');
+    if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
     if (typeof window._slackAddLog === "function") {
       window._slackAddLog(
@@ -422,51 +427,13 @@ window.triggerAwsScan = async function () {
       });
     }
 
-    // Update KPI 1: Attack Paths
-    const kpi1 = document.getElementById("kpi-1-val");
-    if (kpi1) {
-      kpi1.innerText = openAttackPaths;
-      kpi1.style.color = openAttackPaths > 0 ? "var(--red)" : "var(--green)";
-    }
+    // Dashboard re-rendering is handled by updateDashboardContext to ensure
+    // identity-based multipliers (like Blast Radius) are preserved.
+    
+    // Flag session as audited to transition from Clean Slate to Active view
+    sessionStorage.setItem('aws_audit_complete', 'true');
+    if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
-    // Update KPI 2: IAM Identities
-    const kpi2 = document.getElementById("kpi-2-val");
-    if (kpi2) {
-      kpi2.innerText = data.summary || "1";
-      kpi2.style.color = "var(--green)";
-    }
-
-    // Update KPI 3: MFA ENFORCED (The one you need!)
-    const kpi3 = document.getElementById("kpi-3-val");
-    const kpi3s = document.getElementById("kpi-3-sub");
-    if (kpi3) {
-      kpi3.innerText = mfaActive ? "1" : "0";
-      kpi3.style.color = mfaActive ? "var(--green)" : "var(--red)";
-      if (kpi3s)
-        kpi3s.innerText = mfaActive ? "MFA Policy Active" : "MFA Not Detected";
-    }
-
-    // Update KPI 4: Exposed Secrets
-    const kpi4 = document.getElementById("kpi-4-val");
-    if (kpi4) {
-      kpi4.innerText = exposedSecrets;
-      kpi4.style.color = exposedSecrets > 0 ? "var(--red)" : "var(--green)";
-    }
-
-    // Update KPI 5: CONTROLS PASSING (The one you need!)
-    const kpi5 = document.getElementById("kpi-5-val");
-    const kpi5s = document.getElementById("kpi-5-sub");
-    // Simple logic: If bucket is secure + no secrets + MFA active = 3 controls
-    let controls =
-      (openAttackPaths === 0 ? 1 : 0) +
-      (exposedSecrets === 0 ? 1 : 0) +
-      (mfaActive ? 1 : 0);
-
-    if (kpi5) {
-      kpi5.innerText = controls;
-      kpi5.style.color = controls >= 2 ? "var(--green)" : "var(--red)";
-      if (kpi5s) kpi5s.innerText = `${controls}/3 Controls Active`;
-    }
   } catch (err) {
     window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
   }

@@ -22,6 +22,9 @@ export default async function handler(req, res) {
       sessionStorage.setItem('isSSOSession', 'true');
       sessionStorage.setItem('vaultAccountType', 'new');
 
+      // Debug Alert
+      alert('Saving email: ' + '${userEmail}');
+
       // Immediate Redirect to Clean /dashboard URL
       window.location.href = '/dashboard';
     </script>

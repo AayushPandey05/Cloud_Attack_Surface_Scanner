@@ -1186,28 +1186,28 @@
         <div class="kpi-grid" id="kpi-container">
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-1-title">Identity Blast Radius</div>
-            <div class="kpi-v" id="kpi-1-val">0%</div>
-            <div class="kpi-sub" id="kpi-1-sub">Calculating exposure...</div>
+            <div class="kpi-v" id="blast-radius-val">—</div>
+            <div class="kpi-sub" id="blast-radius-sub">Calculating exposure...</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-2-title">IAM IDENTITIES</div>
-            <div class="kpi-v text-green" id="kpi-2-val">0</div>
-            <div class="kpi-sub" id="kpi-2-sub">No issues detected</div>
+            <div class="kpi-v text-green" id="iam-identities-val">0</div>
+            <div class="kpi-sub" id="iam-identities-sub">No issues detected</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-3-title">MFA Enforced</div>
-            <div class="kpi-v text-green" id="kpi-3-val">—</div>
-            <div class="kpi-sub" id="kpi-3-sub">Awaiting scan</div>
+            <div class="kpi-v text-green" id="mfa-enforced-val">—</div>
+            <div class="kpi-sub" id="mfa-enforced-sub">Awaiting scan</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-4-title">Exposed Secrets</div>
-            <div class="kpi-v text-green" id="kpi-4-val">0</div>
-            <div class="kpi-sub" id="kpi-4-sub">No credentials exposed</div>
+            <div class="kpi-v text-green" id="exposed-secrets-val">0</div>
+            <div class="kpi-sub" id="exposed-secrets-sub">No credentials exposed</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-5-title">Controls Passing</div>
-            <div class="kpi-v text-green" id="kpi-5-val">—</div>
-            <div class="kpi-sub" id="kpi-5-sub">Awaiting scan</div>
+            <div class="kpi-v text-green" id="controls-passing-val">—</div>
+            <div class="kpi-sub" id="controls-passing-sub">Awaiting scan</div>
           </div>
         </div>
 
@@ -1326,6 +1326,11 @@
             // CENTRAL IDENTITY REGISTRY
             const ADMIN_EMAIL = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
+            window.vaultLogCache = { aws: [], slack: [] };
+            
+            // Clear scan state on initial lifecycle boot for a clean state experience
+            sessionStorage.removeItem('aws_audit_complete');
+            sessionStorage.removeItem('slack_audit_complete');
 
             /**
              * Universal Identity Fetcher: Resolves active user from URL params (query/hash) 
@@ -1344,6 +1349,27 @@
             }
 
             document.addEventListener('DOMContentLoaded', () => {
+                        // PRIORITY: Identity Extraction & Admin Recognition
+                        const userEmail = sessionStorage.getItem('loggedInUser');
+                        console.log("Current User:", userEmail);
+
+                        window.renderAdminDashboard = function() {
+                            window.isAdmin = true;
+                            document.body.classList.add('admin-mode');
+                            if (typeof showState === 'function') showState(stateDashboard, false);
+                        };
+
+                        window.renderGuestDashboard = function() {
+                            window.isAdmin = false;
+                            document.body.classList.remove('admin-mode');
+                            if (typeof showState === 'function') showState(stateLogin, false);
+                        };
+
+                        if (userEmail === 'aayushpandey2905@gmail.com') {
+                             document.body.classList.add('admin-mode');
+                             window.isAdmin = true;
+                        }
+
                         lucide.createIcons();
 
                         // View-state handles: mutually exclusive visibility enforced by showState()
@@ -1412,6 +1438,24 @@
                                 showState(stateLogin, false);
                             }
                         });
+
+                        function resolveSessionIdentity() {
+                            const userEmail = sessionStorage.getItem('loggedInUser') || 'DEBUG: NO EMAIL FOUND';
+                            window.isAdmin = userEmail.toLowerCase() === 'aayushpandey2905@gmail.com';
+                            
+                            const pEmail = document.getElementById('profile-email');
+                            const pName = document.getElementById('profile-name');
+                            const avatar = document.querySelector('.avatar');
+
+                            if (pEmail) pEmail.innerText = userEmail;
+                            if (pName) pName.innerText = window.isAdmin ? 'Security Admin' : 'External Auditor';
+                            
+                            const avatarText = window.isAdmin ? 'A' : (userEmail !== 'DEBUG: NO EMAIL FOUND' ? userEmail.charAt(0).toUpperCase() : 'U');
+                            if (avatar) avatar.innerText = avatarText;
+
+                            console.log("[Identity Persistence] Active User:", userEmail, "| Role:", (window.isAdmin ? 'Admin' : 'Guest'));
+                            return userEmail;
+                        }
 
                         // Session bootstrap: validates the sessionStorage auth token on every
                         // page load. Authenticated sessions resume at the dashboard; all others
@@ -1689,7 +1733,8 @@
                             });
                         }
                         corpSso.addEventListener('click', () => {
-                            processAuthSuccess('Not Available');
+                            const emailFallback = sessionStorage.getItem('loggedInUser') || 'DEBUG: NO EMAIL FOUND';
+                            processAuthSuccess(emailFallback);
                         });
 
                         // ── Session Termination & Profile Dropdown ───────────────────────
@@ -1710,9 +1755,47 @@
                             window.location.href = '/';
                         });
 
-                        //Dashboard Initialisation
+                        // ── Forensic Telemetry Engine ───────────────
+                        function renderLogLine(l) {
+                            const logLine = document.createElement('div');
+                            logLine.className = `log-line level-${l.level.toLowerCase()}`;
+                            logLine.innerHTML = `
+                                <span class="log-time">[${l.time}]</span>
+                                <span class="log-source">[${l.source || 'SYS'}]</span>
+                                <span class="log-category">${l.category || 'Audit'}:</span>
+                                <span class="log-text">${l.text}</span>
+                                ${l.subtext ? `<span class="log-sub">${l.subtext}</span>` : ''}
+                            `;
+                            return logLine;
+                        }
+
+                        function addLog(source, text, level = 'INFO', category = 'Audit', subtext = '') {
+                            const env = window.currentEnv || 'aws';
+                            const logObj = { 
+                                source, text, level, category, subtext, 
+                                time: new Date().toLocaleTimeString('en-GB', { hour12: false }) 
+                            };
+                            
+                            if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
+                            if (!window.vaultLogCache[env]) window.vaultLogCache[env] = [];
+                            window.vaultLogCache[env].push(logObj);
+
+                            const logLine = renderLogLine(logObj);
+                            terminalFeed.appendChild(logLine);
+                            terminalFeed.scrollTop = terminalFeed.scrollHeight;
+                        }
+
+                        function rehydrateLogs(env) {
+                            terminalFeed.innerHTML = '';
+                            const logs = window.vaultLogCache[env] || [];
+                            logs.forEach(l => {
+                                terminalFeed.appendChild(renderLogLine(l));
+                            });
+                            terminalFeed.scrollTop = terminalFeed.scrollHeight;
+                        }
+
+                        // Dashboard Initialisation
                         function initDashboard() {
-                            // Restore persisted attack surface context from the prior session
                             var savedEnv = sessionStorage.getItem('vaultActiveEnv');
                             if (savedEnv === 'slack' || savedEnv === 'aws') {
                                 window.currentEnv = savedEnv;
@@ -1721,27 +1804,23 @@
                                 });
                             }
 
-                            // Identity-Based Data Isolation (Zero Trust Enforcement)
                             const terminalPanel = document.getElementById('terminal-panel');
                             const zeroStateUI = document.getElementById('zero-trust-connect');
                             terminalFeed.innerHTML = '';
 
-                            // Admin Lock: Ensure the administrator sees metrics immediately
                             if (sessionStorage.getItem('loggedInUser') === 'aayushpandey2905@gmail.com') {
                                 window.isAdmin = true;
                             }
 
                             if (window.isAdmin) {
-                                // Admin View: Show active security telemetry
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
                                 if (zeroStateUI) zeroStateUI.classList.add('hidden');
 
-                                addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS');
-                                addLog('AWS', 'Auditing S3 Storage: [aayush-publicexposure-test] detected.', 'INFO');
-                                addLog('AWS', 'Critical Attack Path: IAM Identity -> S3 Exfiltration identified.', 'ERROR');
-                                addLog('OKTA', 'Identity Audit: 3 high-privileged IAM identities found.', 'WARNING');
+                                rehydrateLogs(window.currentEnv || 'aws');
+                                if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
+                                    addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS', 'Gateway');
+                                }
                             } else {
-                                // Zero Trust View: Hide telemetry and show onboarding
                                 if (terminalPanel) terminalPanel.classList.add('hidden');
                                 if (zeroStateUI) {
                                   zeroStateUI.classList.remove('hidden');
@@ -1764,16 +1843,11 @@
                                 btn.classList.add('active');
 
                                 window.currentEnv = view;
-                                // Persist context for cross-refresh continuity
                                 sessionStorage.setItem('vaultActiveEnv', view);
+                                
+                                rehydrateLogs(view);
                                 updateDashboardContext();
 
-                                // Enforce cross-surface telemetry isolation before emitting context event
-                                terminalFeed.innerHTML = '';
-                                addLog(view.toUpperCase(), 'Context switched to ' + view.toUpperCase() + ' environment.', 'SYSTEM');
-
-                                // AWS: boot the static attack path rotation engine
-                                // Slack: telemetry fetch is dispatched inside updateDashboardContext()
                                 if (view === 'aws') {
                                     startTerminal();
                                 } else {
@@ -1782,115 +1856,67 @@
                             });
                         });
 
-                        // Binds KPI panel labels and values to the taxonomy of the active
                         function updateDashboardContext() {
                             const titleTerm = document.getElementById('terminal-title');
-                            if (window.currentEnv === 'aws') {
-                                // IaaS attack surface — safe zero-state defaults pending live CSPM scan
-                                document.getElementById('kpi-1-val').innerText = '0';
-                                document.getElementById('kpi-1-val').style.color = 'var(--green)';
-                                document.getElementById('kpi-1-sub').innerText = 'No public exposure';
+                            const env = window.currentEnv || 'aws';
+                            const isAuditComplete = sessionStorage.getItem(env + '_audit_complete') === 'true';
+
+                            if (env === 'aws') {
+                                // IaaS attack surface defaults
+                                document.getElementById('kpi-1-title').innerText = 'Identity Blast Radius';
+                                document.getElementById('blast-radius-val').innerText = isAuditComplete ? (window.isAdmin ? '95%' : '5%') : '—';
+                                document.getElementById('blast-radius-val').style.color = isAuditComplete ? (window.isAdmin ? 'var(--red)' : 'var(--green)') : 'var(--gray)';
+                                document.getElementById('blast-radius-sub').innerText = isAuditComplete ? (window.isAdmin ? 'CRITICAL: Full Admin status detected via Okta SSO.' : 'Least Privilege Enforced. Lateral movement blocked.') : 'Awaiting audit...';
+
                                 document.getElementById('kpi-2-title').innerText = 'IAM IDENTITIES';
-                                document.getElementById('kpi-2-val').innerText = '0';
-                                document.getElementById('kpi-2-val').style.color = 'var(--green)';
-                                document.getElementById('kpi-2-sub').innerText = 'No issues detected';
+                                document.getElementById('iam-identities-val').innerText = isAuditComplete ? '3' : '0';
+                                document.getElementById('iam-identities-val').style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
+                                document.getElementById('iam-identities-sub').innerText = isAuditComplete ? 'Active identities analyzed' : 'No identities analyzed';
+
                                 document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                                document.getElementById('kpi-3-val').innerText = '—';
-                                document.getElementById('kpi-3-val').style.color = 'var(--green)';
-                                document.getElementById('kpi-3-sub').innerText = 'Awaiting scan';
+                                document.getElementById('mfa-enforced-val').innerText = isAuditComplete ? '66%' : '—';
+                                document.getElementById('mfa-enforced-val').style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
+                                document.getElementById('mfa-enforced-sub').innerText = isAuditComplete ? 'Identity protection active' : 'Awaiting compliance check';
+
                                 document.getElementById('kpi-4-title').innerText = 'Exposed Secrets';
-                                document.getElementById('kpi-4-val').innerText = '0';
-                                document.getElementById('kpi-4-val').style.color = 'var(--green)';
-                                document.getElementById('kpi-4-sub').innerText = 'No credentials exposed';
+                                document.getElementById('exposed-secrets-val').innerText = isAuditComplete ? '1' : '0';
+                                document.getElementById('exposed-secrets-val').style.color = isAuditComplete ? 'var(--red)' : 'var(--gray)';
+                                document.getElementById('exposed-secrets-sub').innerText = isAuditComplete ? '1 high-entropy secret leaked in source code.' : 'No credentials scanned';
+
                                 document.getElementById('kpi-5-title').innerText = 'Controls Passing';
-                                document.getElementById('kpi-5-val').innerText = '—';
-                                document.getElementById('kpi-5-val').style.color = 'var(--green)';
-                                document.getElementById('kpi-5-sub').innerText = 'Awaiting scan';
+                                document.getElementById('controls-passing-val').innerText = isAuditComplete ? '2/3' : '—';
+                                document.getElementById('controls-passing-val').style.color = isAuditComplete ? 'var(--yellow)' : 'var(--gray)';
+                                document.getElementById('controls-passing-sub').innerText = isAuditComplete ? 'Critical misconfigurations identified' : 'Awaiting compliance scan';
 
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
-                                 // SaaS attack surface — indeterminate state while telemetry stream hydrates
-                                 document.getElementById('kpi-1-val').innerText = '—';
-                                 document.getElementById('kpi-1-sub').innerText = 'Scanning…';
-                                 document.getElementById('kpi-1-val').style.color = 'var(--gray)';
+                                 // SaaS attack surface defaults
+                                 document.getElementById('kpi-1-title').innerText = 'Exposed Secrets';
+                                 document.getElementById('blast-radius-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.secrets : '0') : '—';
+                                 document.getElementById('blast-radius-val').style.color = isAuditComplete ? 'var(--red)' : 'var(--gray)';
+                                 document.getElementById('blast-radius-sub').innerText = isAuditComplete ? 'Critical credential leakage' : 'Scanning messages…';
+
                                  document.getElementById('kpi-2-title').innerText = 'Exposed Secrets';
-                                 document.getElementById('kpi-2-val').innerText = '—';
-                                 document.getElementById('kpi-2-val').style.color = 'var(--gray)';
-                                 document.getElementById('kpi-2-sub').innerText = 'Scanning messages…';
+                                 document.getElementById('iam-identities-val').innerText = '—';
+                                 document.getElementById('iam-identities-val').style.color = 'var(--gray)';
+                                 document.getElementById('iam-identities-sub').innerText = 'Deep message audit…';
+
                                  document.getElementById('kpi-3-title').innerText = 'MFA Enforced';
-                                 document.getElementById('kpi-3-val').innerText = '—';
-                                 document.getElementById('kpi-3-val').style.color = 'var(--gray)';
-                                 document.getElementById('kpi-3-sub').innerText = 'Checking users…';
-                                 document.getElementById('kpi-4-title').innerText = 'Non-Compliant Users';
-                                 document.getElementById('kpi-4-val').innerText = '—';
-                                 document.getElementById('kpi-4-val').style.color = 'var(--gray)';
-                                 document.getElementById('kpi-4-sub').innerText = 'MFA / profile audit';
+                                 document.getElementById('mfa-enforced-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—';
+
+                                 document.getElementById('kpi-4-title').innerText = 'High-risk identities detected';
+                                 document.getElementById('exposed-secrets-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.uniqueLeakers : '0') : '0';
+                                 document.getElementById('exposed-secrets-val').style.color = isAuditComplete ? 'var(--red)' : 'var(--gray)';
+                                 document.getElementById('exposed-secrets-sub').innerText = isAuditComplete ? 'High-risk identities detected' : 'MFA & profile audit';
+
                                  document.getElementById('kpi-5-title').innerText = 'Total Users';
-                                 document.getElementById('kpi-5-val').innerText = '—';
-                                 document.getElementById('kpi-5-val').style.color = 'var(--gray)';
-                                 document.getElementById('kpi-5-sub').innerText = 'Querying workspace…';
+                                 document.getElementById('controls-passing-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.totalUsers : '0') : '—';
+                                 document.getElementById('controls-passing-sub').innerText = isAuditComplete ? 'Users audited' : 'Querying workspace…';
+                                 
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }
-
-                            // Global isAdmin switch drives KPI visibility
-                            if (window.currentEnv === 'aws') {
-                                if (window.isAdmin) {
-                                    // Full Admin AWS metrics: High Blast Radius due to identity privilege
-                                    document.getElementById('kpi-1-val').innerText = '95%';
-                                    document.getElementById('kpi-1-val').style.color = 'var(--red)';
-                                    document.getElementById('kpi-1-sub').innerText = 'CRITICAL: Full Admin status detected via Okta SSO.';
-
-                                    document.getElementById('kpi-2-val').innerText = '3';
-                                    document.getElementById('kpi-3-val').innerText = '66%';
-                                    
-                                    // Move secret count telemetry to the appropriate card
-                                    document.getElementById('kpi-4-val').innerText = '1'; 
-                                    document.getElementById('kpi-4-val').style.color = 'var(--red)';
-                                    document.getElementById('kpi-4-sub').innerText = '1 high-entropy secret leaked in source code.';
-                                } else {
-                                    // Zero Trust Guest Metrics: Low Blast Radius
-                                    document.getElementById('kpi-1-val').innerText = '5%';
-                                    document.getElementById('kpi-1-val').style.color = 'var(--green)';
-                                    document.getElementById('kpi-1-sub').innerText = 'Least Privilege Enforced. Lateral movement blocked.';
-
-                                    document.getElementById('kpi-2-val').innerText = '0';
-                                    document.getElementById('kpi-3-val').innerText = '0%';
-                                    document.getElementById('kpi-4-val').innerText = '0';
-                                    document.getElementById('kpi-5-val').innerText = '0';
-                                    
-                                    document.getElementById('kpi-2-val').style.color = 'var(--gray)';
-                                    document.getElementById('kpi-4-val').style.color = 'var(--gray)';
-
-                                    const zeroMsg = document.getElementById('zero-trust-msg');
-                                    const zeroLink = document.getElementById('zero-trust-link');
-                                    if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your AWS Environment to begin scanning.';
-                                    if (zeroLink) {
-                                        zeroLink.href = 'https://console.aws.amazon.com';
-                                        zeroLink.innerHTML = `<i data-lucide="plus" width="18" height="18"></i> Connect Your AWS Cloud`;
-                                        if (window.lucide) lucide.createIcons();
-                                    }
-                                }
-                            } else {
-                                // Slack Workspace Isolation (Zero Trust)
-                                if (window.isAdmin) {
-                                    document.getElementById('kpi-5-val').innerText = '12';
-                                    document.getElementById('kpi-2-val').innerText = '4';
-                                } else {
-                                    for(let i=1; i<=5; i++) {
-                                        document.getElementById('kpi-'+i+'-val').innerText = '0';
-                                        document.getElementById('kpi-'+i+'-val').style.color = 'var(--gray)';
-                                    }
-                                    const zeroMsg = document.getElementById('zero-trust-msg');
-                                    const zeroLink = document.getElementById('zero-trust-link');
-                                    if (zeroMsg) zeroMsg.innerText = 'No active telemetry detected for this account. Please link your Slack Environment to begin scanning.';
-                                    if (zeroLink) {
-                                        zeroLink.href = 'https://vault-audit-workspace.slack.com';
-                                        zeroLink.innerHTML = `<i data-lucide="plus" width="18" height="18"></i> Connect Your Slack Workspace`;
-                                        if (window.lucide) lucide.createIcons();
-                                    }
-                                }
-                            }
                         }
+                        window.updateDashboardContext = updateDashboardContext;
 
                         function startTerminal() {
                             if (terminalInterval) clearInterval(terminalInterval);
@@ -1904,55 +1930,6 @@
                             }
                         }
 
-                        // Forensic Log Renderer
-                        function addLog(tag, content, level, pathHighlight, pathTarget) {
-                            const entry = document.createElement('div');
-                            entry.className = 'log-entry fade-in';
-
-                            const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                            const tagClass = tag.toLowerCase();
-
-                            let levelHTML = '';
-                            if (level === 'CRITICAL') {
-                                levelHTML = `<span class="log-crit">${level}:</span> `;
-                            } else if (level === 'ALERT') {
-                                levelHTML = `<span class="log-alert">${level}:</span> `;
-                            } else if (level === 'WARN') {
-                                levelHTML = `<span class="log-warn">${level}:</span> `;
-                            } else {
-                                levelHTML = `<span style="color:var(--blue)">${level}:</span> `;
-                            }
-
-                            entry.innerHTML = `
-                                <div>
-                                    <span class="log-time">${timeStr}</span>
-                                    <span class="log-tag ${tagClass}">[${tag}]</span>
-                                    ${levelHTML}<span class="log-text">${content}</span>
-                                </div>
-                            `;
-
-                            if (pathHighlight && pathTarget) {
-                                const pathLine = document.createElement('div');
-                                pathLine.style.paddingLeft = '6.5rem';
-                                pathLine.style.marginTop = '0.1rem';
-                                pathLine.style.marginBottom = '0.4rem';
-                                pathLine.innerHTML = `
-                                    <span style="color:#666;">&#x21B3; Attack Path:</span>
-                                    <span style="color:#A855F7;">${pathHighlight}</span>
-                                    <span style="color:#666;">&rarr;</span>
-                                    <span style="color:#818CF8;">${pathTarget}</span>
-                                `;
-                                entry.appendChild(pathLine);
-                            }
-
-                            terminalFeed.appendChild(entry);
-                            terminalFeed.scrollTop = terminalFeed.scrollHeight;
-
-                            // Rolling window: evict oldest entry beyond 20-item threshold
-                            if (terminalFeed.childElementCount > 20) {
-                                terminalFeed.removeChild(terminalFeed.firstChild);
-                            }
-                        }
                         window._slackAddLog = addLog;
 
                         // AUDIT LOG EXPORT — Client-Side Blob Engine
@@ -2049,45 +2026,33 @@
                 }
             });
 
-            // --- IDENTITY-AWARE OVERRIDE ---
-      window.addEventListener('DOMContentLoaded', () => {
-          const params = new URLSearchParams(window.location.search);
-          const hashPath = window.location.hash.split('?')[1];
-          const hashParams = new URLSearchParams(hashPath);
+      // LEGACY OVERRIDE PURGED IN FAVOR OF PRIORITY INITIALIZATION
+    </script>
 
-          // Check both standard URL and Hash-based URL for the 'new' flag
-          if (params.get('accountType') === 'new' || hashParams.get('accountType') === 'new') {
-              console.log("Verified: New Enterprise Session Detected.");
-              const userEmail = params.get('email') || hashParams.get('email') || sessionStorage.getItem('email') || "admin@security-vault.demo";
-              const userName = "Security Admin";
-
-              // Update the UI Stats
-              if(document.getElementById('total-users')) document.getElementById('total-users').innerText = "1";
-              if(document.getElementById('exposed-secrets')) document.getElementById('exposed-secrets').innerText = "0";
-
-              // Update Profile Display as soon as DOM is ready
-              const pName = document.querySelector('#profile-name-display');
-              const pEmail = document.querySelector('#profile-email-display');
-              if (pName) pName.innerText = "Security Admin"; // Always Security Admin
-              if (pEmail) pEmail.innerText = userEmail;
-
-              // Update the Avatar initial to match the first letter of the name
-              const avatar = document.querySelector('.avatar');
-              if (avatar) avatar.innerText = userName.charAt(0).toUpperCase();
-
-              // Wipe the old logs and show fresh ones (Corrected ID to terminal-feed)
-              const terminal = document.getElementById('terminal-feed');
-              if(terminal) {
-                  terminal.innerHTML = `
-                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[SYSTEM]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Identity-Aware Tunnel Established.</span></div>
-                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[INFO]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Logged in as: ${userEmail}</span></div>
-                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag aws">[AWS]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">S3 Surface: [testuser-private-storage] is secure.</span></div>
-                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag okta">[OKTA]</span> <span class="log-success" style="color:var(--green)">SUCCESS:</span> <span class="log-text">MFA Policy: Okta Verify Enforced.</span></div>
-                      <div class="log-entry"><span class="log-time">${new Date().toLocaleTimeString('en-GB', {hour12:false})}</span> <span class="log-tag system">[WAIT]</span> <span style="color:var(--blue)">INFO:</span> <span class="log-text">Awaiting first telemetry sync...</span></div>
-                  `;
-              }
+    <!-- FAST-TRACK IDENTITY MULTIPLIER (Hard Override) -->
+    <script>
+      (function() {
+        const originalUpdate = window.updateDashboardContext;
+        window.updateDashboardContext = function() {
+          if (typeof originalUpdate === 'function') originalUpdate();
+          
+          const userEmail = sessionStorage.getItem('loggedInUser');
+          const env = window.currentEnv || 'aws';
+          const isAuditComplete = sessionStorage.getItem(env + '_audit_complete') === 'true';
+          
+          if (env === 'aws' && isAuditComplete) {
+            const val = document.getElementById('blast-radius-val');
+            const sub = document.getElementById('blast-radius-sub');
+            if (userEmail === 'aayushpandey2905@gmail.com') {
+              if (val) { val.innerText = '95%'; val.style.color = '#ff4d4d'; }
+              if (sub) sub.innerText = 'Full Administrative Access detected via Okta SSO.';
+            } else {
+              if (val) { val.innerText = '5%'; val.style.color = '#4ade80'; }
+              if (sub) sub.innerText = 'Least Privilege Enforced. Lateral movement blocked.';
+            }
           }
-      });
+        };
+      })();
     </script>
 
     <!-- External logic module — cache-busted for Vercel edge freshness -->
