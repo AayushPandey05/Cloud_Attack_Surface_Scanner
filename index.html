@@ -1204,7 +1204,7 @@
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-title-2">IAM IDENTITIES</div>
-            <div class="kpi-v text-green" id="iam-identities-count">0</div>
+            <div class="kpi-v text-green" id="impacted-channels-count">0</div>
             <div class="kpi-sub" id="iam-identities-sub">
               No issues detected
             </div>
@@ -1836,11 +1836,22 @@
                         function renderLogLine(l) {
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
+                            
+                            // TERMINAL PAINT ENGINE: Inject colors based on architectural keywords
+                            let coloredText = l.text;
+                            if (coloredText.includes('Threat:') || coloredText.includes('Attack Path') || coloredText.includes('non-compliance')) {
+                                coloredText = `<span style="color: #ff3131;">${coloredText}</span>`;
+                            } else if (coloredText.includes('Initial Access') || coloredText.includes('SYSTEM') || coloredText.includes('[IDENT]')) {
+                                coloredText = `<span style="color: #ffcc00;">${coloredText}</span>`;
+                            } else if (coloredText.includes('secure') || coloredText.includes('passed') || coloredText.includes('Scan complete')) {
+                                coloredText = `<span style="color: #00f2ff;">${coloredText}</span>`;
+                            }
+
                             logLine.innerHTML = `
                                 <span class="log-time">[${l.time}]</span>
-                                <span class="log-source">[${l.source || 'SYS'}]</span>
-                                <span class="log-category">${l.category || 'Audit'}:</span>
-                                <span class="log-text">${l.text}</span>
+                                <span class="log-source" style="color: #ffffff;">[${l.source || 'SYS'}]</span>
+                                <span class="log-category" style="color: #ffffff; opacity: 0.6;">${l.category || 'Audit'}:</span>
+                                <span class="log-text" style="color: #ffffff;">${coloredText}</span>
                                 ${l.subtext ? `<span class="log-sub">${l.subtext}</span>` : ''}
                             `;
                             return logLine;
@@ -1978,10 +1989,10 @@
                                  const secretsVal = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.secrets : '0') : '—';
                                  document.getElementById('blast-radius-val').innerText = secretsVal;
 
-                                 const iamEl = document.getElementById('iam-identities-count');
-                                 if (iamEl) {
-                                     iamEl.innerText = isAuditComplete ? '0' : '0';
-                                     iamEl.style.color = isAuditComplete ? 'var(--yellow)' : 'var(--gray)';
+                                 const channelEl = document.getElementById('impacted-channels-count');
+                                 if (channelEl) {
+                                     channelEl.innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.impactedChannelCount : '0') : '0';
+                                     channelEl.style.color = isAuditComplete ? (window.latestSlackData && window.latestSlackData.impactedChannelCount > 0 ? 'var(--red)' : 'var(--green)') : 'var(--gray)';
                                  }
 
                                  document.getElementById('mfa-enforced-val').innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—';

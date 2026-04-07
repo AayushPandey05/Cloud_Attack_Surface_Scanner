@@ -182,12 +182,15 @@ window.runSlackAudit = async function () {
     
     // Identity Deduplication: Identify unique users responsible for findings
     var uniqueUsers = new Set();
+    var impactedChannels = new Set();
     var alerts = Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [];
     alerts.forEach(function(a) {
-        var userName = a.split(" | ")[0];
-        if (userName) uniqueUsers.add(userName);
+        var parts = a.split(" | ");
+        if (parts[0]) uniqueUsers.add(parts[0]);
+        if (parts[2]) impactedChannels.add(parts[2]);
     });
     var uniqueLeakerCount = uniqueUsers.size || 0;
+    var impactedChannelCount = impactedChannels.size || 0;
 
     // ATTACK PATH TELEMETRY: Document the lateral movement threat model
     if (secrets > 0 && typeof window._slackAddLog === "function") {
@@ -247,11 +250,16 @@ window.runSlackAudit = async function () {
       totalUsers: totalUsers,
       mfaPct: mfaPct,
       uniqueLeakerCount: uniqueLeakerCount,
+      impactedChannelCount: impactedChannelCount,
       detailedAlerts: Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
         : [],
       raw: data,
     };
+
+    // STRICT DOM SYNC: Impacted Channels Metric
+    const channelsEl = document.getElementById('impacted-channels-count');
+    if (channelsEl) channelsEl.innerText = String(impactedChannelCount);
 
     // Flag session as audited to transition from Clean Slate to Active view
     sessionStorage.setItem('slack_audit_complete', 'true');
