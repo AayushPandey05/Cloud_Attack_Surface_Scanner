@@ -1221,11 +1221,6 @@
               No credentials exposed
             </div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-h" id="kpi-title-5">SOC2 Status</div>
-            <div class="kpi-v text-green" id="compliance-status-val">—</div>
-            <div class="kpi-sub" id="controls-passing-sub">Awaiting scan</div>
-          </div>
         </div>
 
         <!-- Segmented Control + Export Bar -->
@@ -1860,7 +1855,7 @@
 
                             // TERMINAL PAINT ENGINE: Keyword highlights
                             let coloredText = l.text;
-                            if (coloredText.includes('Threat:') || coloredText.includes('Attack Path') || coloredText.includes('non-compliance') || coloredText.includes('CRITICAL:')) {
+                            if (coloredText.includes('CRITICAL:') || coloredText.includes('PUBLIC ACCESS ENABLED!') || coloredText.includes('non-compliance')) {
                                 coloredText = `<span style="color: #ff3131;">${coloredText}</span>`;
                             } else if (coloredText.includes('Initial Access') || coloredText.includes('SYSTEM') || coloredText.includes('[IDENT]')) {
                                 coloredText = `<span style="color: #ffcc00;">${coloredText}</span>`;

@@ -410,20 +410,19 @@ window.triggerAwsScan = async function () {
 
     let openAttackPaths = 0;
     let exposedSecrets = 0;
-    let mfaActive = false; // New Logic Catcher
+    let mfaBypassDetected = false;
 
     if (Array.isArray(data.terminalLogs)) {
       const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
       
       data.terminalLogs.forEach((entry) => {
-        // Identity-Aware Telemetry Scrubbing: Replace admin bucket with test user bucket
         let processedEntry = entry;
         if (isNewUser) {
            processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
         }
 
         if (processedEntry.includes("missing MFA")) {
-            // 2. High-Severity MFA Alert Injection ( Architectural Restore )
+            mfaBypassDetected = true;
             window._slackAddLog("AWS", "CRITICAL: User [Vault-Scanner-Service] missing MFA device.", "CRITICAL", "Audit");
             return; 
         }
@@ -433,8 +432,8 @@ window.triggerAwsScan = async function () {
           processedEntry.includes("CRITICAL")
         ) {
           openAttackPaths++;
+          exposedSecrets++; // High-risk metadata exposure
           
-          // 3. S3 Secret Scanning Logic: Search for sensitive markers in public buckets
           if (processedEntry.includes(".env") || processedEntry.includes("config.json") || processedEntry.includes("root_key.csv") || processedEntry.includes("aayush-publicexposure-test")) {
              window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL", "Audit");
              exposedSecrets++;
@@ -442,9 +441,6 @@ window.triggerAwsScan = async function () {
         }
 
         if (processedEntry.includes("Leaked AWS Access Key")) exposedSecrets++;
-
-        // --- CATCH MFA STATUS FROM LOGS ---
-        if (processedEntry.includes("MFA compliance check passed")) mfaActive = true;
 
         let clean = processedEntry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
@@ -454,28 +450,33 @@ window.triggerAwsScan = async function () {
       });
     }
 
-    // Dashboard re-rendering is handled by updateDashboardContext to ensure
-    // identity-based multipliers (like Blast Radius) are preserved.
-    
-    // Flag session as audited to transition from Clean Slate to Active view
     sessionStorage.setItem('aws_audit_complete', 'true');
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
     // 4. Metric Card Sync (Architectural Flush)
     if (exposedSecrets > 0) {
         const secretsCard = document.getElementById('aws-secrets-count');
-        const soc2Card = document.getElementById('compliance-status-val');
         if (secretsCard) {
             secretsCard.innerText = String(exposedSecrets);
-            secretsCard.style.color = '#ff3131'; // Critical Highlight
-        }
-        if (soc2Card) {
-            soc2Card.innerText = 'FAILED (Non-Compliant)';
-            soc2Card.style.color = '#ff3131';
+            secretsCard.style.color = '#ff3131'; 
         }
     }
 
-    // S3 THREAT LOGIC: Force a Critical Threat Level (85%) if Public Buckets are detected
+    // 5. MFA ENFORCEMENT SYNC
+    const mfaVal = document.getElementById('mfa-enforced-val');
+    const mfaSub = document.getElementById('mfa-enforced-sub');
+    if (mfaVal && mfaSub) {
+        if (mfaBypassDetected) {
+            mfaVal.innerText = '0%';
+            mfaVal.style.color = '#ff3131';
+            mfaSub.innerText = 'CRITICAL: MFA bypass detected.';
+        } else {
+            mfaVal.innerText = '100%';
+            mfaVal.style.color = 'var(--green)';
+            mfaSub.innerText = 'All devices compliant.';
+        }
+    }
+
     if (openAttackPaths > 0) {
         const radiusNum = document.getElementById('blast-radius-val');
         const radiusDesc = document.getElementById('blast-radius-sub');
