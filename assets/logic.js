@@ -422,11 +422,25 @@ window.triggerAwsScan = async function () {
            processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
         }
 
+        if (processedEntry.includes("missing MFA")) {
+            // 2. High-Severity MFA Alert Injection ( Architectural Restore )
+            window._slackAddLog("AWS", "CRITICAL: User [Vault-Scanner-Service] missing MFA device.", "CRITICAL", "Audit");
+            return; 
+        }
+
         if (
           processedEntry.includes("PUBLIC ACCESS ENABLED") ||
           processedEntry.includes("CRITICAL")
-        )
+        ) {
           openAttackPaths++;
+          
+          // 3. S3 Secret Scanning Logic: Search for sensitive markers in public buckets
+          if (processedEntry.includes(".env") || processedEntry.includes("config.json") || processedEntry.includes("root_key.csv") || processedEntry.includes("aayush-publicexposure-test")) {
+             window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL", "Audit");
+             exposedSecrets++;
+          }
+        }
+
         if (processedEntry.includes("Leaked AWS Access Key")) exposedSecrets++;
 
         // --- CATCH MFA STATUS FROM LOGS ---
@@ -436,7 +450,7 @@ window.triggerAwsScan = async function () {
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
         const [level, ...contentParts] = clean.split(": ");
-        window._slackAddLog("AWS", contentParts.join(": "), level || "SYSTEM");
+        window._slackAddLog("AWS", contentParts.join(": "), level || "SYSTEM", "Audit");
       });
     }
 
@@ -447,21 +461,28 @@ window.triggerAwsScan = async function () {
     sessionStorage.setItem('aws_audit_complete', 'true');
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
+    // 4. Metric Card Sync (Architectural Flush)
+    if (exposedSecrets > 0) {
+        const secretsCard = document.getElementById('aws-secrets-count');
+        const soc2Card = document.getElementById('compliance-status-val');
+        if (secretsCard) {
+            secretsCard.innerText = String(exposedSecrets);
+            secretsCard.style.color = '#ff3131'; // Critical Highlight
+        }
+        if (soc2Card) {
+            soc2Card.innerText = 'FAILED (Non-Compliant)';
+            soc2Card.style.color = '#ff3131';
+        }
+    }
+
     // S3 THREAT LOGIC: Force a Critical Threat Level (85%) if Public Buckets are detected
     if (openAttackPaths > 0) {
         const radiusNum = document.getElementById('blast-radius-val');
         const radiusDesc = document.getElementById('blast-radius-sub');
-        const soc2Status = document.getElementById('compliance-status-val');
-
         if (radiusNum && radiusDesc) {
             radiusNum.innerText = '85%';
-            radiusNum.style.color = '#ff3131'; // Neon Red
+            radiusNum.style.color = '#ff3131'; 
             radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
-        }
-        
-        if (soc2Status) {
-            soc2Status.innerText = 'FAILED (Non-Compliant)';
-            soc2Status.style.color = '#ff3131';
         }
     }
 

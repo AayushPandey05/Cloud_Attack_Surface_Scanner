@@ -1837,9 +1837,30 @@
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
                             
-                            // TERMINAL PAINT ENGINE: Inject colors based on architectural keywords
+                            // IDENT-AWARE COLOR PALETTE: Sync with AWS/Slack architectural requirements
+                            const isAws = l.source === 'AWS';
+                            const prefixColor = isAws ? '#ff9900' : '#ffffff';
+                            const timeColor = isAws ? '#ff9900' : '#ffffff';
+                            
+                            let categoryColor = '#ffffff';
+                            let categoryOpacity = 0.6;
+                            
+                            if (l.category === 'SYSTEM' || l.category === 'Audit' || l.category === 'Gateway') {
+                                categoryColor = '#00aaff'; // Blue
+                                categoryOpacity = 1.0;
+                            }
+                            if (l.level === 'INFO') {
+                                categoryColor = '#00f2ff'; // Cyan
+                                categoryOpacity = 1.0;
+                            }
+                            if (l.level === 'CRITICAL' || l.level === 'FAILURE') {
+                                categoryColor = '#ff3131'; // Neon Red
+                                categoryOpacity = 1.0;
+                            }
+
+                            // TERMINAL PAINT ENGINE: Keyword highlights
                             let coloredText = l.text;
-                            if (coloredText.includes('Threat:') || coloredText.includes('Attack Path') || coloredText.includes('non-compliance')) {
+                            if (coloredText.includes('Threat:') || coloredText.includes('Attack Path') || coloredText.includes('non-compliance') || coloredText.includes('CRITICAL:')) {
                                 coloredText = `<span style="color: #ff3131;">${coloredText}</span>`;
                             } else if (coloredText.includes('Initial Access') || coloredText.includes('SYSTEM') || coloredText.includes('[IDENT]')) {
                                 coloredText = `<span style="color: #ffcc00;">${coloredText}</span>`;
@@ -1848,9 +1869,9 @@
                             }
 
                             logLine.innerHTML = `
-                                <span class="log-time">[${l.time}]</span>
-                                <span class="log-source" style="color: #ffffff;">[${l.source || 'SYS'}]</span>
-                                <span class="log-category" style="color: #ffffff; opacity: 0.6;">${l.category || 'Audit'}:</span>
+                                <span class="log-time" style="color: ${timeColor}; opacity: 0.8;">[${l.time}]</span>
+                                <span class="log-source" style="color: ${prefixColor};">[${l.source || 'SYS'}]</span>
+                                <span class="log-category" style="color: ${categoryColor}; opacity: ${categoryOpacity};">${l.category || 'Audit'}:</span>
                                 <span class="log-text" style="color: #ffffff;">${coloredText}</span>
                                 ${l.subtext ? `<span class="log-sub">${l.subtext}</span>` : ''}
                             `;
