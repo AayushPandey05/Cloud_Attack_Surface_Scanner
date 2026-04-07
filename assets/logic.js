@@ -187,7 +187,12 @@ window.runSlackAudit = async function () {
         var userName = a.split(" | ")[0];
         if (userName) uniqueUsers.add(userName);
     });
-    var uniqueLeakerCount = uniqueUsers.size;
+    var uniqueLeakerCount = uniqueUsers.size || 0;
+
+    // ATTACK PATH TELEMETRY: Document the lateral movement threat model
+    if (secrets > 0 && typeof window._slackAddLog === "function") {
+        window._slackAddLog("SLACK", "↳ Attack Path: Initial Access \u2192 Credential Theft \u2192 Lateral Movement", "CRITICAL", "Threat");
+    }
 
     var nonCompliant =
       typeof data.nonCompliant === "number" ? data.nonCompliant : 0;

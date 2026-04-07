@@ -592,19 +592,20 @@
           padding: 2.5rem 2rem;
           width: 100%;
           max-width: 420px;
-      /* PRO TERMINAL PALETTE (High-Fidelity CRT Restore) */
+      /* PRO TERMINAL PALETTE (High-Fidelity SecOps Restore) */
       .terminal-body {
-          background-color: #0a0a0a !important; /* Deep Black */
+          background-color: #000000 !important; /* Pitch Black */
           color: #00f2ff !important; /* Neon Cyan (Standard Text) */
-          font-family: 'JetBrains Mono', 'Courier New', monospace;
+          font-family: 'Courier New', Courier, monospace;
       }
       .log-line { margin-bottom: 2px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px; }
-      .log-time, .log-source, .log-category { color: #ffffff !important; opacity: 0.6; }
+      .log-time, .log-source, .log-category { color: #ffffff !important; opacity: 1.0; }
       .log-text { color: #00f2ff !important; }
       
       .level-crit .log-text, .level-critical .log-text, .level-failure .log-text { color: #ff3131 !important; font-weight: bold; } /* Neon Red */
+      .level-threat .log-text { color: #ff3131 !important; font-weight: bold; } /* Attack Path Focus */
       .level-success .log-text, .level-ok .log-text { color: #00f2ff !important; }
-      .level-warning .log-text, .level-audit .log-text { color: #ffcc00 !important; } /* Amber */
+      .level-warning .log-text, .level-audit .log-text { color: #ffff00 !important; } /* Vivid Yellow */
       .log-sub { color: #666 !important; }
           content: '';
           position: absolute;
