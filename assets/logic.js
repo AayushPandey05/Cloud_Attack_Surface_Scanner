@@ -602,6 +602,7 @@ window.triggerAwsScan = async function () {
       `client_id=${clientId}&` +
       `response_type=code&` +
       `scope=openid%20profile%20email&` +
+      `prompt=login&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `state=security_vault_init&` +
       `nonce=${Math.random().toString(36).substring(7)}`;
