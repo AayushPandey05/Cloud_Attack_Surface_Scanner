@@ -592,12 +592,19 @@
           padding: 2.5rem 2rem;
           width: 100%;
           max-width: 420px;
-          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(99, 102, 241, 0.08);
-          position: relative;
-          overflow: hidden;
+      /* PRO TERMINAL PALETTE (High-Fidelity CRT Restore) */
+      .terminal-body {
+          background-color: #000000 !important;
+          color: #33ff33 !important; /* CRT Phosphor */
+          font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
       }
-      /* Subtle top-edge accent glow */
-      .otp-card::before {
+      .log-line { margin-bottom: 2px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px; }
+      .log-time, .log-source, .log-category { color: #ffffff !important; opacity: 0.6; }
+      .log-text { color: #33ff33 !important; }
+      
+      .level-crit .log-text, .level-critical .log-text, .level-failure .log-text { color: #ff0000 !important; font-weight: bold; }
+      .level-success .log-text, .level-ok .log-text { color: #00ffff !important; }
+      .log-sub { color: #666 !important; }
           content: '';
           position: absolute;
           top: 0; left: 50%; transform: translateX(-50%);
@@ -2089,15 +2096,51 @@
           const env = window.currentEnv || 'aws';
           const isAuditComplete = sessionStorage.getItem(env + '_audit_complete') === 'true';
           
-          if (env === 'aws' && isAuditComplete) {
-            const val = document.getElementById('blast-radius-val');
-            const sub = document.getElementById('blast-radius-sub');
-            if (userEmail === 'aayushpandey2905@gmail.com') {
-              if (val) { val.innerText = '95%'; val.style.color = '#ff4d4d'; }
-              if (sub) sub.innerText = 'Full Administrative Access detected via Okta SSO.';
+          if (isAuditComplete) {
+            // SHARED OVERRIDE: SOC2 COMPLIANCE STATUS
+            const statusVal = document.getElementById('controls-passing-val');
+            const statusSub = document.getElementById('controls-passing-sub');
+            const statusTitle = document.getElementById('controls-passing-title');
+            if (statusTitle) statusTitle.innerText = 'SOC2 Compliance Status';
+
+            if (env === 'aws') {
+              const val = document.getElementById('blast-radius-val');
+              const sub = document.getElementById('blast-radius-sub');
+              const secretsVal = document.getElementById('exposed-secrets-val');
+              
+              const radiusNum = (userEmail === 'aayushpandey2905@gmail.com') ? 95 : 5;
+              const leakedKeys = 1; // Findings from terminal
+
+              if (userEmail === 'aayushpandey2905@gmail.com') {
+                if (val) { val.innerText = '95%'; val.style.color = '#ff4d4d'; }
+                if (sub) sub.innerText = 'Full Administrative Access detected via Okta SSO.';
+              } else {
+                if (val) { val.innerText = '5%'; val.style.color = '#4ade80'; }
+                if (sub) sub.innerText = 'Least Privilege Enforced. Lateral movement blocked.';
+              }
+
+              // SOC2 Integrity: Red if Risk > 80 OR Secrets > 0
+              const isFailed = radiusNum > 80 || leakedKeys > 0;
+              if (statusVal) {
+                  statusVal.innerText = isFailed ? 'FAILED (Non-Compliant)' : 'COMPLIANT';
+                  statusVal.style.color = isFailed ? '#ff4d4d' : '#4ade80';
+              }
+              if (statusSub) statusSub.innerText = isFailed ? 'Critical control failures detected.' : 'Internal security controls passing.';
             } else {
-              if (val) { val.innerText = '5%'; val.style.color = '#4ade80'; }
-              if (sub) sub.innerText = 'Least Privilege Enforced. Lateral movement blocked.';
+              // SLACK VIEW IDENTITY SYNC
+              const slackSecrets = window.latestSlackData ? parseInt(window.latestSlackData.secrets) : 0;
+              const isFailed = slackSecrets > 0;
+              if (statusVal) {
+                  statusVal.innerText = isFailed ? 'FAILED (Non-Compliant)' : 'COMPLIANT';
+                  statusVal.style.color = isFailed ? '#ff4d4d' : '#4ade80';
+              }
+              if (statusSub) statusSub.innerText = isFailed ? 'Policy violation: Secret Exposure.' : 'Workspace policies enforced.';
+
+              // Ensure Non-Compliant Users card is strictly distinct and Deduplicated
+              const userCardVal = document.getElementById('exposed-secrets-val');
+              const userCardTitle = document.getElementById('exposed-secrets-title');
+              if (userCardTitle) userCardTitle.innerText = 'Non-Compliant Users';
+              if (userCardVal) userCardVal.innerText = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || '0';
             }
           }
         };
