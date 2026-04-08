@@ -1,8 +1,8 @@
 # Cloud Attack Surface Scanner 🛡️⚡
 
 **Developed by:** Aayush Pandey  
-**Focus:** Cloud Security, Attack Surface Management, and Identity Threat Detection  
-**🔴 Live Dashboard:** [Click here to view the live project]([https://vault.heyitsaayush.me/#login])
+**Focus:** Cloud Security • Attack Surface Management • Identity Threat Detection  
+**🔴 Live Dashboard:** https://vault.heyitsaayush.me/login
 
 ---
 
@@ -11,6 +11,8 @@
 The **Cloud Attack Surface Scanner** is an enterprise-grade, serverless security tool designed to proactively discover and neutralize cloud misconfigurations before they can be exploited by threat actors.
 
 In the modern threat landscape, identity is the new perimeter. This tool automates the detection of high-risk IAM vulnerabilities, shadow admins, and exposed infrastructure, shifting cloud security from reactive logging to proactive threat containment.
+
+---
 
 ## 🚀 Core Capabilities & Threat Detection
 
@@ -21,7 +23,7 @@ In the modern threat landscape, identity is the new perimeter. This tool automat
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Architecture Overview
 
 Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing security without infrastructure overhead:
 
@@ -35,7 +37,8 @@ Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing sec
 ## 📂 Repository Structure
 
 - `/assets` - Core frontend logic, UI styling, and AWS SDK configurations.
-- `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors (`vulnerability_vectors.md`) and sample threat telemetry.
+- `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors
+- (`vulnerability_vectors.md`) and sample threat telemetry.
 - `/backend-functions` - Threat-hunting scripts, secret scanners, and automated cloud auditors.
 - `/iam-policies` - Hardened JSON policies enforcing the principle of "Least Privilege".
 - `/infrastructure` - Setup files and YAML templates for rapid, secure deployment.
@@ -45,3 +48,9 @@ Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing sec
 ## 🎯 Why I Built This
 
 This project demonstrates a deep, practical understanding of **Cloud Security Posture Management (CSPM)** and **AppSec engineering**. By building the tools to automatically detect and contain cloud attack paths, this project proves the ability to defend enterprise perimeters and reduce blast radius at scale.
+
+---
+
+## 👨‍💻 Author
+
+**Aayush Pandey**

@@ -1554,8 +1554,27 @@
 
                         // Generates and dispatches a cryptographically random 6-digit OTP
                         // to the authenticated email address via the EmailJS transactional relay.
-                        window.triggerEmailOtpFlow = function(userEmail) {
-                            // Uniform distribution across [100000, 999999] — 6-digit decimal space
+                        window.triggerEmailOtpFlow = function(userEmail, isManual = false) {
+                            if (!isManual) {
+                                console.warn("[Security] Auto-trigger detected and blocked for EmailJS.");
+                                return;
+                            }
+
+                            // TERMINAL LOGGING (Requirement 2)
+                            console.log('Email Triggered for: ' + userEmail);
+
+                            // THE 999999 GUARD (Requirement 3)
+                            // Skip actual email dispatch for the admin identity to preserve quota.
+                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com') {
+                                console.log("[Quota-Guard] Admin email detected. Skipping EmailJS dispatch (Bypass code: 999999).");
+                                currentSessionOtp = '999999';
+                                var gateway = document.getElementById('mfa-gateway');
+                                if (gateway) gateway.classList.add('active');
+                                var emailDisplay = document.getElementById('display-user-email');
+                                if (emailDisplay) emailDisplay.textContent = userEmail;
+                                return;
+                            }
+
                             currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
 
                             // Surface the MFA gateway overlay over the current view
@@ -1606,7 +1625,7 @@
 
                             // 1. ADMIN IDENTITY BYPASS (PRIORITY FIX)
                             // Strict bypass logic for administrative identity to ensure 0-quota demo speed.
-                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com' && entered.length === 6) {
+                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com' && (entered === '999999' || entered === currentSessionOtp)) {
                                 if (typeof addLog === 'function') {
                                     addLog('AUTH', 'Admin Identity Verified. Bypassing local MFA challenge...', 'SUCCESS', 'Gateway');
                                     addLog('SEC', 'Access Granted: Full Administrative Privileges.', 'SUCCESS', 'Identity');
@@ -1661,7 +1680,7 @@
                             var email = emailDisplay ? emailDisplay.textContent : '';
 
                             if(email) {
-                               triggerEmailOtpFlow(email);
+                               triggerEmailOtpFlow(email, true);
                                console.log("Resending code...");
                             }
                         };
@@ -1702,7 +1721,7 @@
                         // (800ms minimum to guarantee the spinner renders before the MFA overlay).
                         // Responsibilities: profile dropdown hydration, session token persistence,
                         // loading state teardown, and MFA gateway activation.
-                        window.processAuthSuccess = function processAuthSuccess(email, displayName, accType = 'existing') {
+                        window.processAuthSuccess = function processAuthSuccess(email, displayName, accType = 'existing', isManual = false) {
                             var userEmail = email || 'user@company.com';
                             const adminEmail = 'aayushpandey2905@gmail.com';
                             const isAdmin = userEmail.toLowerCase() === adminEmail;
@@ -1741,7 +1760,7 @@
                             if (stateLogin) stateLogin.classList.remove('hidden');
 
                             try {
-                                triggerEmailOtpFlow(userEmail);
+                                triggerEmailOtpFlow(userEmail, isManual);
                             } catch (err) {
                                 console.error('[processAuthSuccess] triggerEmailOtpFlow threw:', err);
                                 alert('MFA gateway failed to open. Please refresh and try again.');
@@ -1761,7 +1780,7 @@
                             // 800ms delay allows the browser to commit the spinner render
                             // before the MFA overlay activation begins.
                             setTimeout(() => {
-                                processAuthSuccess(emailValue, null, 'existing');
+                                processAuthSuccess(emailValue, null, 'existing', true);
                             }, 800);
                         });
 
@@ -1791,22 +1810,22 @@
                             // loading state first, then 800ms render buffer, then MFA activation.
                             showState(stateLoading, false);
                             setTimeout(() => {
-                                processAuthSuccess(emailVal, null, 'new');
+                                processAuthSuccess(emailVal, null, 'new', true);
                             }, 800);
                         });
                         // Both Google entry points route through the same OAuth2 token client
-                        if (googleSignupBtn) {
-                            googleSignupBtn.addEventListener('click', () => {
-                                if (window._gsiTokenClient) {
-                                    window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
-                                } else {
-                                    processAuthSuccess('demo@google.com');
-                                }
-                            });
-                        }
+                            if (googleSignupBtn) {
+                                googleSignupBtn.addEventListener('click', () => {
+                                    if (window._gsiTokenClient) {
+                                        window._gsiTokenClient.requestAccessToken({ prompt: 'select_account' });
+                                    } else {
+                                        processAuthSuccess('demo@google.com', null, 'existing', true);
+                                    }
+                                });
+                            }
                         corpSso.addEventListener('click', () => {
                             const emailFallback = sessionStorage.getItem('loggedInUser') || 'DEBUG: NO EMAIL FOUND';
-                            processAuthSuccess(emailFallback);
+                            processAuthSuccess(emailFallback, null, 'existing', true);
                         });
 
                         // ── Session Termination & Profile Dropdown ───────────────────────
@@ -2035,7 +2054,7 @@
 
                             if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
                                 console.error('[GSI] Not initialized — falling back to demo flow.');
-                                processAuthSuccess('demo@google.com', 'Security Admin');
+                                processAuthSuccess('demo@google.com', 'Security Admin', 'existing', true);
                                 return;
                             }
 
@@ -2048,7 +2067,7 @@
                             try {
                                 const payload = JSON.parse(atob(response.credential.split('.')[1]));
                                 console.log('[GSI] Credential response — Email:', payload.email);
-                                processAuthSuccess(payload.email, payload.name || 'Google User');
+                                processAuthSuccess(payload.email, payload.name || 'Google User', 'existing', true);
                             } catch (err) {
                                 console.error('[GSI] JWT decode failed:', err);
                             }
@@ -2102,7 +2121,7 @@
                                 console.log('[GSI] Auth — Email:', userInfo.email, '| Name:', userInfo.name);
                                 // Null-check: processAuthSuccess must exist before calling
                                 if (typeof window.processAuthSuccess === 'function') {
-                                    window.processAuthSuccess(userInfo.email, userInfo.name || 'Google User');
+                                    window.processAuthSuccess(userInfo.email, userInfo.name || 'Google User', 'existing', true);
                                 } else {
                                     console.error('[GSI] processAuthSuccess not defined yet.');
                                 }

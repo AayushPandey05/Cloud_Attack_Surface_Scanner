@@ -49,6 +49,15 @@ window.sendOtpEmail = function (userEmail, otpCode) {
     return;
   }
 
+  // TERMINAL LOGGING (Requirement 2)
+  console.log('Email Triggered for: ' + userEmail);
+
+  // THE 999999 GUARD (Requirement 3)
+  if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com') {
+      console.log("[Quota-Guard] Admin email detected. Skipping EmailJS dispatch (Bypass code: 999999).");
+      return;
+  }
+
   var templateParams = {
     user_email: userEmail,
     otp_code: otpCode,
