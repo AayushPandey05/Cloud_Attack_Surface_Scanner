@@ -427,7 +427,7 @@ window.triggerAwsScan = async function () {
     if (iamCard) {
         iamCard.innerText = totalIamUsers; 
         iamCard.classList.remove('text-green');
-        iamCard.style.color = '#00f2ff'; // Neon Cyan for active state
+        iamCard.style.color = '#00D2FF'; // Neon Cyan for active state
     }
     if (iamSub) {
         iamSub.innerText = totalIamUsers > 0 ? 'Active identities analyzed' : 'No issues detected';
@@ -483,7 +483,7 @@ window.triggerAwsScan = async function () {
                 const s3Card = document.getElementById('s3-bucket-count');
                 if (s3Card) {
                     s3Card.innerText = totalBucketsFound;
-                    s3Card.style.color = '#00f2ff';
+                    s3Card.style.color = '#00D2FF';
                 }
                 const s3Sub = document.getElementById('s3-bucket-sub');
                 if (s3Sub) s3Sub.innerText = 'Global assets discovered';
@@ -545,22 +545,26 @@ window.triggerAwsScan = async function () {
     // 2. DATA TRUTH SYNC (Architectural Flush)
     const finalSum = data.totalVulnerabilities || 0;
     if (finalSum > 0) {
-        updateSafe('aws-secrets-count', String(finalSum), '#FF1744');
-        updateSafe('exposed-secrets-sub', `${finalSum} Critical Risks Found`, '#FF8A65'); // subtle orange-red
+        updateSafe('aws-secrets-count', String(finalSum), '#FF4C4C');
+        updateSafe('exposed-secrets-sub', `${finalSum} Critical Risks Found`, '#FF4C4C');
     } else {
-        updateSafe('aws-secrets-count', '0', 'var(--green)');
-        updateSafe('exposed-secrets-sub', 'No credentials exposed', 'var(--gray)');
+        updateSafe('aws-secrets-count', '0', '#2ECC71');
+        updateSafe('exposed-secrets-sub', 'No credentials exposed', '#2ECC71');
     }
 
     // 5. MFA ENFORCEMENT SYNC
     const finalPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
     
     if (finalPercentage === 100) {
-        updateSafe('mfa-enforced-val', '100%', '#00E676');
+        updateSafe('mfa-enforced-val', '100%', '#2ECC71');
         updateSafe('mfa-enforced-sub', 'All devices compliant.');
+    } else if (finalPercentage >= 50 && finalPercentage < 100) {
+        const failures = totalUsers - mfaEnabledUsers;
+        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FFA500');
+        updateSafe('mfa-enforced-sub', `WARNING: MFA bypass detected for ${failures} users.`);
     } else {
         const failures = totalUsers - mfaEnabledUsers;
-        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FF1744');
+        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FF4C4C');
         updateSafe('mfa-enforced-sub', `CRITICAL: MFA bypass detected for ${failures} users.`);
     }
 
@@ -571,11 +575,11 @@ window.triggerAwsScan = async function () {
             const user = sessionStorage.getItem('loggedInUser');
             if (user === 'aayushpandey2905@gmail.com') {
                 radiusNum.innerText = '95%';
-                radiusNum.style.color = '#FF1744'; 
+                radiusNum.style.color = '#FFA500'; 
                 radiusDesc.innerText = 'CRITICAL: Full Administrative Access.';
             } else {
                 radiusNum.innerText = '85%';
-                radiusNum.style.color = '#FF1744'; 
+                radiusNum.style.color = '#FFA500'; 
                 radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
             }
         }
@@ -631,7 +635,7 @@ window.triggerAwsScan = async function () {
           const radiusText = document.getElementById('blast-radius-sub');
           if (radiusNumber && radiusText) {
               radiusNumber.innerText = '95%';
-              radiusNumber.style.color = '#ff3131'; 
+              radiusNumber.style.color = '#FFA500'; 
               radiusText.innerText = 'CRITICAL: Full Admin status detected.';
           }
       }
