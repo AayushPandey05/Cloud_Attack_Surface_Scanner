@@ -1559,6 +1559,7 @@
 
                         // Session-scoped OTP token — ephemeral, cleared on verify or cancel
                         var currentSessionOtp = '';
+                        let emailAlreadySent = false;
 
                         // Generates and dispatches a cryptographically random 6-digit OTP
                         // to the authenticated email address via the EmailJS transactional relay.
@@ -1610,16 +1611,35 @@
                             // Dispatch is wrapped to prevent transient network errors from
                             // blocking the MFA overlay render — delivery failures are logged
                             // but do not revert the authentication flow to the login view.
+                            if (emailAlreadySent) {
+                                console.log('EMAIL_SAFEGUARD: Blocking redundant email attempt');
+                                return;
+                            }
+                            
                             try {
+                                emailAlreadySent = true;
                                 emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
                                     .then(function(response) {
                                         console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                                        
+                                        // Disable logic to prevent redundant interaction spam
+                                        var submitBtn = document.querySelector('.login-btn');
+                                        if (submitBtn) {
+                                            submitBtn.disabled = true;
+                                            submitBtn.innerText = 'Sent... Check Email';
+                                            setTimeout(function() {
+                                                submitBtn.disabled = false;
+                                                submitBtn.innerText = 'Sign In';
+                                            }, 60000);
+                                        }
                                     })
                                     .catch(function(error) {
                                         console.error('FAILED to send OTP:', error);
+                                        emailAlreadySent = false; // Allow retry on raw network failure
                                     });
                             } catch(e) {
                                 console.error('[EmailJS] Exception during send:', e);
+                                emailAlreadySent = false;
                             }
                         };
 
