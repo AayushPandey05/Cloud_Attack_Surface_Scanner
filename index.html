@@ -1886,9 +1886,17 @@
                             const timeColor = '#57595B'; // Gray
                             const tagColor  = '#9B7EBD'; // Purple
                             
-                            // Level Tag Color: INFO is Indigo, WARN/CRITICAL is Red
+                            // ── CONDITIONAL LEVEL TAGGING (Requirement 1 & 2) ──
+                            let displayLevel = l.level.toUpperCase();
+                            const hasFound = l.text.includes('Found');
+                            
+                            if (displayLevel === 'INFO' && !hasFound) {
+                                displayLevel = 'AUDIT';
+                            }
+                            
+                            // Level Tag Color: INFO/AUDIT is Indigo, WARN/CRITICAL is Red
                             let levelColor = '#22177A'; 
-                            if (l.level.toUpperCase() === 'WARN' || l.level.toUpperCase() === 'CRITICAL') {
+                            if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
                             
@@ -1908,7 +1916,7 @@
                             logLine.innerHTML = `
                                 <span class="log-time" style="color: ${timeColor}; font-weight: 400;">[${l.time}]</span>
                                 <span class="log-source" style="color: ${tagColor}; font-weight: 500;">[${l.source || 'SYS'}]</span>
-                                <span class="log-level" style="color: ${levelColor}; font-weight: 700;">${l.level.toUpperCase()}:</span>
+                                <span class="log-level" style="color: ${levelColor}; font-weight: 700;">${displayLevel}:</span>
                                 <span class="log-text" style="color: ${textColor}; font-weight: 400;">${l.text}</span>
                                 ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem; font-weight: 400;">[${l.subtext}]</span>` : ''}
                             `;
