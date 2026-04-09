@@ -1961,12 +1961,22 @@
 
                         function addLog(source, text, level = 'INFO', subtext = '') {
                             const env = window.currentEnv || 'aws';
-                            const timestamp = new Date().toISOString().replace('T', '  ').substring(0, 22);
+                            const now = new Date();
+                            
+                            // DISP: [HH:MM:SS] (Local System Time)
+                            const displayTime = now.toLocaleTimeString('en-GB', { hour12: false });
+                            
+                            // BUFFER: YYYY-MM-DD HH:MM:SS (Forensic Export parity)
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            const bufferTimestamp = `${year}-${month}-${day} ${displayTime}`;
+
                             const logObj = {
                                 source, text, 
                                 level: level.toUpperCase(), 
                                 subtext,
-                                time: timestamp
+                                time: displayTime
                             };
 
                             if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
@@ -1976,7 +1986,7 @@
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
                             const cleanMessage = text.replace(/<[^>]*>?/gm, '');
                             window.auditLogsBuffer.push({ 
-                                timestamp: timestamp, 
+                                timestamp: bufferTimestamp, 
                                 env: env, 
                                 source: source, 
                                 level: logObj.level, 
