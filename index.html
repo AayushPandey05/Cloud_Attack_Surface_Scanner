@@ -1999,11 +1999,12 @@
 
                         function addLog(source, text, level = 'INFO', subtext = '') {
                             const env = window.currentEnv || 'aws';
+                            const timestamp = new Date().toISOString().replace('T', '  ').substring(0, 22);
                             const logObj = {
                                 source, text, 
                                 level: level.toUpperCase(), 
                                 subtext,
-                                time: new Date().toLocaleTimeString('en-GB', { hour12: false })
+                                time: timestamp
                             };
 
                             if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
@@ -2013,7 +2014,7 @@
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
                             const cleanMessage = text.replace(/<[^>]*>?/gm, '');
                             window.auditLogsBuffer.push({ 
-                                timestamp: new Date().toISOString(), 
+                                timestamp: timestamp, 
                                 env: env, 
                                 source: source, 
                                 level: logObj.level, 
