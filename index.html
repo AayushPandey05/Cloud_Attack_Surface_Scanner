@@ -615,23 +615,31 @@
           100% { top: 100%; }
       }
 
-      .scanning-watermark {
+      #terminal-loader {
+          display: none;
+          justify-content: center;
+          align-items: center;
           position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: 100;
+      }
+
+      @keyframes pulse-watermark {
+          0% { opacity: 0.1; }
+          50% { opacity: 0.3; }
+          100% { opacity: 0.1; }
+      }
+
+      .watermark-text {
           font-family: 'Inter', sans-serif;
           font-weight: 800;
           font-size: 1.5rem;
           color: var(--white);
-          opacity: 0;
-          pointer-events: none;
-          z-index: 5;
           letter-spacing: 4px;
           white-space: nowrap;
-          transition: opacity 0.3s ease;
-      }
-      .terminal-container.is-auditing .scanning-watermark {
-          opacity: 0.08;
+          animation: pulse-watermark 2s ease-in-out infinite;
       }
 
       .status-indicator-live {
@@ -1405,7 +1413,9 @@
             </div>
           </div>
           <div class="scanning-beam"></div>
-          <div class="scanning-watermark">SCANNING INFRASTRUCTURE...</div>
+          <div id="terminal-loader">
+            <div class="watermark-text">SCANNING INFRASTRUCTURE...</div>
+          </div>
           <div class="terminal-body font-mono" id="terminal-feed">
             <!-- Logs -> JS -->
           </div>

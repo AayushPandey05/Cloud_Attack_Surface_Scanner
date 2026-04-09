@@ -601,7 +601,10 @@ window.triggerAwsScan = async function () {
     triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> Auditing...`;
     
     const terminalPanel = document.getElementById("terminal-panel");
+    const terminalLoader = document.getElementById("terminal-loader");
+    
     if (terminalPanel) terminalPanel.classList.add("is-auditing");
+    if (terminalLoader) terminalLoader.style.display = "flex";
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -626,6 +629,7 @@ window.triggerAwsScan = async function () {
       console.error("[ScanTrigger] Execution failed:", err);
     } finally {
       if (terminalPanel) terminalPanel.classList.remove("is-auditing");
+      if (terminalLoader) terminalLoader.style.display = "none";
       // 3. This restores the button text to "Run Security Audit" after scan finishes
       triggerBtn.disabled = false;
       triggerBtn.innerHTML = originalContent;
