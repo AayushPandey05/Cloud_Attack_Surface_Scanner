@@ -478,8 +478,8 @@ window.triggerAwsScan = async function () {
           }
         }
 
-        if (processedEntry.includes("Found [") && processedEntry.includes("S3 Buckets")) {
-            const match = processedEntry.match(/Found \[(\d+)\] S3 Buckets/);
+        if (processedEntry.includes("Global S3 Buckets identified") && processedEntry.includes("multiple regions")) {
+            const match = processedEntry.match(/(\d+) Global S3 Buckets identified/);
             if (match) {
                 totalBucketsFound = parseInt(match[1]);
                 sessionStorage.setItem('vaultAwsS3Count', totalBucketsFound);

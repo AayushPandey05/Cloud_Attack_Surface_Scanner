@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     );
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
-    const s3Client = new S3Client({ region, credentials });
+    const s3Client = new S3Client({ region, credentials, useAccelerateEndpoint: false });
     terminalLogs.push(
       `[${getTimestamp()}] [AWS] SYSTEM: S3 Storage Audit initiated.`,
     );
@@ -89,16 +89,17 @@ export default async function handler(req, res) {
     try {
       const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
       terminalLogs.push(
-        `[AWS] Audit: Found [${Buckets.length}] S3 Buckets across Global Infrastructure.`,
+        `[AWS] Audit: ${Buckets.length} Global S3 Buckets identified across multiple regions.`,
       );
 
       for (const bucket of Buckets) {
         try {
           const locRes = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucket.Name }));
-          let bucketRegion = locRes.LocationConstraint || "us-east-1";
+          let bucketRegion = locRes.LocationConstraint;
+          if (!bucketRegion) bucketRegion = region;
           if (bucketRegion === "EU") bucketRegion = "eu-west-1";
           
-          const regionalS3Client = new S3Client({ region: bucketRegion, credentials });
+          const regionalS3Client = new S3Client({ region: bucketRegion, credentials, useAccelerateEndpoint: false });
 
           const { PublicAccessBlockConfiguration } = await regionalS3Client.send(
             new GetPublicAccessBlockCommand({ Bucket: bucket.Name }),
