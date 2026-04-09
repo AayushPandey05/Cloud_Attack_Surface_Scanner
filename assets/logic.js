@@ -478,7 +478,7 @@ window.triggerAwsScan = async function () {
           }
         }
 
-        if (processedEntry.includes("Found [") && processedEntry.includes("S3 Buckets in")) {
+        if (processedEntry.includes("Found [") && processedEntry.includes("S3 Buckets")) {
             const match = processedEntry.match(/Found \[(\d+)\] S3 Buckets/);
             if (match) {
                 totalBucketsFound = parseInt(match[1]);
@@ -489,7 +489,7 @@ window.triggerAwsScan = async function () {
                     s3Card.style.color = '#00f2ff';
                 }
                 const s3Sub = document.getElementById('s3-bucket-sub');
-                if (s3Sub) s3Sub.innerText = 'Cloud storage assets discovered';
+                if (s3Sub) s3Sub.innerText = 'Global assets discovered';
             }
         }
 

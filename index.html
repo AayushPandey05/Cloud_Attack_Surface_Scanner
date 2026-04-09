@@ -2031,6 +2031,10 @@
                                     s3CountCard.innerText = isAuditComplete && s3Count !== null ? s3Count : '0';
                                     s3CountCard.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
                                 }
+                                const s3Sub = document.getElementById('s3-bucket-sub');
+                                if (s3Sub) {
+                                    s3Sub.innerText = isAuditComplete ? 'Global assets discovered' : 'Awaiting scan';
+                                }
                                 
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {

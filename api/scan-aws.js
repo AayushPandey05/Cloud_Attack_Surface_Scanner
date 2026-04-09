@@ -10,6 +10,7 @@ import {
   ListBucketsCommand,
   ListObjectsV2Command,
   S3Client,
+  GetBucketLocationCommand,
 } from "@aws-sdk/client-s3";
 
 // Get current timestamp in local 24-hour format
@@ -88,12 +89,18 @@ export default async function handler(req, res) {
     try {
       const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
       terminalLogs.push(
-        `[AWS] SYSTEM: Found [${Buckets.length}] S3 Buckets in ${region}.`,
+        `[AWS] Audit: Found [${Buckets.length}] S3 Buckets across Global Infrastructure.`,
       );
 
       for (const bucket of Buckets) {
         try {
-          const { PublicAccessBlockConfiguration } = await s3Client.send(
+          const locRes = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucket.Name }));
+          let bucketRegion = locRes.LocationConstraint || "us-east-1";
+          if (bucketRegion === "EU") bucketRegion = "eu-west-1";
+          
+          const regionalS3Client = new S3Client({ region: bucketRegion, credentials });
+
+          const { PublicAccessBlockConfiguration } = await regionalS3Client.send(
             new GetPublicAccessBlockCommand({ Bucket: bucket.Name }),
           );
 
@@ -112,13 +119,13 @@ export default async function handler(req, res) {
           }
 
           // ── S3 CONTENT INSPECTION (DEEP SCAN) ────────────────────────
-          const { Contents } = await s3Client.send(
+          const { Contents } = await regionalS3Client.send(
             new ListObjectsV2Command({ Bucket: bucket.Name, MaxKeys: 5 }),
           );
           if (Contents && Contents.length > 0) {
             for (const obj of Contents) {
               try {
-                const getObjRes = await s3Client.send(
+                const getObjRes = await regionalS3Client.send(
                   new GetObjectCommand({ Bucket: bucket.Name, Key: obj.Key }),
                 );
                 const body = await getObjRes.Body.transformToString();
