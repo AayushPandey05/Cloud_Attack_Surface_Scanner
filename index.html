@@ -538,7 +538,7 @@
           top: 41px;
           left: 0;
           right: 0;
-          height: 40px;
+          height: 15px;
           background: linear-gradient(to bottom, #000000, transparent);
           pointer-events: none;
           z-index: 10;
@@ -569,8 +569,7 @@
       .dot-green { background-color: #27C93F; }
 
       .terminal-body {
-          padding: 1.5rem;
-          padding-top: 2.5rem;
+          padding: 10px 1.25rem 1.5rem 1.25rem;
           overflow-y: auto;
           flex: 1;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -2007,12 +2006,12 @@
                             }
                             
                             // Level Tag Color: 
-                            // INFO (System) = #1A2CA3 (Navy Blue)
+                            // INFO (System) = #982598 (Navy Blue)
                             // AUDIT (Security Discovery) = #2FA4D7 (Bright Blue)
                             // WARN/CRITICAL (Alerts) = #DB1A1A (Red)
                             let levelColor = '#2FA4D7'; 
                             if (displayLevel === 'INFO') {
-                                levelColor = '#1A2CA3'; 
+                                levelColor = '#982598'; 
                             } else if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
