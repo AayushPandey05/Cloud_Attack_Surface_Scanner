@@ -1380,6 +1380,10 @@
             // CENTRAL IDENTITY REGISTRY
             const MASTER_ADMIN = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
+            
+            // Forensic Storage Initialization (Requirement 4: Pure Slate)
+            window.awsTerminalStorage = "";
+            window.slackTerminalStorage = "";
             window.vaultLogCache = { aws: [], slack: [] };
             window.auditLogsBuffer = [];
 
@@ -1978,7 +1982,7 @@
 
                                 rehydrateLogs(window.currentEnv || 'aws');
                                 if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
-                                    addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS', 'Gateway');
+                                    addLog('SYSTEM', 'System ready. Awaiting Security Audit...', 'INFO');
                                 }
                             } else {
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
@@ -1991,7 +1995,7 @@
                                 }
                                 rehydrateLogs(window.currentEnv || 'aws');
                                 if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
-                                    addLog('SYSTEM', 'Unauthorized access attempt blocked. Audit restricted to Lead Architect.', 'CRITICAL', 'Gateway');
+                                    addLog('SYSTEM', 'System ready. Awaiting Security Audit...', 'INFO');
                                 }
                             }
 
