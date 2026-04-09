@@ -501,6 +501,7 @@
           overflow-y: auto;
           flex: 1;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          line-height: 1.5;
       }
 
       .terminal-body::-webkit-scrollbar { width: 6px; }
@@ -1874,36 +1875,26 @@
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
                             
-                            // IDENT-AWARE COLOR PALETTE: Less distracting tags
-                            const isAws = l.source === 'AWS';
-                            const prefixColor = '#00D2FF'; // Cyan for [AWS] and [SYS]
-                            const timeColor = '#00D2FF'; // Cyan for Time
+                            // ── CYBER COLOR MAP ─────────────────────────
+                            const timeColor = '#FFD700'; // Gold
+                            const tagColor = '#00D2FF';  // Cyan
                             
-                            let categoryColor = '#00D2FF'; // Cyan for [Audit]
-                            let categoryOpacity = 1.0;
+                            // Determine text color based on content keywords
+                            let textColor = '#00D2FF'; // Default Info (Cyan)
                             
-                            if (l.level === 'CRITICAL' || l.level === 'FAILURE') {
-                                // Only actual text or the line content turns Red
-                                // but we let the tags stay cyan so the red really pops on the finding
-                            }
-
-                            let coloredText = l.text;
-                            if (coloredText.includes('CRITICAL:') || coloredText.includes('PUBLIC ACCESS ENABLED!') || coloredText.includes('non-compliance')) {
-                                coloredText = `<span style="color: #FF4C4C;">${coloredText}</span>`; // Solid Red flag
-                            } else if (coloredText.includes('Initial Access') || coloredText.includes('SYSTEM') || coloredText.includes('[IDENT]')) {
-                                coloredText = `<span style="color: #FFCC00;">${coloredText}</span>`; // Vivid Yellow
-                            } else if (coloredText.includes('secure') || coloredText.includes('passed') || coloredText.includes('Scan complete')) {
-                                coloredText = `<span style="color: #00E676;">${coloredText}</span>`; // Emerald Green
-                            } else if (coloredText.includes('Found [') || coloredText.includes('S3 Bucket') || coloredText.includes('IAM User') || coloredText.includes('MFA compliance')) {
-                                coloredText = `<span style="color: #00f2ff;">${coloredText}</span>`; // Neon Cyan
+                            const lowerText = l.text.toLowerCase();
+                            if (lowerText.includes('critical') || lowerText.includes('leaked') || lowerText.includes('public access enabled')) {
+                                textColor = '#FF4C4C'; // Red
+                            } else if (lowerText.includes('secure') || lowerText.includes('passed') || lowerText.includes('complete')) {
+                                textColor = '#2ECC71'; // Green
                             }
 
                             logLine.innerHTML = `
-                                <span class="log-time" style="color: ${timeColor}; opacity: 0.8;">[${l.time}]</span>
-                                <span class="log-source" style="color: ${prefixColor};">[${l.source || 'SYS'}]</span>
-                                <span class="log-category" style="color: ${categoryColor}; opacity: ${categoryOpacity};">${l.category || 'Audit'}:</span>
-                                <span class="log-text" style="color: #ffffff;">${coloredText}</span>
-                                ${l.subtext ? `<span class="log-sub">${l.subtext}</span>` : ''}
+                                <span class="log-time" style="color: ${timeColor}; opacity: 0.9;">[${l.time}]</span>
+                                <span class="log-source" style="color: ${tagColor};">[${l.source || 'SYS'}]</span>
+                                <span class="log-category" style="color: ${tagColor};">${l.category || 'Audit'}:</span>
+                                <span class="log-text" style="color: ${textColor};">${l.text}</span>
+                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.7; margin-left: 1rem; font-size: 0.8rem;">${l.subtext}</span>` : ''}
                             `;
                             return logLine;
                         }

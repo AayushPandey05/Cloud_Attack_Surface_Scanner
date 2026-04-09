@@ -79,7 +79,7 @@ export default async function handler(req, res) {
 
     const finalMfaPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
     terminalLogs.push(
-      `[AWS] Audit: Final MFA Compliance: ${finalMfaPercentage}% across ${totalUsers} identities.`
+      `[AWS] Audit: Final MFA Compliance: ${finalMfaPercentage}% MFA across ${totalUsers} identities.`
     );
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────

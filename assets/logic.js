@@ -394,6 +394,8 @@ window.triggerAwsScan = async function () {
   const terminal = document.getElementById("terminal-feed");
   if (typeof window._slackAddLog !== "function") return;
 
+  // 1. Audit Start Reset: Clear global buffers to ensure fresh forensic records
+  window.auditLogsBuffer = [];
   window.clearTerminal();
 
   try {
@@ -660,31 +662,14 @@ window.triggerAwsScan = async function () {
     
     const logsToExport = (window.auditLogsBuffer || []).filter(log => log.env === env);
 
-    const parsed = logsToExport.map(log => {
-        let msg = log.message;
-        let attackChain = "None";
-        if (msg.startsWith("↳ Attack Path:")) {
-            attackChain = msg.replace("↳ Attack Path:", "").trim();
-            msg = "Attack Path Identified";
-        }
-        return {
-            timestamp: log.timestamp,
-            environment: log.source || env.toUpperCase(),
-            severity: log.level,
-            message: msg,
-            attack_chain: attackChain
-        };
-    });
-
     let content, mimeType;
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      // Enterprise CSV Header: Timestamp, Service, Level, Message
+      // Enterprise CSV: Strictly derived from terminal telemetry
       const csvRows = [
         '"Timestamp","Service","Level","Message"',
       ];
-      // Map through the buffer structure instead of the DOM
       logsToExport.forEach((r) => {
         const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
         csvRows.push(row);
@@ -692,12 +677,13 @@ window.triggerAwsScan = async function () {
       content = csvRows.join("\n");
       mimeType = "text/csv;charset=utf-8;";
     } else {
-      // JSON Parity: Includes the new attack_chain field for backend forensic analysis
-      content = JSON.stringify(
-        { target_environment: env.toUpperCase(), scan_data: parsed },
-        null,
-        2,
-      );
+      // Flat JSON Format: [{ "time": "...", "level": "...", "message": "..." }]
+      const flatJson = logsToExport.map(log => ({
+          time: log.timestamp.split('T')[1].split('.')[0], // Extract time part
+          level: log.level,
+          message: log.message
+      }));
+      content = JSON.stringify(flatJson, null, 2);
       mimeType = "application/json";
     }
 
