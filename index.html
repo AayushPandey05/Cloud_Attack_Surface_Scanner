@@ -2006,9 +2006,14 @@
                                 displayLevel = 'AUDIT';
                             }
                             
-                            // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red (#DB1A1A)
+                            // Level Tag Color: 
+                            // INFO (System) = #1A2CA3 (Navy Blue)
+                            // AUDIT (Security Discovery) = #2FA4D7 (Bright Blue)
+                            // WARN/CRITICAL (Alerts) = #DB1A1A (Red)
                             let levelColor = '#2FA4D7'; 
-                            if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
+                            if (displayLevel === 'INFO') {
+                                levelColor = '#1A2CA3'; 
+                            } else if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
                             
