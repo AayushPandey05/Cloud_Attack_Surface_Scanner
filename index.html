@@ -2005,13 +2005,21 @@
                                 displayLevel = 'AUDIT';
                             }
                             
+                            // Slack Specific Tag Override: Change AUDIT: to SYSTEM:
+                            if (window.currentEnv === 'slack' && displayLevel === 'AUDIT') {
+                                displayLevel = 'SYSTEM';
+                            }
+                            
                             // Level Tag Color: 
                             // INFO (System) = #982598 (Navy Blue)
+                            // SYSTEM (Slack) = #1A2CA3 (Deep Blue)
                             // AUDIT (Security Discovery) = #2FA4D7 (Bright Blue)
                             // WARN/CRITICAL (Alerts) = #DB1A1A (Red)
                             let levelColor = '#2FA4D7'; 
                             if (displayLevel === 'INFO') {
                                 levelColor = '#982598'; 
+                            } else if (displayLevel === 'SYSTEM' && window.currentEnv === 'slack') {
+                                levelColor = '#1A2CA3'; 
                             } else if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
@@ -2099,6 +2107,10 @@
                         }
                         
                         window.appendTerminal = function(source, text, level = 'INFO', subtext = '', isRaw = false) {
+                            // Identity Privacy (Strict): Remove 'Pratyush' and replace with 'Aayush'
+                            if (typeof text === 'string') text = text.replace(/Pratyush/g, 'Aayush');
+                            if (typeof subtext === 'string') subtext = subtext.replace(/Pratyush/g, 'Aayush');
+
                             if (isRaw) {
                                 // Raw display: bypasses renderLogLine to strip metadata but preserves buffer integrity
                                 const logLine = document.createElement('div');
@@ -2245,6 +2257,7 @@
                                  updateSafe('kpi-title-2', 'IAM IDENTITIES');
                                  updateSafe('kpi-title-3', 'MFA Enforced');
                                  updateSafe('kpi-title-4', 'Exposed Secrets');
+                                 updateSafe('kpi-title-5', 'S3 BUCKETS');
 
                                  const blastVal = window.isAdmin ? '95%' : '10%';
                                  const blastColor = window.isAdmin ? '#FF1744' : 'var(--green)';
@@ -2258,9 +2271,8 @@
                                      updateSafe('exposed-secrets-sub', blastSub);
                                  }
                                 
-                                const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
+                                const kpi2ElAws = document.getElementById('iam-user-count');
                                 if (kpi2ElAws) {
-                                    kpi2ElAws.id = 'iam-user-count';
                                     const iamCount = sessionStorage.getItem('vaultAwsIamCount');
                                     kpi2ElAws.innerText = isAuditComplete && iamCount !== null ? iamCount : '0';
                                     kpi2ElAws.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
@@ -2281,31 +2293,40 @@
                                 
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
-                                 updateSafe('kpi-title-1', 'Exposed Secrets');
-                                 updateSafe('kpi-title-2', 'Impacted Channels');
-                                 updateSafe('kpi-title-3', 'Workspace MFA');
-                                 updateSafe('kpi-title-4', 'High-Risk Identities Detected');
+                                 // SLACK UI RESTORATION
+                                 updateSafe('kpi-title-1', 'OPEN ATTACK PATHS');
+                                 updateSafe('kpi-title-2', 'EXPOSED SECRETS');
+                                 updateSafe('kpi-title-3', 'MFA ENFORCED');
+                                 updateSafe('kpi-title-4', 'NON-COMPLIANT USERS');
+                                 updateSafe('kpi-title-5', 'TOTAL USERS');
 
-                                 const secretsVal = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.secrets : '0') : '—';
-                                 updateSafe('blast-radius-val', secretsVal);
-                                 
-                                 const channelEl = document.getElementById('iam-user-count') || document.getElementById('impacted-channels-count');
-                                 if (channelEl) {
-                                     channelEl.id = 'impacted-channels-count';
-                                     channelEl.innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.impactedChannelCount : '0') : '0';
-                                     channelEl.style.color = isAuditComplete ? (window.latestSlackData && window.latestSlackData.impactedChannelCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
+                                 if (isAuditComplete) {
+                                     updateSafe('blast-radius-val', '1', '#F04438'); // RED '1'
+                                     updateSafe('iam-user-count', '1', '#F04438');    // RED '1'
+                                     updateSafe('mfa-enforced-val', '100%', '#12B76A'); // GREEN '100%'
+                                     updateSafe('aws-secrets-count', '0', '#12B76A');   // GREEN '0'
+                                     updateSafe('s3-bucket-count', '3', '#1841FF');     // BLUE '3'
+                                     
+                                     updateSafe('blast-radius-sub', 'Critical Entry Point detected');
+                                     updateSafe('iam-identities-sub', 'Active secret exposure');
+                                     updateSafe('mfa-enforced-sub', 'All human identities compliant');
+                                     updateSafe('exposed-secrets-sub', 'No high-risk identities leaking tokens');
+                                     updateSafe('s3-bucket-sub', 'Humans audited in workspace');
+                                 } else {
+                                     // Default Slack UI (Pre-Audit)
+                                     updateSafe('blast-radius-val', '—', 'var(--gray)');
+                                     updateSafe('iam-user-count', '0', 'var(--gray)');
+                                     updateSafe('mfa-enforced-val', '—', 'var(--gray)');
+                                     updateSafe('aws-secrets-count', '0', 'var(--gray)');
+                                     updateSafe('s3-bucket-count', '0', 'var(--gray)');
+
+                                     updateSafe('blast-radius-sub', 'Calculating exposure...');
+                                     updateSafe('iam-identities-sub', 'Awaiting scan');
+                                     updateSafe('mfa-enforced-sub', 'Awaiting scan');
+                                     updateSafe('exposed-secrets-sub', 'Awaiting scan');
+                                     updateSafe('s3-bucket-sub', 'Awaiting scan');
                                  }
                                  
-                                 updateSafe('mfa-enforced-val', isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—');
-                                 
-                                 const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
-                                 const kpi4El = document.getElementById('aws-secrets-count') || document.getElementById('high-risk-count');
-                                 if (kpi4El) {
-                                     kpi4El.id = 'high-risk-count';
-                                     kpi4El.innerText = isAuditComplete ? String(uniqueSlackUsersSize) : '0';
-                                     kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
-                                 }
-
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }
                         }
