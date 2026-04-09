@@ -1561,7 +1561,6 @@
                             }
                             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                             if (!emailRegex.test(userEmail)) {
-                                alert("Invalid email format detected. Cannot deliver OTP.");
                                 console.error("[Security] Invalid email format.");
                                 var loaderEl = document.getElementById('state-loading');
                                 if (loaderEl) loaderEl.classList.add('hidden');
