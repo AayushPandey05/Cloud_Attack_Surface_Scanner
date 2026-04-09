@@ -596,11 +596,83 @@
           padding: 2.5rem 2rem;
           width: 100%;
           max-width: 420px;
-      /* PRO TERMINAL PALETTE (High-Fidelity SecOps Restore) */
+      /* ── TERMINAL UI ENHANCEMENTS ──────────────────────── */
+      .scanning-beam {
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 2px;
+          background: linear-gradient(90deg, transparent, #00D2FF, transparent);
+          box-shadow: 0 0 12px #00D2FF;
+          opacity: 0;
+          pointer-events: none;
+          z-index: 100;
+      }
+      .terminal-container.is-auditing .scanning-beam {
+          opacity: 0.6;
+          animation: scan-move 2.5s linear infinite;
+      }
+      @keyframes scan-move {
+          0% { top: 0; }
+          100% { top: 100%; }
+      }
+
+      .scanning-watermark {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          font-family: 'Inter', sans-serif;
+          font-weight: 800;
+          font-size: 1.5rem;
+          color: var(--white);
+          opacity: 0;
+          pointer-events: none;
+          z-index: 5;
+          letter-spacing: 4px;
+          white-space: nowrap;
+          transition: opacity 0.3s ease;
+      }
+      .terminal-container.is-auditing .scanning-watermark {
+          opacity: 0.08;
+      }
+
+      .status-indicator-live {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #27C93F;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          font-size: 0.7rem;
+      }
+      .status-indicator-live .blink-dot {
+          width: 8px; height: 8px;
+          background-color: #27C93F;
+          border-radius: 50%;
+          box-shadow: 0 0 8px #27C93F;
+          animation: blink-soft 1.5s ease-in-out infinite;
+      }
+      @keyframes blink-soft {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
+      }
+
+      .flicker-text {
+          animation: flicker-wake 0.5s ease;
+      }
+      @keyframes flicker-wake {
+          0% { opacity: 0.1; transform: skewX(1deg); }
+          20% { opacity: 0.8; transform: skewX(-1deg); }
+          40% { opacity: 0.3; transform: skewX(1deg); }
+          60% { opacity: 1; transform: skewX(0); }
+          80% { opacity: 0.5; }
+          100% { opacity: 1; }
+      }
+
       .terminal-body {
           background-color: #000000 !important; /* Pitch Black */
           color: #00f2ff !important; /* Neon Cyan (Standard Text) */
           font-family: 'Courier New', Courier, monospace;
+          position: relative;
+          z-index: 10;
       }
       .log-line { margin-bottom: 2px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px; }
       .log-time, .log-source, .log-category { color: #ffffff !important; opacity: 1.0; }
@@ -1327,11 +1399,13 @@
             <div id="terminal-title">
               security-telemetry — AWS Infrastructure
             </div>
-            <div class="flex items-center gap-1" style="color: var(--green);">
-              <div class="status-dot"></div>
-              LIVE
+            <div class="status-indicator-live">
+              <div class="blink-dot"></div>
+              LIVE LINK ACTIVE
             </div>
           </div>
+          <div class="scanning-beam"></div>
+          <div class="scanning-watermark">SCANNING INFRASTRUCTURE...</div>
           <div class="terminal-body font-mono" id="terminal-feed">
             <!-- Logs -> JS -->
           </div>
@@ -1947,6 +2021,13 @@
                             });
 
                             const logLine = renderLogLine(logObj);
+                            
+                            // CRT Wake-Up Flicker (Requirement 3: one-time trigger for first log)
+                            if (terminalFeed.children.length === 0) {
+                                terminalFeed.classList.add('flicker-text');
+                                setTimeout(() => terminalFeed.classList.remove('flicker-text'), 500);
+                            }
+
                             terminalFeed.appendChild(logLine);
                             terminalFeed.scrollTop = terminalFeed.scrollHeight;
                         }
