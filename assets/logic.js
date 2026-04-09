@@ -415,13 +415,25 @@ window.triggerAwsScan = async function () {
 
     if (terminal) terminal.innerHTML = "";
 
+    const totalUsers = typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
+    const mfaEnabledUsers = typeof data.mfaEnabledUsers === "number" ? data.mfaEnabledUsers : 0;
+
+    const iamCard = document.getElementById('iam-user-count');
+    const iamSub = document.getElementById('iam-identities-sub');
+
+    if (iamCard) {
+        iamCard.innerText = totalUsers; 
+        iamCard.classList.remove('text-green');
+        iamCard.style.color = '#00f2ff'; // Neon Cyan for active state
+    }
+    if (iamSub) {
+        iamSub.innerText = totalUsers > 0 ? 'Active identities analyzed' : 'No issues detected';
+    }
+
     let openAttackPaths = 0;
     let exposedSecrets = 0;
     let mfaBypassDetected = false;
-
-    let totalIamUsersFound = 0;
-
-        let publicBuckets = 0;
+    let publicBuckets = 0;
 
         if (Array.isArray(data.terminalLogs)) {
           const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
@@ -430,11 +442,6 @@ window.triggerAwsScan = async function () {
             let processedEntry = entry;
             if (isNewUser) {
                processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
-            }
-
-            // IAM USER COUNT DETECTOR: Sync with metric card
-            if (processedEntry.includes("IAM-Audit") && processedEntry.includes("Found User")) {
-                totalIamUsersFound++;
             }
 
             // S3 PUBLIC ACCESS OVERRIDE: The scanner must correctly identify the public test bucket
@@ -488,33 +495,21 @@ window.triggerAwsScan = async function () {
         }
     };
     
-    // IAM Identities Priority Sync
-    const iamCountVal = totalIamUsersFound || 1;
-    const iamCard = document.getElementById('iam-user-count');
-    const iamSub = document.getElementById('iam-identities-sub');
-
-    if (iamCard) {
-        iamCard.innerText = iamCountVal; 
-        iamCard.classList.remove('text-green');
-        iamCard.style.color = '#00f2ff'; // Neon Cyan for active state
-    }
-    if (iamSub) {
-        iamSub.innerText = iamCountVal > 0 ? 'Active identities analyzed' : 'No issues detected';
-    }
-
     // 2. DATA TRUTH SYNC (Architectural Flush)
     if (publicBuckets > 0 || exposedSecrets > 0) {
         updateSafe('aws-secrets-count', String(publicBuckets), '#FF1744');
     }
 
     // 5. MFA ENFORCEMENT SYNC
-    const mfaPct = Math.round(((totalIamUsersFound - (mfaBypassDetected ? 1 : 0)) / (totalIamUsersFound || 1)) * 100);
-    if (mfaBypassDetected) {
-        updateSafe('mfa-enforced-val', `${mfaPct}%`, '#FF1744');
-        updateSafe('mfa-enforced-sub', 'CRITICAL: MFA bypass detected.');
-    } else {
+    const finalPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
+    
+    if (finalPercentage === 100) {
         updateSafe('mfa-enforced-val', '100%', '#00E676');
         updateSafe('mfa-enforced-sub', 'All devices compliant.');
+    } else {
+        const failures = totalUsers - mfaEnabledUsers;
+        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FF1744');
+        updateSafe('mfa-enforced-sub', `CRITICAL: MFA bypass detected for ${failures} users.`);
     }
 
     if (openAttackPaths > 0) {

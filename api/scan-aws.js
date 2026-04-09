@@ -23,7 +23,8 @@ export default async function handler(req, res) {
   // Terminal log storage for front-end dashboard
   const terminalLogs = [];
   let exposedSecrets = 0;
-  let mfaEnabled = false;
+  let totalUsers = 0;
+  let mfaEnabledUsers = 0;
   let publicBuckets = 0;
 
   try {
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
 
     // ── MFA AUDIT LAYER ────────────────────────────────────────────────
     for (const user of Users) {
+      totalUsers++;
       const created = new Date(user.CreateDate).toLocaleDateString();
       terminalLogs.push(
         `[AWS] INFO: User [${user.UserName}] detected (Created: [${created}]).`,
@@ -58,7 +60,7 @@ export default async function handler(req, res) {
           new ListMFADevicesCommand({ UserName: user.UserName }),
         );
         if (mfaRes.MFADevices && mfaRes.MFADevices.length > 0) {
-          mfaEnabled = true; // Signal to frontend
+          mfaEnabledUsers++;
           terminalLogs.push(
             `[AWS] INFO: User [${user.UserName}] MFA compliance check passed.`,
           );
@@ -71,6 +73,11 @@ export default async function handler(req, res) {
         console.error("MFA Check failed for user", user.UserName);
       }
     }
+
+    const finalMfaPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
+    terminalLogs.push(
+      `[AWS] Audit: Final MFA Compliance: ${finalMfaPercentage}% across ${totalUsers} identities.`
+    );
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
     const s3Client = new S3Client({ region, credentials });
@@ -148,13 +155,14 @@ export default async function handler(req, res) {
     let controlsPassing = 0;
     if (publicBuckets === 0) controlsPassing++; // Check 1: Bucket Security
     if (exposedSecrets === 0) controlsPassing++; // Check 2: Secret Cleanliness
-    if (mfaEnabled) controlsPassing++; // Check 3: Identity MFA
+    if (mfaEnabledUsers > 0 && mfaEnabledUsers === totalUsers) controlsPassing++; // Check 3: Identity MFA
 
     // Return unified compliance telemetry payload
     return res.status(200).json({
       summary: Users.length,
+      totalUsers: totalUsers,
+      mfaEnabledUsers: mfaEnabledUsers,
       exposedSecrets: exposedSecrets,
-      mfaEnabled: mfaEnabled,
       controlsPassing: controlsPassing,
       terminalLogs: terminalLogs,
     });
@@ -164,8 +172,9 @@ export default async function handler(req, res) {
     );
     return res.status(200).json({
       summary: 0,
+      totalUsers: 0,
+      mfaEnabledUsers: 0,
       exposedSecrets: 0,
-      mfaEnabled: false,
       controlsPassing: 0,
       terminalLogs: terminalLogs,
     });
