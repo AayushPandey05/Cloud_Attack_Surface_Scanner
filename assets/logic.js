@@ -143,6 +143,9 @@ window.runSlackAudit = async function () {
     if (el) el.innerText = text;
   };
 
+  // 1. Audit Start Reset: Clear global buffers for forensic integrity
+  window.auditLogsBuffer = [];
+
   // Bind KPI headers to the Slack threat model taxonomy
   setTitle(2, "Exposed Secrets");
   setTitle(3, "MFA Enforced");
@@ -412,8 +415,6 @@ window.triggerAwsScan = async function () {
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
 
-    if (terminal) terminal.innerHTML = "";
-
     const totalUsers = typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
     const mfaEnabledUsers = typeof data.mfaEnabledUsers === "number" ? data.mfaEnabledUsers : 0;
 
@@ -585,6 +586,9 @@ window.triggerAwsScan = async function () {
     return;
   }
   triggerBtn.addEventListener("click", async () => {
+    // 1. Audit Reset: Purge prior scan telemetry from across all environments
+    window.auditLogsBuffer = [];
+
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
     const currentUser = sessionStorage.getItem('loggedInUser') || '';
     const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
@@ -651,10 +655,9 @@ window.triggerAwsScan = async function () {
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      // Enterprise CSV: Strictly derived from terminal telemetry
-      const csvRows = [
-        '"Timestamp","Service","Level","Message"',
-      ];
+      // Enterprise CSV: Strictly derived from terminal telemetry (Single Source of Truth)
+      const csvRows = ['"Timestamp","Service","Level","Message"'];
+      
       logsToExport.forEach((r) => {
         const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
         csvRows.push(row);
