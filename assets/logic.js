@@ -420,20 +420,24 @@ window.triggerAwsScan = async function () {
 
     const iamCard = document.getElementById('iam-user-count');
     const iamSub = document.getElementById('iam-identities-sub');
+    const totalIamUsers = typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
+
+    sessionStorage.setItem('vaultAwsIamCount', totalIamUsers);
 
     if (iamCard) {
-        iamCard.innerText = totalUsers; 
+        iamCard.innerText = totalIamUsers; 
         iamCard.classList.remove('text-green');
         iamCard.style.color = '#00f2ff'; // Neon Cyan for active state
     }
     if (iamSub) {
-        iamSub.innerText = totalUsers > 0 ? 'Active identities analyzed' : 'No issues detected';
+        iamSub.innerText = totalIamUsers > 0 ? 'Active identities analyzed' : 'No issues detected';
     }
 
     let openAttackPaths = 0;
     let exposedSecrets = 0;
     let mfaBypassDetected = false;
     let publicBuckets = 0;
+    let totalBucketsFound = 0;
 
         if (Array.isArray(data.terminalLogs)) {
           const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
@@ -472,6 +476,21 @@ window.triggerAwsScan = async function () {
              window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL", "Audit");
              exposedSecrets++;
           }
+        }
+
+        if (processedEntry.includes("Found [") && processedEntry.includes("S3 Buckets in")) {
+            const match = processedEntry.match(/Found \[(\d+)\] S3 Buckets/);
+            if (match) {
+                totalBucketsFound = parseInt(match[1]);
+                sessionStorage.setItem('vaultAwsS3Count', totalBucketsFound);
+                const s3Card = document.getElementById('s3-bucket-count');
+                if (s3Card) {
+                    s3Card.innerText = totalBucketsFound;
+                    s3Card.style.color = '#00f2ff';
+                }
+                const s3Sub = document.getElementById('s3-bucket-sub');
+                if (s3Sub) s3Sub.innerText = 'Cloud storage assets discovered';
+            }
         }
 
         if (processedEntry.includes("Leaked AWS Access Key")) exposedSecrets++;

@@ -1221,6 +1221,13 @@
               No credentials exposed
             </div>
           </div>
+          <div class="kpi-card">
+            <div class="kpi-h" id="kpi-title-5">S3 BUCKETS</div>
+            <div class="kpi-v text-green" id="s3-bucket-count">0</div>
+            <div class="kpi-sub" id="s3-bucket-sub">
+              Awaiting scan
+            </div>
+          </div>
         </div>
 
         <!-- Segmented Control + Export Bar -->
@@ -1863,6 +1870,8 @@
                                 coloredText = `<span style="color: #FFCC00;">${coloredText}</span>`; // Vivid Yellow
                             } else if (coloredText.includes('secure') || coloredText.includes('passed') || coloredText.includes('Scan complete')) {
                                 coloredText = `<span style="color: #00E676;">${coloredText}</span>`; // Emerald Green
+                            } else if (coloredText.includes('Found [') || coloredText.includes('S3 Bucket') || coloredText.includes('IAM User') || coloredText.includes('MFA compliance')) {
+                                coloredText = `<span style="color: #00f2ff;">${coloredText}</span>`; // Neon Cyan
                             }
 
                             logLine.innerHTML = `
@@ -2009,11 +2018,19 @@
                                 const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
                                 if (kpi2ElAws) {
                                     kpi2ElAws.id = 'iam-user-count';
-                                    kpi2ElAws.innerText = isAuditComplete ? '1' : '0';
-                                    kpi2ElAws.style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
+                                    const iamCount = sessionStorage.getItem('vaultAwsIamCount');
+                                    kpi2ElAws.innerText = isAuditComplete && iamCount !== null ? iamCount : '0';
+                                    kpi2ElAws.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
                                 }
                                 updateSafe('mfa-enforced-val', isAuditComplete ? '100.0%' : '—', isAuditComplete ? 'var(--green)' : 'var(--gray)');
                                 updateSafe('aws-secrets-count', isAuditComplete ? '0' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+
+                                const s3CountCard = document.getElementById('s3-bucket-count');
+                                if (s3CountCard) {
+                                    const s3Count = sessionStorage.getItem('vaultAwsS3Count');
+                                    s3CountCard.innerText = isAuditComplete && s3Count !== null ? s3Count : '0';
+                                    s3CountCard.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
+                                }
                                 
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
