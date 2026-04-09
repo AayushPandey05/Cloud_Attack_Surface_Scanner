@@ -495,7 +495,7 @@ window.triggerAwsScan = async function () {
 
         // STICKY FORENSIC HOOK: If Leaked Key detected, trigger Attack Path visualization (Requirement 4.0)
         if (parsedMessage.includes("Leaked Key")) {
-            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;↳ <span style="color: #57595B;">Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #2FA4D7;">[Credential Theft]</span> → <span style="color: #2FA4D7;">[Identity Takeover]</span>`;
+            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #2FA4D7;">[Credential Theft]</span> → <span style="color: #2FA4D7;">[Identity Takeover]</span>`;
             window.appendTerminal("SYS", attackPath, "INFO", "", true); 
         }
       });
