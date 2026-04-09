@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] Audit: CRITICAL: Public Bucket detected [+1].`,
+              `[AWS] Audit: CRITICAL: Public Bucket [${bucket.Name}] detected [+1].`,
             );
           }
 
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
                   if (lines[i].match(regex)) {
                     fileHasLeakedKey = true;
                     terminalLogs.push(
-                      `[AWS] Audit: CRITICAL: Leaked Key in [${obj.Key}] (Line ${i + 1}).`,
+                      `[AWS] Audit: CRITICAL: Leaked Key in [${bucket.Name}/${obj.Key}] (Line ${i + 1}).`,
                     );
                   }
                 }
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] Audit: CRITICAL: Public Bucket detected [+1].`,
+              `[AWS] Audit: CRITICAL: Public Bucket [${bucket.Name}] detected [+1].`,
             );
           }
         }

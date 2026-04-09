@@ -495,8 +495,39 @@ window.triggerAwsScan = async function () {
         let clean = processedEntry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
-        const [level, ...contentParts] = clean.split(": ");
-        window._slackAddLog("AWS", contentParts.join(": "), level || "SYSTEM", "Audit");
+          
+        let parsedLevel = "SYSTEM";
+        let parsedMessage = clean;
+        let service = "AWS";
+
+        if (clean.includes("S3 Bucket") || clean.includes("Leaked Key") || clean.includes("Public Bucket")) {
+            service = "S3";
+        } else if (clean.includes("User [") || clean.includes("IAM") || clean.includes("MFA")) {
+            service = "IAM";
+        }
+
+        const firstColon = clean.indexOf(":");
+        if (firstColon !== -1) {
+            const firstPart = clean.substring(0, firstColon).trim();
+            if (firstPart === "Audit") {
+                const secondColon = clean.indexOf(":", firstColon + 1);
+                if (secondColon !== -1) {
+                    parsedLevel = clean.substring(firstColon + 1, secondColon).trim();
+                    parsedMessage = clean.substring(secondColon + 1).trim();
+                } else {
+                    parsedLevel = "INFO";
+                    parsedMessage = clean.substring(firstColon + 1).trim();
+                }
+            } else {
+                parsedLevel = firstPart;
+                parsedMessage = clean.substring(firstColon + 1).trim();
+            }
+        } else {
+            parsedMessage = clean;
+            parsedLevel = "INFO";
+        }
+
+        window._slackAddLog(service, parsedMessage, parsedLevel, "Audit");
       });
     }
 
