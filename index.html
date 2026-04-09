@@ -1487,7 +1487,7 @@
                             if (pEmail) pEmail.innerText = userEmail;
                             if (pName) pName.innerText = window.isAdmin ? 'Lead Security Architect' : 'Guest Analyst';
 
-                            const avatarText = window.isAdmin ? 'A' : (userEmail !== 'DEBUG: NO EMAIL FOUND' ? userEmail.charAt(0).toUpperCase() : 'U');
+                            const avatarText = window.isAdmin ? 'A' : (userEmail !== 'DEBUG: NO EMAIL FOUND' && userEmail !== '' ? userEmail.charAt(0).toUpperCase() : 'U');
                             if (avatar) avatar.innerText = avatarText;
 
                             console.log("[Identity Persistence] Active User:", userEmail, "| Role:", (window.isAdmin ? 'Admin' : 'Guest'));
@@ -1933,14 +1933,17 @@
                                     addLog('SYSTEM', 'Root Session Authorized: Admin Access granted.', 'SUCCESS', 'Gateway');
                                 }
                             } else {
-                                if (terminalPanel) terminalPanel.classList.add('hidden');
+                                if (terminalPanel) terminalPanel.classList.remove('hidden');
                                 if (zeroStateUI) {
-                                  zeroStateUI.classList.remove('hidden');
-                                  if (window.lucide) lucide.createIcons();
+                                  zeroStateUI.classList.add('hidden');
                                 }
                                 if (triggerBtn) {
                                     triggerBtn.disabled = true;
                                     triggerBtn.innerHTML = '<i data-lucide="lock" width="16" height="16"></i> Insufficient Privileges: Live Audits restricted to Lead Architect.';
+                                }
+                                rehydrateLogs(window.currentEnv || 'aws');
+                                if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
+                                    addLog('SYSTEM', 'Unauthorized access attempt blocked. Audit restricted to Lead Architect.', 'CRITICAL', 'Gateway');
                                 }
                             }
 
@@ -1993,9 +1996,15 @@
 
                                  const blastVal = window.isAdmin ? '95%' : '10%';
                                  const blastColor = window.isAdmin ? '#FF1744' : 'var(--green)';
-                                 const blastSub = window.isAdmin ? 'CRITICAL: Full Admin status detected.' : 'LOW: Guest limits enforced.';
+                                 const blastSub = window.isAdmin ? 'CRITICAL: Full Admin status detected.' : 'Unauthorized: Admin access required to view live telemetry.';
                                  updateSafe('blast-radius-val', blastVal, blastColor);
                                  updateSafe('blast-radius-sub', blastSub);
+                                 
+                                 if (!window.isAdmin) {
+                                     updateSafe('iam-identities-sub', blastSub);
+                                     updateSafe('mfa-enforced-sub', blastSub);
+                                     updateSafe('exposed-secrets-sub', blastSub);
+                                 }
                                 
                                 const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
                                 if (kpi2ElAws) {

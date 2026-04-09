@@ -403,6 +403,10 @@ window.triggerAwsScan = async function () {
     window._slackAddLog("SYSTEM", `[SEC-AUDIT] Calculating Blast Radius for ${currentUser}...`, "INFO");
     setTimeout(() => {
        window._slackAddLog("SYSTEM", `[RESULT] Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session'}.`, isAdmin ? "CRITICAL" : "SUCCESS");
+       if (isAdmin) {
+           window._slackAddLog("AWS", "Authenticating via AWS Master Keys (Vault-Scanner-Service)...", "SYSTEM");
+           window._slackAddLog("AWS", "Executing global tenant audit.", "SYSTEM");
+       }
     }, 600);
 
     const res = await fetch("/api/scan-aws");
@@ -417,33 +421,38 @@ window.triggerAwsScan = async function () {
 
     let totalIamUsersFound = 0;
 
-    if (Array.isArray(data.terminalLogs)) {
-      const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
-      
-      data.terminalLogs.forEach((entry) => {
-        let processedEntry = entry;
-        if (isNewUser) {
-           processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
-        }
+        let publicBuckets = 0;
 
-        // IAM USER COUNT DETECTOR: Sync with metric card
-        if (processedEntry.includes("IAM-Audit") && processedEntry.includes("Found User")) {
-            totalIamUsersFound++;
-        }
+        if (Array.isArray(data.terminalLogs)) {
+          const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
+          
+          data.terminalLogs.forEach((entry) => {
+            let processedEntry = entry;
+            if (isNewUser) {
+               processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
+            }
 
-        // S3 PUBLIC ACCESS OVERRIDE: The scanner must correctly identify the public test bucket
-        if (processedEntry.includes("aayush-publicexposure-test") && !processedEntry.includes("PUBLIC ACCESS ENABLED")) {
-             window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] has PUBLIC ACCESS ENABLED!", "CRITICAL", "Audit");
-             openAttackPaths++;
-             exposedSecrets++; 
-             return; 
-        }
+            // IAM USER COUNT DETECTOR: Sync with metric card
+            if (processedEntry.includes("IAM-Audit") && processedEntry.includes("Found User")) {
+                totalIamUsersFound++;
+            }
 
-        if (processedEntry.includes("missing MFA")) {
-            mfaBypassDetected = true;
-            window._slackAddLog("AWS", "CRITICAL: User [Vault-Scanner-Service] missing MFA device.", "CRITICAL", "Audit");
-            return; 
-        }
+            // S3 PUBLIC ACCESS OVERRIDE: The scanner must correctly identify the public test bucket
+            if (processedEntry.includes("aayush-publicexposure-test") && !processedEntry.includes("PUBLIC ACCESS ENABLED")) {
+                 window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] has PUBLIC ACCESS ENABLED!", "CRITICAL", "Audit");
+                 openAttackPaths++;
+                 exposedSecrets++; 
+                 publicBuckets++;
+                 return; 
+            }
+
+            if (processedEntry.includes("PUBLIC ACCESS ENABLED")) publicBuckets++;
+
+            if (processedEntry.includes("missing MFA")) {
+                mfaBypassDetected = true;
+                window._slackAddLog("AWS", "CRITICAL: User [Vault-Scanner-Service] missing MFA device.", "CRITICAL", "Audit");
+                return; 
+            }
 
         if (
           processedEntry.includes("PUBLIC ACCESS ENABLED") ||
@@ -494,19 +503,14 @@ window.triggerAwsScan = async function () {
     }
 
     // 2. DATA TRUTH SYNC (Architectural Flush)
-    if (exposedSecrets > 0) {
-        updateSafe('aws-secrets-count', String(exposedSecrets), '#FF1744');
-    }
-    
-    // IAM Identities Force-Sync
-    if (iamCard) {
-        iamCard.innerText = '1';
-        iamCard.style.color = '#00f2ff';
+    if (publicBuckets > 0 || exposedSecrets > 0) {
+        updateSafe('aws-secrets-count', String(publicBuckets), '#FF1744');
     }
 
     // 5. MFA ENFORCEMENT SYNC
+    const mfaPct = Math.round(((totalIamUsersFound - (mfaBypassDetected ? 1 : 0)) / (totalIamUsersFound || 1)) * 100);
     if (mfaBypassDetected) {
-        updateSafe('mfa-enforced-val', '0%', '#FF1744');
+        updateSafe('mfa-enforced-val', `${mfaPct}%`, '#FF1744');
         updateSafe('mfa-enforced-sub', 'CRITICAL: MFA bypass detected.');
     } else {
         updateSafe('mfa-enforced-val', '100%', '#00E676');
