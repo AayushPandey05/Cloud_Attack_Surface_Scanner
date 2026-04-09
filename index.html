@@ -433,6 +433,79 @@
           font-weight: 600;
       }
 
+      .status-indicator-live {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #666;
+          font-size: 0.75rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+      }
+      .blink-dot {
+          width: 7px;
+          height: 7px;
+          background-color: #08CB00;
+          border-radius: 50%;
+          animation: blink 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          box-shadow: 0 0 10px rgba(8, 203, 0, 0.5);
+      }
+      @keyframes blink {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(0.9); }
+      }
+
+      /* Terminal Center Spinner */
+      #terminal-spinner {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          z-index: 100;
+          pointer-events: none;
+      }
+      .spinner-cyan {
+          width: 28px;
+          height: 28px;
+          border: 3px solid rgba(0, 210, 255, 0.1);
+          border-top-color: #00D2FF;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+      }
+      .pulse-text {
+          color: #00D2FF;
+          font-size: 0.8rem;
+          font-family: inherit;
+          letter-spacing: 0.1em;
+          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          text-transform: uppercase;
+          font-weight: 500;
+      }
+      @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+      }
+
+      /* Button Auditing State */
+      .btn-scan-trigger:disabled {
+          background-color: #1a2333;
+          border-color: #2e3a50;
+          color: #64748b;
+          cursor: not-allowed;
+      }
+      .btn-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+      }
+
       .status-badge {
           display: flex;
           align-items: center;
@@ -1369,7 +1442,10 @@
             </div>
           </div>
           <div class="terminal-body font-mono" id="terminal-feed">
-            <!-- Logs -> JS -->
+            <div id="terminal-spinner" class="hidden">
+              <div class="spinner-cyan"></div>
+              <div class="pulse-text">Scanning...</div>
+            </div>
           </div>
         </div>
 
@@ -2001,8 +2077,15 @@
 
                             const logLine = renderLogLine(logObj);
                             
+                            // AUTO-CLEANUP: Clear the central scanning spinner on first log (Requirement 2.0)
+                            const spinner = document.getElementById('terminal-spinner');
+                            if (spinner && !spinner.classList.contains('hidden')) {
+                                spinner.classList.add('hidden');
+                            }
+
                             // CRT Wake-Up Flicker (Requirement 3: one-time trigger for first log)
-                            if (terminalFeed.children.length === 0) {
+                            // Note: We check if children length is 1 because of the hidden spinner div
+                            if (terminalFeed.children.length <= 1) {
                                 terminalFeed.classList.add('flicker-text');
                                 setTimeout(() => terminalFeed.classList.remove('flicker-text'), 500);
                             }

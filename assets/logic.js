@@ -570,8 +570,10 @@ window.triggerAwsScan = async function () {
     return;
   }
   triggerBtn.addEventListener("click", async () => {
-    // 1. Audit Reset: Purge prior scan telemetry from across all environments
+    // 1. Audit Reset: Purge prior scan telemetry and show terminal loading state
     window.auditLogsBuffer = [];
+    const termSpinner = document.getElementById('terminal-spinner');
+    if (termSpinner) termSpinner.classList.remove('hidden');
 
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
     const currentUser = sessionStorage.getItem('loggedInUser') || '';
@@ -581,20 +583,15 @@ window.triggerAwsScan = async function () {
     if (!isAdmin) {
        console.error("[ZeroTrust] Audit blocked: Unauthorized identity.");
        alert("⚠ Security Access Denied: Your account does not have an active AWS connection. Please click 'Connect Your Cloud' to begin.");
+       if (termSpinner) termSpinner.classList.add('hidden');
        return;
     }
 
-    // 1. Reset KPI counters (Your existing reset logic goes here)
-    // ...
-
-    // 2. UPDATE THIS LINE RIGHT HERE:
+    // 2. UI TRANSFORMATION: Auditing State (Requirement 1)
     triggerBtn.disabled = true;
     const originalContent = triggerBtn.innerHTML;
-
-    triggerBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> Auditing...`;
+    triggerBtn.innerHTML = `<div class="btn-spinner"></div> AUDITING...`;
     
-    if (window.lucide) window.lucide.createIcons();
-
     try {
       if (currentModule === "AWS") {
         await window.triggerAwsScan();
