@@ -1874,24 +1874,39 @@
                         function renderLogLine(l) {
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
+                            logLine.style.marginBottom = '6px';
+                            logLine.style.fontSize = '0.875rem';
+                            logLine.style.lineHeight = '1.4';
                             
-                            // ── SEMANTIC CUSTOM PALETTE ─────────────────
+                            // ── METADATA PALETTE ────────────────────────
                             const timeColor = '#57595B'; // Gray
                             const tagColor  = '#9B7EBD'; // Purple
-                            const levelColor = '#22177A'; // Indigo
                             
-                            // Determine text color: White for standard, Red for CRITICAL threats
-                            let textColor = '#FFFFFF';
-                            if (l.level.toUpperCase() === 'CRITICAL') {
-                                textColor = '#FF4C4C';
+                            // Level Tag Color: INFO is Indigo, WARN/CRITICAL is Red
+                            let levelColor = '#22177A'; 
+                            if (l.level.toUpperCase() === 'WARN' || l.level.toUpperCase() === 'CRITICAL') {
+                                levelColor = '#DB1A1A';
+                            }
+                            
+                            // ── INTELLIGENT MESSAGE BODY COLORING ───────
+                            let textColor = '#FFFFFF'; // Default White
+                            const lowerText = l.text.toLowerCase();
+                            
+                            const redKeywords = ['missing mfa', 'critical', 'leaked key', 'public access'];
+                            const greenKeywords = ['is secure', 'compliance check passed'];
+
+                            if (redKeywords.some(k => lowerText.includes(k))) {
+                                textColor = '#DB1A1A'; // Alert Red
+                            } else if (greenKeywords.some(k => lowerText.includes(k))) {
+                                textColor = '#08CB00'; // Success Green
                             }
 
                             logLine.innerHTML = `
-                                <span class="log-time" style="color: ${timeColor};">[${l.time}]</span>
-                                <span class="log-source" style="color: ${tagColor};">[${l.source || 'SYS'}]</span>
-                                <span class="log-level" style="color: ${levelColor}; font-weight: 600;">${l.level.toUpperCase()}:</span>
-                                <span class="log-text" style="color: ${textColor};">${l.text}</span>
-                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem;">[${l.subtext}]</span>` : ''}
+                                <span class="log-time" style="color: ${timeColor}; font-weight: 400;">[${l.time}]</span>
+                                <span class="log-source" style="color: ${tagColor}; font-weight: 500;">[${l.source || 'SYS'}]</span>
+                                <span class="log-level" style="color: ${levelColor}; font-weight: 700;">${l.level.toUpperCase()}:</span>
+                                <span class="log-text" style="color: ${textColor}; font-weight: 400;">${l.text}</span>
+                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem; font-weight: 400;">[${l.subtext}]</span>` : ''}
                             `;
                             return logLine;
                         }

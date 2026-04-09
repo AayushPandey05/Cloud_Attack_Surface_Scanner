@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] WARN: Public Bucket [${bucket.Name}] detected [+1].`,
+              `[AWS] WARN: Public Access detected on Bucket [${bucket.Name}] [+1].`,
             );
           }
 
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] WARN: Public Bucket [${bucket.Name}] detected [+1].`,
+              `[AWS] WARN: Public Access detected on Bucket [${bucket.Name}] [+1].`,
             );
           }
         }

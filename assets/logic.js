@@ -337,7 +337,7 @@ window.runSlackAudit = async function () {
       } else {
         window._slackAddLog(
           "SLACK",
-          "All users pass MFA and profile compliance checks.",
+          "MFA and profile compliance check passed for all users.",
           "INFO",
         );
       }
@@ -404,7 +404,7 @@ window.triggerAwsScan = async function () {
 
     window._slackAddLog("SYSTEM", `Calculating Blast Radius for ${currentUser}...`, "INFO");
     setTimeout(() => {
-       window._slackAddLog("SYSTEM", `Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session'}.`, isAdmin ? "CRITICAL" : "INFO");
+       window._slackAddLog("SYSTEM", `Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session is secure'}.`, isAdmin ? "CRITICAL" : "INFO");
        if (isAdmin) {
            window._slackAddLog("AWS", "Authenticating via AWS Master Keys (Vault-Scanner-Service)...", "INFO");
            window._slackAddLog("AWS", "Executing global tenant audit.", "INFO");
