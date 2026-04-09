@@ -1911,18 +1911,18 @@
                         });
 
                         // ── Forensic Telemetry Engine ───────────────
-                        function renderLogLine(l) {
+                                                function renderLogLine(l) {
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
                             logLine.style.marginBottom = '6px';
                             logLine.style.fontSize = '0.875rem';
                             logLine.style.lineHeight = '1.4';
                             
-                            // ── METADATA PALETTE ────────────────────────
+                            // METADATA PALETTE
                             const timeColor = '#57595B'; // Gray
                             const tagColor  = '#9B7EBD'; // Purple
                             
-                            // ── CONDITIONAL LEVEL TAGGING (Requirement 1 & 2) ──
+                            // CONDITIONAL LEVEL TAGGING (Requirement 1 & 2)
                             let displayLevel = l.level.toUpperCase();
                             const hasFound = l.text.includes('Found');
                             
@@ -1930,17 +1930,18 @@
                                 displayLevel = 'AUDIT';
                             }
                             
-                            // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red
-                            let levelColor = '#2FA4D7'; 
+                            // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red (#DB1A1A)
+                            let levelColor = '#DB1A1A'; 
                             if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
                             
-                            // ── INTELLIGENT MESSAGE BODY COLORING ───────
+                            // INTELLIGENT MESSAGE BODY COLORING
                             let textColor = '#FFFFFF'; // Default White
                             const lowerText = l.text.toLowerCase();
                             
-                            const redKeywords = ['missing mfa', 'critical', 'leaked key', 'public access'];
+                            // Requirement 3: Ensure 'Exposed Secrets' triggers Red text
+                            const redKeywords = ['missing mfa', 'critical', 'leaked key', 'public access', 'exposed secrets', 'access denied', 'unauthorized'];
                             const greenKeywords = ['is secure', 'compliance check passed'];
 
                             if (redKeywords.some(k => lowerText.includes(k))) {
@@ -1952,7 +1953,7 @@
                             logLine.innerHTML = `
                                 <span class="log-time" style="color: ${timeColor}; font-weight: 400;">[${l.time}]</span>
                                 <span class="log-source" style="color: ${tagColor}; font-weight: 500;">[${l.source || 'SYS'}]</span>
-                                <span class="log-level" style="color: ${levelColor}; font-weight: 700;">${displayLevel}:</span>
+                                <span class="log-level" style="color: ${levelColor}; font-weight: bold;">${displayLevel}:</span>
                                 <span class="log-text" style="color: ${textColor}; font-weight: 400;">${l.text}</span>
                                 ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem; font-weight: 400;">[${l.subtext}]</span>` : ''}
                             `;
@@ -2026,13 +2027,13 @@
 
                             const terminalPanel = document.getElementById('terminal-panel');
                             const zeroStateUI = document.getElementById('zero-trust-connect');
-                            terminalFeed.innerHTML = '';
+                            const triggerBtn = document.getElementById("scan-trigger-btn");
 
                             if (sessionStorage.getItem('loggedInUser') === MASTER_ADMIN) {
                                 window.isAdmin = true;
+                            } else {
+                                window.isAdmin = false;
                             }
-
-                            const triggerBtn = document.getElementById("scan-trigger-btn");
 
                             if (window.isAdmin) {
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
@@ -2048,21 +2049,22 @@
                                 }
                             } else {
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
-                                if (zeroStateUI) {
-                                  zeroStateUI.classList.add('hidden');
-                                }
+                                if (zeroStateUI) zeroStateUI.classList.add('hidden');
+                                
                                 if (triggerBtn) {
                                     triggerBtn.disabled = true;
-                                    triggerBtn.innerHTML = '<i data-lucide="lock" width="16" height="16"></i> Insufficient Privileges: Live Audits restricted to Lead Architect.';
+                                    triggerBtn.innerHTML = '<i data-lucide="lock" width="16" height="16"></i> ACCESS RESTRICTED';
                                 }
-                                rehydrateLogs(window.currentEnv || 'aws');
-                                if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
-                                    addLog('SYSTEM', 'System ready. Awaiting Security Audit...', 'INFO');
-                                }
+                                
+                                // GUEST UI REPAIR: Wipe default message and inject critical alert
+                                terminalFeed.innerHTML = '';
+                                window.vaultLogCache[window.currentEnv || 'aws'] = [];
+                                addLog('SYSTEM', 'ACCESS DENIED. Unauthorized session detected.', 'CRITICAL');
                             }
 
                             updateDashboardContext();
                             stopTerminal();
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
                         }
 
                         // Attack Surface Context Switch
@@ -2188,9 +2190,6 @@
                         window._slackAddLog = addLog;
 
                         // AUDIT LOG EXPORT — Client-Side Blob Engine
-                        // downloadAuditLogs has been refactored to assets/logic.js for context-aware naming and data isolation.
-
-                        // Called from onclick="handleGoogleLogin(event)" on the button
                         window.handleGoogleLogin = function (e) {
                             if (e && e.preventDefault) e.preventDefault();
                             console.log('🚀 Custom Google Auth Triggered');
