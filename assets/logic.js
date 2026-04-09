@@ -516,7 +516,14 @@ window.triggerAwsScan = async function () {
     
     // 2. DATA TRUTH SYNC (Architectural Flush)
     if (publicBuckets > 0 || exposedSecrets > 0) {
-        updateSafe('aws-secrets-count', String(publicBuckets), '#FF1744');
+        // Keep the existing logic for the metric count, but correctly use exposedSecrets for the text
+        const displayValue = exposedSecrets > 0 ? exposedSecrets : publicBuckets;
+        updateSafe('aws-secrets-count', String(displayValue), '#FF1744');
+    }
+    if (exposedSecrets > 0) {
+        updateSafe('exposed-secrets-sub', 'CRITICAL: Leaked credentials detected!', '#FF8A65'); // subtle orange-red
+    } else {
+        updateSafe('exposed-secrets-sub', 'No credentials exposed', 'var(--gray)');
     }
 
     // 5. MFA ENFORCEMENT SYNC
