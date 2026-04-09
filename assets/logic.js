@@ -478,6 +478,9 @@ window.triggerAwsScan = async function () {
             parsedLevel = clean.substring(0, colonIdx).trim().toUpperCase();
             parsedMessage = clean.substring(colonIdx + 1).trim();
             
+            // REDUNDANCY PATCH: Strip service tags from level string to avoid [S3] [S3] display
+            parsedLevel = parsedLevel.replace(/^\[(S3|AWS)\]\s*/i, "").trim();
+
             // Map legacy levels to semantic ones
             if (parsedLevel === "SYSTEM" || parsedLevel === "SUCCESS") parsedLevel = "INFO";
         }

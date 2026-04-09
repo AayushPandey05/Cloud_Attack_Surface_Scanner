@@ -1762,6 +1762,11 @@
                                 }
                             });
                         }
+                        // Register the telemetry sink immediately at scope-root.
+                        // logic.js may invoke _slackAddLog before any addLog call occurs
+                        // (e.g. on session-restore refresh) — early registration prevents
+                        // a null-sink race condition in the Slack telemetry engine.
+                        window._slackAddLog = addLog;
 
                         // ── Authentication Slider — Login / Register Panel Toggle ───────────────
                         toggleSignup.addEventListener('click', (e) => {
@@ -1926,7 +1931,7 @@
                             }
                             
                             // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red (#DB1A1A)
-                            let levelColor = '#DB1A1A'; 
+                            let levelColor = '#2FA4D7'; 
                             if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
@@ -2219,6 +2224,7 @@
                             }
                         }
 
+                        window._slackAddLog = addLog;
 
                         // AUDIT LOG EXPORT — Client-Side Blob Engine
                         window.handleGoogleLogin = function (e) {
