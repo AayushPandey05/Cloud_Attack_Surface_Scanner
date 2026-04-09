@@ -27,6 +27,7 @@ export default async function handler(req, res) {
   let totalUsers = 0;
   let mfaEnabledUsers = 0;
   let publicBuckets = 0;
+  let totalVulnerabilities = 0;
 
   try {
     terminalLogs.push(
@@ -66,6 +67,7 @@ export default async function handler(req, res) {
             `[AWS] INFO: User [${user.UserName}] MFA compliance check passed.`,
           );
         } else {
+          totalVulnerabilities++;
           terminalLogs.push(
             `[AWS] WARN: User [${user.UserName}] missing MFA device.`,
           );
@@ -114,8 +116,9 @@ export default async function handler(req, res) {
             );
           } else {
             publicBuckets++;
+            totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
+              `[AWS] Audit: CRITICAL: Public Bucket detected [+1].`,
             );
           }
 
@@ -135,8 +138,9 @@ export default async function handler(req, res) {
 
                 if (body.match(regex)) {
                   exposedSecrets++;
+                  totalVulnerabilities++;
                   terminalLogs.push(
-                    `[AWS] CRITICAL: Leaked AWS Access Key found in [${bucket.Name}/${obj.Key}]!`,
+                    `[AWS] Audit: CRITICAL: Leaked Key in [${obj.Key}] [+1].`,
                   );
                 }
               } catch (objErr) {
@@ -147,8 +151,9 @@ export default async function handler(req, res) {
         } catch (s3Err) {
           if (s3Err.name === "NoSuchPublicAccessBlockConfiguration") {
             publicBuckets++;
+            totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] CRITICAL: S3 Bucket [${bucket.Name}] has PUBLIC ACCESS ENABLED!`,
+              `[AWS] Audit: CRITICAL: Public Bucket detected [+1].`,
             );
           }
         }
@@ -173,6 +178,7 @@ export default async function handler(req, res) {
       exposedSecrets: exposedSecrets,
       controlsPassing: controlsPassing,
       terminalLogs: terminalLogs,
+      totalVulnerabilities: totalVulnerabilities,
     });
   } catch (err) {
     terminalLogs.push(
@@ -185,6 +191,7 @@ export default async function handler(req, res) {
       exposedSecrets: 0,
       controlsPassing: 0,
       terminalLogs: terminalLogs,
+      totalVulnerabilities: 0,
     });
   }
 }

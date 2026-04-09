@@ -457,7 +457,7 @@ window.triggerAwsScan = async function () {
                  return; 
             }
 
-            if (processedEntry.includes("PUBLIC ACCESS ENABLED")) publicBuckets++;
+            if (processedEntry.includes("PUBLIC ACCESS ENABLED") || processedEntry.includes("CRITICAL: Public Bucket detected")) publicBuckets++;
 
             if (processedEntry.includes("missing MFA")) {
                 mfaBypassDetected = true;
@@ -466,15 +466,12 @@ window.triggerAwsScan = async function () {
             }
 
         if (
-          processedEntry.includes("PUBLIC ACCESS ENABLED") ||
           processedEntry.includes("CRITICAL")
         ) {
           openAttackPaths++;
-          exposedSecrets++; 
           
           if (processedEntry.includes(".env") || processedEntry.includes("config.json") || processedEntry.includes("root_key.csv") || processedEntry.includes("aayush-publicexposure-test")) {
              window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL", "Audit");
-             exposedSecrets++;
           }
         }
 
@@ -515,14 +512,12 @@ window.triggerAwsScan = async function () {
     };
     
     // 2. DATA TRUTH SYNC (Architectural Flush)
-    if (publicBuckets > 0 || exposedSecrets > 0) {
-        // Keep the existing logic for the metric count, but correctly use exposedSecrets for the text
-        const displayValue = exposedSecrets > 0 ? exposedSecrets : publicBuckets;
-        updateSafe('aws-secrets-count', String(displayValue), '#FF1744');
-    }
-    if (exposedSecrets > 0) {
-        updateSafe('exposed-secrets-sub', 'CRITICAL: Leaked credentials detected!', '#FF8A65'); // subtle orange-red
+    const finalSum = data.totalVulnerabilities || 0;
+    if (finalSum > 0) {
+        updateSafe('aws-secrets-count', String(finalSum), '#FF1744');
+        updateSafe('exposed-secrets-sub', `${finalSum} Critical Risks Found`, '#FF8A65'); // subtle orange-red
     } else {
+        updateSafe('aws-secrets-count', '0', 'var(--green)');
         updateSafe('exposed-secrets-sub', 'No credentials exposed', 'var(--gray)');
     }
 
