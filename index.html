@@ -1371,6 +1371,7 @@
             const MASTER_ADMIN = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
             window.vaultLogCache = { aws: [], slack: [] };
+            window.auditLogsBuffer = [];
 
             // Clear scan state on initial lifecycle boot for a clean state experience
             sessionStorage.removeItem('aws_audit_complete');
@@ -1894,6 +1895,10 @@
                             if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
                             if (!window.vaultLogCache[env]) window.vaultLogCache[env] = [];
                             window.vaultLogCache[env].push(logObj);
+
+                            if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
+                            const cleanMessage = text.replace(/<[^>]*>?/gm, '');
+                            window.auditLogsBuffer.push({ timestamp: new Date().toISOString(), env: env, source: source, level: level, message: cleanMessage });
 
                             const logLine = renderLogLine(logObj);
                             terminalFeed.appendChild(logLine);

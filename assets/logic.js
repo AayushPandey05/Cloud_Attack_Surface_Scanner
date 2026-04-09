@@ -627,48 +627,36 @@ window.triggerAwsScan = async function () {
       ".segmented-control .segment-btn.active",
     );
     const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
-    const rawText = document.getElementById("terminal-feed")?.innerText || "";
-    // Strict A, B, C, D tokenizing regex: Matches [Timestamp] [Env] Severity: Message
-    const logRegex = /^(\d{2}:\d{2}:\d{2})\s+\[(.*?)\]\s+([A-Z]+):\s+(.*)$/;
+    
+    const logsToExport = (window.auditLogsBuffer || []).filter(log => log.env === env);
 
-    const parsed = [];
-    let lastLog = null;
-
-    rawText
-      .split("\n")
-      .filter((l) => l.trim() !== "")
-      .forEach((line) => {
-        const match = line.match(logRegex);
-        if (match) {
-          // Standard Log Record — Initialize with Attack_Chain: None
-          lastLog = {
-            timestamp: match[1],
-            environment: match[2],
-            severity: match[3],
-            message: match[4],
-            attack_chain: "None",
-          };
-          parsed.push(lastLog);
-        } else if (line.trim().startsWith("↳") && lastLog) {
-          // Hierarchical Merger — Extract the chain and update previous row's 5th slot
-          const chainMatch = line.match(/↳ Attack Path:\s*(.*)/);
-          if (chainMatch) {
-            lastLog.attack_chain = chainMatch[1].trim();
-          }
+    const parsed = logsToExport.map(log => {
+        let msg = log.message;
+        let attackChain = "None";
+        if (msg.startsWith("↳ Attack Path:")) {
+            attackChain = msg.replace("↳ Attack Path:", "").trim();
+            msg = "Attack Path Identified";
         }
-      });
+        return {
+            timestamp: log.timestamp,
+            environment: log.source || env.toUpperCase(),
+            severity: log.level,
+            message: msg,
+            attack_chain: attackChain
+        };
+    });
 
     let content, mimeType;
     const filename = `${env}_audit_logs.${format}`;
 
     if (format === "csv") {
-      // Enterprise CSV Header: Timestamp,Environment,Severity,Event_Description,Attack_Chain
+      // Enterprise CSV Header: Timestamp, Service, Level, Message
       const csvRows = [
-        '"Timestamp","Environment","Severity","Event_Description","Attack_Chain"',
+        '"Timestamp","Service","Level","Message"',
       ];
-      // Every single value wrapped in double quotes for 100% Sheets/Excel alignment
-      parsed.forEach((r) => {
-        const row = `"${r.timestamp}","${r.environment}","${r.severity}","${r.message.replace(/"/g, '""')}","${r.attack_chain.replace(/"/g, '""')}"`;
+      // Map through the buffer structure instead of the DOM
+      logsToExport.forEach((r) => {
+        const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
         csvRows.push(row);
       });
       content = csvRows.join("\n");
