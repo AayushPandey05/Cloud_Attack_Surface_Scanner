@@ -402,15 +402,6 @@ window.triggerAwsScan = async function () {
     const currentUser = sessionStorage.getItem('loggedInUser') || 'Not Available';
     const isAdmin = currentUser === 'aayushpandey2905@gmail.com';
 
-    window._slackAddLog("SYSTEM", `Calculating Blast Radius for ${currentUser}...`, "INFO");
-    setTimeout(() => {
-       window._slackAddLog("SYSTEM", `Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session is secure'}.`, isAdmin ? "CRITICAL" : "INFO");
-       if (isAdmin) {
-           window._slackAddLog("AWS", "Authenticating via AWS Master Keys (Vault-Scanner-Service)...", "INFO");
-           window._slackAddLog("AWS", "Executing global tenant audit.", "INFO");
-       }
-    }, 600);
-
     const res = await fetch("/api/scan-aws");
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
