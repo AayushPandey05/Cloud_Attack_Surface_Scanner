@@ -136,12 +136,21 @@ export default async function handler(req, res) {
                 const regex =
                   /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g;
 
-                if (body.match(regex)) {
+                let fileHasLeakedKey = false;
+                const lines = body.split("\n");
+
+                for (let i = 0; i < lines.length; i++) {
+                  if (lines[i].match(regex)) {
+                    fileHasLeakedKey = true;
+                    terminalLogs.push(
+                      `[AWS] Audit: CRITICAL: Leaked Key in [${obj.Key}] (Line ${i + 1}).`,
+                    );
+                  }
+                }
+
+                if (fileHasLeakedKey) {
                   exposedSecrets++;
                   totalVulnerabilities++;
-                  terminalLogs.push(
-                    `[AWS] Audit: CRITICAL: Leaked Key in [${obj.Key}] [+1].`,
-                  );
                 }
               } catch (objErr) {
                 /* Skip private/unreadable */
