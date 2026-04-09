@@ -166,7 +166,7 @@ window.runSlackAudit = async function () {
     window._slackAddLog(
       "SLACK",
       "Initiating live workspace scan via /api/scan-slack…",
-      "SYSTEM",
+      "INFO",
     );
   }
 
@@ -276,7 +276,7 @@ window.runSlackAudit = async function () {
           " users, " +
           secrets +
           " secret(s) detected.",
-        "SYSTEM",
+        "INFO",
       );
       var alerts = Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
@@ -297,14 +297,13 @@ window.runSlackAudit = async function () {
             tag,
             message,
             "CRITICAL",
-            "Initial Access",
             subtext,
           );
 
           // Forensic Identity Audit: Specific flagging for the non-compliant user
           const userName = parts[0];
           if (userName && typeof window._slackAddLog === "function") {
-             window._slackAddLog("SYSTEM", `[IDENT] User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARNING");
+             window._slackAddLog("IAM", `User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARN");
           }
         });
       } else if (secrets > 0) {
@@ -314,14 +313,12 @@ window.runSlackAudit = async function () {
           secrets +
             " credential pattern(s) matched (AKIA/sk_live) in channel history.",
           "CRITICAL",
-          "Initial Access",
-          "Credential Theft",
         );
       } else {
         window._slackAddLog(
           "SLACK",
           "No AWS keys or Stripe secrets found in scanned messages.",
-          "SYSTEM",
+          "INFO",
         );
       }
 
@@ -338,7 +335,7 @@ window.runSlackAudit = async function () {
         window._slackAddLog(
           "SLACK",
           "All users pass MFA and profile compliance checks.",
-          "SYSTEM",
+          "INFO",
         );
       }
     }
@@ -402,12 +399,12 @@ window.triggerAwsScan = async function () {
     const currentUser = sessionStorage.getItem('loggedInUser') || 'Not Available';
     const isAdmin = currentUser === 'aayushpandey2905@gmail.com';
 
-    window._slackAddLog("SYSTEM", `[SEC-AUDIT] Calculating Blast Radius for ${currentUser}...`, "INFO");
+    window._slackAddLog("SYSTEM", `Calculating Blast Radius for ${currentUser}...`, "INFO");
     setTimeout(() => {
-       window._slackAddLog("SYSTEM", `[RESULT] Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session'}.`, isAdmin ? "CRITICAL" : "SUCCESS");
+       window._slackAddLog("SYSTEM", `Impact Zone: ${isAdmin ? 'Global Tenant' : 'Isolated Session'}.`, isAdmin ? "CRITICAL" : "INFO");
        if (isAdmin) {
-           window._slackAddLog("AWS", "Authenticating via AWS Master Keys (Vault-Scanner-Service)...", "SYSTEM");
-           window._slackAddLog("AWS", "Executing global tenant audit.", "SYSTEM");
+           window._slackAddLog("AWS", "Authenticating via AWS Master Keys (Vault-Scanner-Service)...", "INFO");
+           window._slackAddLog("AWS", "Executing global tenant audit.", "INFO");
        }
     }, 600);
 
@@ -451,19 +448,19 @@ window.triggerAwsScan = async function () {
             }
 
             // S3 PUBLIC ACCESS OVERRIDE: The scanner must correctly identify the public test bucket
-            if (processedEntry.includes("aayush-publicexposure-test") && !processedEntry.includes("PUBLIC ACCESS ENABLED")) {
-                 window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] has PUBLIC ACCESS ENABLED!", "CRITICAL", "Audit");
+            if (processedEntry.includes("aayush-publicexposure-test") && !processedEntry.includes("PUBLIC ACCESS ENABLED") && !processedEntry.includes("detected")) {
+                 window._slackAddLog("S3", "S3 Bucket [aayush-publicexposure-test] has PUBLIC ACCESS ENABLED!", "WARN");
                  openAttackPaths++;
                  exposedSecrets++; 
                  publicBuckets++;
                  return; 
             }
 
-            if (processedEntry.includes("PUBLIC ACCESS ENABLED") || processedEntry.includes("CRITICAL: Public Bucket detected")) publicBuckets++;
+            if (processedEntry.includes("PUBLIC ACCESS ENABLED") || processedEntry.includes("Public Bucket detected")) publicBuckets++;
 
             if (processedEntry.includes("missing MFA")) {
                 mfaBypassDetected = true;
-                window._slackAddLog("AWS", "CRITICAL: User [Vault-Scanner-Service] missing MFA device.", "CRITICAL", "Audit");
+                window._slackAddLog("IAM", "User [Vault-Scanner-Service] missing MFA device.", "WARN");
                 return; 
             }
 
@@ -473,7 +470,7 @@ window.triggerAwsScan = async function () {
           openAttackPaths++;
           
           if (processedEntry.includes(".env") || processedEntry.includes("config.json") || processedEntry.includes("root_key.csv") || processedEntry.includes("aayush-publicexposure-test")) {
-             window._slackAddLog("AWS", "CRITICAL: S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL", "Audit");
+             window._slackAddLog("S3", "S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL");
           }
         }
 
@@ -498,38 +495,26 @@ window.triggerAwsScan = async function () {
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
           
-        let parsedLevel = "SYSTEM";
+        let parsedLevel = "INFO";
         let parsedMessage = clean;
         let service = "AWS";
 
-        if (clean.includes("S3 Bucket") || clean.includes("Leaked Key") || clean.includes("Public Bucket")) {
+        const colonIdx = clean.indexOf(":");
+        if (colonIdx !== -1) {
+            parsedLevel = clean.substring(0, colonIdx).trim().toUpperCase();
+            parsedMessage = clean.substring(colonIdx + 1).trim();
+            
+            // Map legacy levels to semantic ones
+            if (parsedLevel === "SYSTEM" || parsedLevel === "SUCCESS") parsedLevel = "INFO";
+        }
+
+        if (clean.includes("S3 Bucket") || clean.includes("Key") || clean.includes("Bucket")) {
             service = "S3";
         } else if (clean.includes("User [") || clean.includes("IAM") || clean.includes("MFA")) {
             service = "IAM";
         }
 
-        const firstColon = clean.indexOf(":");
-        if (firstColon !== -1) {
-            const firstPart = clean.substring(0, firstColon).trim();
-            if (firstPart === "Audit") {
-                const secondColon = clean.indexOf(":", firstColon + 1);
-                if (secondColon !== -1) {
-                    parsedLevel = clean.substring(firstColon + 1, secondColon).trim();
-                    parsedMessage = clean.substring(secondColon + 1).trim();
-                } else {
-                    parsedLevel = "INFO";
-                    parsedMessage = clean.substring(firstColon + 1).trim();
-                }
-            } else {
-                parsedLevel = firstPart;
-                parsedMessage = clean.substring(firstColon + 1).trim();
-            }
-        } else {
-            parsedMessage = clean;
-            parsedLevel = "INFO";
-        }
-
-        window._slackAddLog(service, parsedMessage, parsedLevel, "Audit");
+        window._slackAddLog(service, parsedMessage, parsedLevel);
       });
     }
 

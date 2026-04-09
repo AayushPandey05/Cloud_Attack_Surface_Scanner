@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     // Execute User enumeration
     const { Users } = await iamClient.send(new ListUsersCommand({}));
     terminalLogs.push(
-      `[AWS] SYSTEM: Found [${Users.length}] IAM Users in account.`,
+      `[AWS] INFO: Found [${Users.length}] IAM Users in account.`,
     );
 
     // ── MFA AUDIT LAYER ────────────────────────────────────────────────
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
 
     const finalMfaPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
     terminalLogs.push(
-      `[AWS] Audit: Final MFA Compliance: ${finalMfaPercentage}% MFA across ${totalUsers} identities.`
+      `[AWS] INFO: Final MFA Compliance: ${finalMfaPercentage}% MFA across ${totalUsers} identities.`
     );
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     try {
       const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
       terminalLogs.push(
-        `[AWS] Audit: ${Buckets.length} Global S3 Buckets identified across multiple regions.`,
+        `[AWS] INFO: ${Buckets.length} Global S3 Buckets identified across multiple regions.`,
       );
 
       for (const bucket of Buckets) {
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] Audit: CRITICAL: Public Bucket [${bucket.Name}] detected [+1].`,
+              `[AWS] WARN: Public Bucket [${bucket.Name}] detected [+1].`,
             );
           }
 
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
                   if (lines[i].match(regex)) {
                     fileHasLeakedKey = true;
                     terminalLogs.push(
-                      `[AWS] Audit: CRITICAL: Leaked Key in [${bucket.Name}/${obj.Key}] (Line ${i + 1}).`,
+                      `[AWS] CRITICAL: Leaked Key in [${bucket.Name}/${obj.Key}] (Line ${i + 1}).`,
                     );
                   }
                 }
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] Audit: CRITICAL: Public Bucket [${bucket.Name}] detected [+1].`,
+              `[AWS] WARN: Public Bucket [${bucket.Name}] detected [+1].`,
             );
           }
         }

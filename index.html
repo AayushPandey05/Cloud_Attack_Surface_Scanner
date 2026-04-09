@@ -1875,34 +1875,33 @@
                             const logLine = document.createElement('div');
                             logLine.className = `log-line level-${l.level.toLowerCase()}`;
                             
-                            // ── CYBER COLOR MAP ─────────────────────────
-                            const timeColor = '#FFD700'; // Gold
-                            const tagColor = '#00D2FF';  // Cyan
+                            // ── SEMANTIC CUSTOM PALETTE ─────────────────
+                            const timeColor = '#57595B'; // Gray
+                            const tagColor  = '#9B7EBD'; // Purple
+                            const levelColor = '#22177A'; // Indigo
                             
-                            // Determine text color based on content keywords
-                            let textColor = '#00D2FF'; // Default Info (Cyan)
-                            
-                            const lowerText = l.text.toLowerCase();
-                            if (lowerText.includes('critical') || lowerText.includes('leaked') || lowerText.includes('public access enabled')) {
-                                textColor = '#FF4C4C'; // Red
-                            } else if (lowerText.includes('secure') || lowerText.includes('passed') || lowerText.includes('complete')) {
-                                textColor = '#2ECC71'; // Green
+                            // Determine text color: White for standard, Red for CRITICAL threats
+                            let textColor = '#FFFFFF';
+                            if (l.level.toUpperCase() === 'CRITICAL') {
+                                textColor = '#FF4C4C';
                             }
 
                             logLine.innerHTML = `
-                                <span class="log-time" style="color: ${timeColor}; opacity: 0.9;">[${l.time}]</span>
+                                <span class="log-time" style="color: ${timeColor};">[${l.time}]</span>
                                 <span class="log-source" style="color: ${tagColor};">[${l.source || 'SYS'}]</span>
-                                <span class="log-category" style="color: ${tagColor};">${l.category || 'Audit'}:</span>
+                                <span class="log-level" style="color: ${levelColor}; font-weight: 600;">${l.level.toUpperCase()}:</span>
                                 <span class="log-text" style="color: ${textColor};">${l.text}</span>
-                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.7; margin-left: 1rem; font-size: 0.8rem;">${l.subtext}</span>` : ''}
+                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem;">[${l.subtext}]</span>` : ''}
                             `;
                             return logLine;
                         }
 
-                        function addLog(source, text, level = 'INFO', category = 'Audit', subtext = '') {
+                        function addLog(source, text, level = 'INFO', subtext = '') {
                             const env = window.currentEnv || 'aws';
                             const logObj = {
-                                source, text, level, category, subtext,
+                                source, text, 
+                                level: level.toUpperCase(), 
+                                subtext,
                                 time: new Date().toLocaleTimeString('en-GB', { hour12: false })
                             };
 
@@ -1912,7 +1911,13 @@
 
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
                             const cleanMessage = text.replace(/<[^>]*>?/gm, '');
-                            window.auditLogsBuffer.push({ timestamp: new Date().toISOString(), env: env, source: source, level: level, message: cleanMessage });
+                            window.auditLogsBuffer.push({ 
+                                timestamp: new Date().toISOString(), 
+                                env: env, 
+                                source: source, 
+                                level: logObj.level, 
+                                message: cleanMessage 
+                            });
 
                             const logLine = renderLogLine(logObj);
                             terminalFeed.appendChild(logLine);
