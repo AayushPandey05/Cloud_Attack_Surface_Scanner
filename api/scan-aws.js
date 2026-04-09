@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     try {
       const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
       terminalLogs.push(
-        `[AWS] INFO: ${Buckets.length} Global S3 Buckets identified across multiple regions.`,
+        `[AWS] INFO: Found ${Buckets.length} Global S3 Buckets identified across multiple regions.`,
       );
 
       for (const bucket of Buckets) {
