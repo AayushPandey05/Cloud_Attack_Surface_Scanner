@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   // 2. Map identity to role
   const isAdmin = userEmail.toLowerCase() === 'aayushpandey2905@gmail.com';
-  const userName = isAdmin ? "Security Admin" : "External Auditor";
+  const userName = isAdmin ? "Lead Security Architect" : "Guest Analyst";
 
   // 3. SECURE BRIDGE: Return a script that hydrates sessionStorage and redirects
   // This achieves "Clean URLs" by never exposing identity tokens in the URL bar.
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       const finalEmail = (rawEmail === 'Not Available' || !rawEmail) ? 'aayushpandey2905@gmail.com' : rawEmail;
       
       const isAdmin = finalEmail.toLowerCase() === 'aayushpandey2905@gmail.com';
-      const userName = isAdmin ? "Lead Security Architect" : "External Auditor";
+      const userName = isAdmin ? "Lead Security Architect" : "Guest Analyst";
 
       // Hydrate Session — Priority Sync
       sessionStorage.setItem('loggedInUser', finalEmail);

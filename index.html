@@ -1361,7 +1361,7 @@
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
             // CENTRAL IDENTITY REGISTRY
-            const ADMIN_EMAIL = 'aayushpandey2905@gmail.com';
+            const MASTER_ADMIN = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
             window.vaultLogCache = { aws: [], slack: [] };
 
@@ -1478,14 +1478,14 @@
 
                         function resolveSessionIdentity() {
                             const userEmail = sessionStorage.getItem('loggedInUser') || 'DEBUG: NO EMAIL FOUND';
-                            window.isAdmin = userEmail.toLowerCase() === 'aayushpandey2905@gmail.com';
+                            window.isAdmin = userEmail.toLowerCase() === MASTER_ADMIN;
 
                             const pEmail = document.getElementById('profile-email');
                             const pName = document.getElementById('profile-name');
                             const avatar = document.querySelector('.avatar');
 
                             if (pEmail) pEmail.innerText = userEmail;
-                            if (pName) pName.innerText = window.isAdmin ? 'Lead Security Architect' : 'External Auditor';
+                            if (pName) pName.innerText = window.isAdmin ? 'Lead Security Architect' : 'Guest Analyst';
 
                             const avatarText = window.isAdmin ? 'A' : (userEmail !== 'DEBUG: NO EMAIL FOUND' ? userEmail.charAt(0).toUpperCase() : 'U');
                             if (avatar) avatar.innerText = avatarText;
@@ -1711,9 +1711,8 @@
                         // loading state teardown, and MFA gateway activation.
                         window.processAuthSuccess = function processAuthSuccess(email, displayName, accType = 'existing', isManual = false) {
                             var userEmail = email || 'user@company.com';
-                            const adminEmail = 'aayushpandey2905@gmail.com';
-                            const isAdmin = userEmail.toLowerCase() === adminEmail;
-                            var userName  = isAdmin ? 'Lead Security Architect' : 'External Auditor';
+                            const isAdmin = userEmail.toLowerCase() === MASTER_ADMIN;
+                            var userName  = isAdmin ? 'Lead Security Architect' : 'Guest Analyst';
 
                             // Hydrate profile dropdown (Standardized IDs)
                             var pEmail = document.getElementById('profile-email');
@@ -1916,13 +1915,19 @@
                             const zeroStateUI = document.getElementById('zero-trust-connect');
                             terminalFeed.innerHTML = '';
 
-                            if (sessionStorage.getItem('loggedInUser') === 'aayushpandey2905@gmail.com') {
+                            if (sessionStorage.getItem('loggedInUser') === MASTER_ADMIN) {
                                 window.isAdmin = true;
                             }
+
+                            const triggerBtn = document.getElementById("scan-trigger-btn");
 
                             if (window.isAdmin) {
                                 if (terminalPanel) terminalPanel.classList.remove('hidden');
                                 if (zeroStateUI) zeroStateUI.classList.add('hidden');
+                                if (triggerBtn) {
+                                    triggerBtn.disabled = false;
+                                    triggerBtn.innerHTML = '<i data-lucide="shield-check" width="16" height="16"></i> Run Security Audit';
+                                }
 
                                 rehydrateLogs(window.currentEnv || 'aws');
                                 if (window.vaultLogCache[window.currentEnv || 'aws'].length === 0) {
@@ -1933,6 +1938,10 @@
                                 if (zeroStateUI) {
                                   zeroStateUI.classList.remove('hidden');
                                   if (window.lucide) lucide.createIcons();
+                                }
+                                if (triggerBtn) {
+                                    triggerBtn.disabled = true;
+                                    triggerBtn.innerHTML = '<i data-lucide="lock" width="16" height="16"></i> Insufficient Privileges: Live Audits restricted to Lead Architect.';
                                 }
                             }
 
@@ -1978,10 +1987,16 @@
                             };
 
                             if (env === 'aws') {
-                                updateSafe('kpi-title-1', 'Identity Blast Radius');
-                                updateSafe('kpi-title-2', 'IAM IDENTITIES');
-                                updateSafe('kpi-title-3', 'MFA Enforced');
-                                updateSafe('kpi-title-4', 'Exposed Secrets');
+                                 updateSafe('kpi-title-1', 'Identity Blast Radius');
+                                 updateSafe('kpi-title-2', 'IAM IDENTITIES');
+                                 updateSafe('kpi-title-3', 'MFA Enforced');
+                                 updateSafe('kpi-title-4', 'Exposed Secrets');
+
+                                 const blastVal = window.isAdmin ? '95%' : '10%';
+                                 const blastColor = window.isAdmin ? '#FF1744' : 'var(--green)';
+                                 const blastSub = window.isAdmin ? 'CRITICAL: Full Admin status detected.' : 'LOW: Guest limits enforced.';
+                                 updateSafe('blast-radius-val', blastVal, blastColor);
+                                 updateSafe('blast-radius-sub', blastSub);
                                 
                                 const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
                                 if (kpi2ElAws) {
