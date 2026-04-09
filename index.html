@@ -1179,7 +1179,7 @@
                     class="font-medium text-white"
                     style="margin-bottom:0.15rem;"
                   >
-                    Security Admin
+                    Lead Security Admin
                   </div>
                   <div id="profile-email" class="text-xs text-gray">—</div>
                 </div>
@@ -2097,7 +2097,7 @@
 
                             if (typeof google === 'undefined' || !google.accounts || !window._gsiTokenClient) {
                                 console.error('[GSI] Not initialized — falling back to demo flow.');
-                                processAuthSuccess('demo@google.com', 'Security Admin', 'existing', true);
+                                processAuthSuccess('demo@google.com', 'Lead Security Admin', 'existing', true);
                                 return;
                             }
 
@@ -2124,7 +2124,7 @@
                 const userEmail = resolveSessionIdentity();
 
                 // Enforce Identity-Based Role Naming
-                const userName = window.isAdmin ? 'Security Admin' : 'External Auditor';
+                const userName = window.isAdmin ? 'Lead Security Admin' : 'External Auditor';
 
                 // DOM Injection (Standardized IDs)
                 const pEmail = document.getElementById('profile-email');
