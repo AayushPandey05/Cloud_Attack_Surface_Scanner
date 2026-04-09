@@ -1985,9 +1985,14 @@
                             window.vaultLogCache[env].push(logObj);
 
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
-                            const cleanMessage = text.replace(/<[^>]*>?/gm, '');
+                            
+                            // EXPORT CLEANUP: Normalise message and date/time components
+                            const dateStr = now.toISOString().split('T')[0];
+                            const cleanMessage = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>?/gm, '');
+
                             window.auditLogsBuffer.push({ 
-                                timestamp: bufferTimestamp, 
+                                date: dateStr,
+                                time: displayTime, 
                                 env: env, 
                                 source: source, 
                                 level: logObj.level, 
@@ -2021,21 +2026,28 @@
                                 terminalFeed.appendChild(logLine);
                                 terminalFeed.scrollTop = terminalFeed.scrollHeight;
 
-                                // EXPORT COMPLIANCE: Buffer the raw line with local forensic metadata
+                                // EXPORT COMPLIANCE: Buffer the raw line with normalized forensic metadata
                                 const now = new Date();
                                 const displayTime = now.toLocaleTimeString('en-GB', { hour12: false });
-                                const year = now.getFullYear();
-                                const month = String(now.getMonth() + 1).padStart(2, '0');
-                                const day = String(now.getDate()).padStart(2, '0');
-                                const bufferTimestamp = `${year}-${month}-${day} ${displayTime}`;
+                                const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
                                 
-                                const cleanMessage = text.replace(/<[^>]*>?/gm, '').trim();
+                                // Purge HTML entities and normalize indentation for plain-text exports
+                                const cleanMessage = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>?/gm, '').trim();
+
                                 window.auditLogsBuffer.push({
-                                    timestamp: bufferTimestamp,
+                                    date: dateStr,
+                                    time: displayTime,
                                     env: window.currentEnv || 'aws',
                                     source: 'FORENSICS',
-                                    level: level.toUpperCase(),
-                                    message: cleanMessage
+                                    level: 'FORENSICS', // Requirement 3: Explicit Forensics Level
+                                    message: cleanMessage,
+                                    metadata: {
+                                        palette: {
+                                            discovery: '#2FA4D7',
+                                            theft: '#B500B2',
+                                            takeover: '#8E7DBE'
+                                        }
+                                    }
                                 });
                                 return;
                             }

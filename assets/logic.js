@@ -495,7 +495,8 @@ window.triggerAwsScan = async function () {
 
         // STICKY FORENSIC HOOK: If Leaked Key detected, trigger Attack Path visualization (Requirement 4.0)
         if (parsedMessage.includes("Leaked Key")) {
-            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #2FA4D7;">[Credential Theft]</span> → <span style="color: #2FA4D7;">[Identity Takeover]</span>`;
+            // Indentation optimized for vertical alignment under message body (index 21-22)
+            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #B500B2;">[Credential Theft]</span> → <span style="color: #8E7DBE;">[Identity Takeover]</span>`;
             window.appendTerminal("SYS", attackPath, "INFO", "", true); 
         }
       });
@@ -635,9 +636,9 @@ window.exportToCSV = function() {
   // Filter logs for the active environment (AWS/SLACK)
   const logsToExport = buffer.filter(log => (log.env || "AWS").toUpperCase() === env);
   
-  const csvRows = ['"Timestamp","Service","Level","Message"'];
+  const csvRows = ['"Date","Time","Service","Level","Message"'];
   logsToExport.forEach((r) => {
-    const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
+    const row = `"${r.date}","${r.time}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
     csvRows.push(row);
   });
   
