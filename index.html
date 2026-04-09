@@ -596,52 +596,6 @@
           padding: 2.5rem 2rem;
           width: 100%;
           max-width: 420px;
-      /* ── TERMINAL UI ENHANCEMENTS ──────────────────────── */
-      .scanning-beam {
-          position: absolute;
-          top: 0; left: 0; width: 100%; height: 2px;
-          background: linear-gradient(90deg, transparent, #00D2FF, transparent);
-          box-shadow: 0 0 12px #00D2FF;
-          opacity: 0;
-          pointer-events: none;
-          z-index: 100;
-      }
-      .terminal-container.is-auditing .scanning-beam {
-          opacity: 0.6;
-          animation: scan-move 2.5s linear infinite;
-      }
-      @keyframes scan-move {
-          0% { top: 0; }
-          100% { top: 100%; }
-      }
-
-      #terminal-loader {
-          display: none;
-          justify-content: center;
-          align-items: center;
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          pointer-events: none;
-          z-index: 100;
-      }
-
-      @keyframes pulse-watermark {
-          0% { opacity: 0.1; }
-          50% { opacity: 0.3; }
-          100% { opacity: 0.1; }
-      }
-
-      .watermark-text {
-          font-family: 'Inter', sans-serif;
-          font-weight: 800;
-          font-size: 1.5rem;
-          color: var(--white);
-          letter-spacing: 4px;
-          white-space: nowrap;
-          animation: pulse-watermark 2s ease-in-out infinite;
-      }
-
       .status-indicator-live {
           display: flex;
           align-items: center;
@@ -1411,10 +1365,6 @@
               <div class="blink-dot"></div>
               LIVE
             </div>
-          </div>
-          <div class="scanning-beam"></div>
-          <div id="terminal-loader">
-            <div class="watermark-text">SCANNING INFRASTRUCTURE...</div>
           </div>
           <div class="terminal-body font-mono" id="terminal-feed">
             <!-- Logs -> JS -->
