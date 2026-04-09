@@ -613,58 +613,58 @@ window.triggerAwsScan = async function () {
   });
 })();
 
-// SANITIZED HIERARCHICAL PARSER — Clean Columns & Merged Findings
-(function initSanitizedExport() {
-  function downloadAuditLogs(format) {
-    const activeBtn = document.querySelector(
-      ".segmented-control .segment-btn.active",
-    );
-    const env = activeBtn ? activeBtn.getAttribute("data-view") : "unknown";
-    
-    const logsToExport = (window.auditLogsBuffer || []).filter(log => log.env === env);
-
-    let content, mimeType;
-    const filename = `${env}_audit_logs.${format}`;
-
-    if (format === "csv") {
-      // Enterprise CSV: Strictly derived from terminal telemetry (Single Source of Truth)
-      const csvRows = ['"Timestamp","Service","Level","Message"'];
-      
-      logsToExport.forEach((r) => {
-        const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
-        csvRows.push(row);
-      });
-      content = csvRows.join("\n");
-      mimeType = "text/csv;charset=utf-8;";
-    } else {
-      // Flat JSON Format: [{ "time": "...", "level": "...", "message": "..." }]
-      const flatJson = logsToExport.map(log => ({
-          time: log.timestamp.split('T')[1].split('.')[0], // Extract time part
-          level: log.level,
-          message: log.message
-      }));
-      content = JSON.stringify(flatJson, null, 2);
-      mimeType = "application/json";
-    }
-
-    const finalContent = format === "csv" ? "\uFEFF" + content : content;
-    const blob = new Blob([finalContent], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+// FORENSIC EXPORT ENGINE — Global CSV/JSON Dispatcher
+window.exportToCSV = function() {
+  const env = (window.currentEnv || "AWS").toUpperCase();
+  const buffer = window.auditLogsBuffer || [];
+  
+  if (buffer.length === 0) {
+    alert("No audit logs available for export. Please run a security scan first.");
+    return;
   }
 
-  const csvBtn = document.getElementById("export-csv-btn");
-  const jsonBtn = document.getElementById("export-json-btn");
-  if (csvBtn) csvBtn.addEventListener("click", () => downloadAuditLogs("csv"));
-  if (jsonBtn)
-    jsonBtn.addEventListener("click", () => downloadAuditLogs("json"));
-})();
+  // Filter logs for the active environment (AWS/SLACK)
+  const logsToExport = buffer.filter(log => (log.env || "AWS").toUpperCase() === env);
+  
+  const csvRows = ['"Timestamp","Service","Level","Message"'];
+  logsToExport.forEach((r) => {
+    const row = `"${r.timestamp}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
+    csvRows.push(row);
+  });
+  
+  const content = "\uFEFF" + csvRows.join("\n");
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  triggerDownload(blob, `${env.toLowerCase()}_audit_logs.csv`);
+};
+
+window.exportToJSON = function() {
+  const env = (window.currentEnv || "AWS").toUpperCase();
+  const buffer = window.auditLogsBuffer || [];
+  
+  if (buffer.length === 0) {
+    alert("No audit logs available for export. Please run a security scan first.");
+    return;
+  }
+
+  // Filter logs for the active environment (AWS/SLACK)
+  const logsToExport = buffer.filter(log => (log.env || "AWS").toUpperCase() === env);
+  
+  // Requirement: JSON.stringify(buffer, null, 2)
+  const content = JSON.stringify(logsToExport, null, 2);
+  const blob = new Blob([content], { type: "application/json" });
+  triggerDownload(blob, `${env.toLowerCase()}_audit_logs.json`);
+};
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 //! OKTA ENTERPRISE SSO — OIDC Identity Gateway
 (function initOktaSSO() {
