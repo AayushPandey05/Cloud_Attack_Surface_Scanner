@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] WARN: Public Access detected on Bucket [${bucket.Name}] [+1].`,
+              `[S3] CRITICAL: Public Access Enabled for [${bucket.Name}].`,
             );
           }
 
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
                   if (lines[i].match(regex)) {
                     fileHasLeakedKey = true;
                     terminalLogs.push(
-                      `[AWS] CRITICAL: Leaked Key in [${bucket.Name}/${obj.Key}] (Line ${i + 1}).`,
+                      `[S3] CRITICAL: Leaked Key in [${bucket.Name}/${obj.Key}] (Line ${i + 1}).`,
                     );
                   }
                 }
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
             publicBuckets++;
             totalVulnerabilities++;
             terminalLogs.push(
-              `[AWS] WARN: Public Access detected on Bucket [${bucket.Name}] [+1].`,
+              `[S3] CRITICAL: Public Access Enabled for [${bucket.Name}].`,
             );
           }
         }

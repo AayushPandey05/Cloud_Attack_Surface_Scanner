@@ -439,32 +439,11 @@ window.triggerAwsScan = async function () {
                processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
             }
 
-            // S3 PUBLIC ACCESS OVERRIDE: The scanner must correctly identify the public test bucket
-            if (processedEntry.includes("aayush-publicexposure-test") && !processedEntry.includes("PUBLIC ACCESS ENABLED") && !processedEntry.includes("detected")) {
-                 window._slackAddLog("S3", "S3 Bucket [aayush-publicexposure-test] has PUBLIC ACCESS ENABLED!", "WARN");
-                 openAttackPaths++;
-                 exposedSecrets++; 
-                 publicBuckets++;
-                 return; 
-            }
-
-            if (processedEntry.includes("PUBLIC ACCESS ENABLED") || processedEntry.includes("Public Bucket detected")) publicBuckets++;
-
             if (processedEntry.includes("missing MFA")) {
                 mfaBypassDetected = true;
                 window._slackAddLog("IAM", "User [Vault-Scanner-Service] missing MFA device.", "WARN");
                 return; 
             }
-
-        if (
-          processedEntry.includes("CRITICAL")
-        ) {
-          openAttackPaths++;
-          
-          if (processedEntry.includes(".env") || processedEntry.includes("config.json") || processedEntry.includes("root_key.csv") || processedEntry.includes("aayush-publicexposure-test")) {
-             window._slackAddLog("S3", "S3 Bucket [aayush-publicexposure-test] contains EXPOSED CREDENTIALS!", "CRITICAL");
-          }
-        }
 
         if (processedEntry.includes("Global S3 Buckets identified") && processedEntry.includes("multiple regions")) {
             const match = processedEntry.match(/(\d+) Global S3 Buckets identified/);
@@ -481,7 +460,10 @@ window.triggerAwsScan = async function () {
             }
         }
 
-        if (processedEntry.includes("Leaked AWS Access Key")) exposedSecrets++;
+        // Sync counts from data payload (Source of Truth)
+        openAttackPaths = data.totalVulnerabilities || 0;
+        exposedSecrets = data.exposedSecrets || 0;
+        publicBuckets = data.publicBuckets || 0;
 
         let clean = processedEntry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
@@ -522,13 +504,14 @@ window.triggerAwsScan = async function () {
     };
     
     // 2. DATA TRUTH SYNC (Architectural Flush)
-    const finalSum = data.totalVulnerabilities || 0;
-    if (finalSum > 0) {
-        updateSafe('aws-secrets-count', String(finalSum), '#FF4C4C');
-        updateSafe('exposed-secrets-sub', `${finalSum} Critical Risks Found`, '#FF4C4C');
+    // ONLY increment Exposed Secrets card for leaked credentials (Requirement Refined)
+    const secretSum = data.exposedSecrets || 0;
+    if (secretSum > 0) {
+        updateSafe('aws-secrets-count', String(secretSum), '#FF4C4C');
+        updateSafe('exposed-secrets-sub', `${secretSum} Leaked Credentials Found`, '#FF4C4C');
     } else {
-        updateSafe('aws-secrets-count', '0', '#2ECC71');
-        updateSafe('exposed-secrets-sub', 'No credentials exposed', '#2ECC71');
+        updateSafe('aws-secrets-count', '0', '#08CB00');
+        updateSafe('exposed-secrets-sub', 'No credentials exposed', '#08CB00');
     }
 
     // 5. MFA ENFORCEMENT SYNC
