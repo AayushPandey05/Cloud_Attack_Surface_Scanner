@@ -165,8 +165,8 @@ window.runSlackAudit = async function () {
   setKpi(5, "—", "Querying API…", "var(--gray)");
 
   // Emit scan initiation event to the telemetry stream
-  if (typeof window._slackAddLog === "function") {
-    window._slackAddLog(
+  if (typeof window.appendTerminal === "function") {
+    window.appendTerminal(
       "SLACK",
       "Initiating live workspace scan via /api/scan-slack…",
       "INFO",
@@ -199,8 +199,8 @@ window.runSlackAudit = async function () {
     var impactedChannelCount = impactedChannels.size || 0;
 
     // ATTACK PATH TELEMETRY: Document the lateral movement threat model
-    if (secrets > 0 && typeof window._slackAddLog === "function") {
-        window._slackAddLog("SLACK", "↳ Attack Path: Initial Access \u2192 Credential Theft \u2192 Lateral Movement", "CRITICAL", "Threat");
+    if (secrets > 0 && typeof window.appendTerminal === "function") {
+        window.appendTerminal("SLACK", "↳ Attack Path: Initial Access \u2192 Credential Theft \u2192 Lateral Movement", "CRITICAL", "Threat");
     }
 
     var nonCompliant =
@@ -271,8 +271,8 @@ window.runSlackAudit = async function () {
     sessionStorage.setItem('slack_audit_complete', 'true');
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
-    if (typeof window._slackAddLog === "function") {
-      window._slackAddLog(
+    if (typeof window.appendTerminal === "function") {
+      window.appendTerminal(
         "SLACK",
         "Scan complete — " +
           totalUsers +
@@ -296,7 +296,7 @@ window.runSlackAudit = async function () {
             ? window.currentEnv.toUpperCase()
             : "SLACK";
 
-          window._slackAddLog(
+          window.appendTerminal(
             tag,
             message,
             "CRITICAL",
@@ -305,20 +305,20 @@ window.runSlackAudit = async function () {
 
           // Forensic Identity Audit: Specific flagging for the non-compliant user
           const userName = parts[0];
-          if (userName && typeof window._slackAddLog === "function") {
-             window._slackAddLog("IAM", `User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARN");
+          if (userName && typeof window.appendTerminal === "function") {
+             window.appendTerminal("IAM", `User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARN");
           }
         });
       } else if (secrets > 0) {
         // Older API schema without per-channel resolution — emit aggregate
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           secrets +
             " credential pattern(s) matched (AKIA/sk_live) in channel history.",
           "CRITICAL",
         );
       } else {
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           "No AWS keys or Stripe secrets found in scanned messages.",
           "INFO",
@@ -327,7 +327,7 @@ window.runSlackAudit = async function () {
 
       // ── MFA Posture Signal ────────────────────────────────────────────
       if (nonCompliant > 0) {
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           nonCompliant + " user(s) missing MFA or profile photo.",
           "WARN",
@@ -335,7 +335,7 @@ window.runSlackAudit = async function () {
           "Account Takeover",
         );
       } else {
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           "MFA and profile compliance check passed for all users.",
           "INFO",
@@ -358,19 +358,19 @@ window.runSlackAudit = async function () {
     setKpi(4, "?", "API unavailable", "var(--gray)");
     setKpi(5, "?", "API unavailable", "var(--gray)");
 
-    if (typeof window._slackAddLog === "function") {
-      window._slackAddLog(
+    if (typeof window.appendTerminal === "function") {
+      window.appendTerminal(
         "SLACK",
         "⚠ Scan API unreachable: " + err.message,
         "ALERT",
       );
       if (isOffline) {
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           "Start the dev server with: vercel dev",
           "SYSTEM",
         );
-        window._slackAddLog(
+        window.appendTerminal(
           "SLACK",
           "Add SLACK_BOT_TOKEN to .env before running.",
           "SYSTEM",
@@ -392,7 +392,7 @@ window.clearTerminal = function () {
 
 window.triggerAwsScan = async function () {
   const terminal = document.getElementById("terminal-feed");
-  if (typeof window._slackAddLog !== "function") return;
+  if (typeof window.appendTerminal !== "function") return;
 
   // 1. Audit Start Reset: Clear global buffers to ensure fresh forensic records
   window.auditLogsBuffer = [];
@@ -441,7 +441,7 @@ window.triggerAwsScan = async function () {
 
             if (processedEntry.includes("missing MFA")) {
                 mfaBypassDetected = true;
-                window._slackAddLog("IAM", "User [Vault-Scanner-Service] missing MFA device.", "WARN");
+                window.appendTerminal("IAM", "User [Vault-Scanner-Service] missing MFA device.", "WARN");
                 return; 
             }
 
@@ -488,7 +488,13 @@ window.triggerAwsScan = async function () {
             service = "IAM";
         }
 
-        window._slackAddLog(service, parsedMessage, parsedLevel);
+        window.appendTerminal(service, parsedMessage, parsedLevel);
+
+        // STICKY FORENSIC HOOK: If Leaked Key detected, trigger Attack Path visualization (Requirement 4.0)
+        if (parsedMessage.includes("Leaked Key")) {
+            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;↳ <span style="color: #57595B;">Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #2FA4D7;">[Credential Theft]</span> → <span style="color: #2FA4D7;">[Identity Takeover]</span>`;
+            window.appendTerminal("SYS", attackPath, "INFO", "", true); 
+        }
       });
     }
 
@@ -548,7 +554,7 @@ window.triggerAwsScan = async function () {
     }
 
   } catch (err) {
-    window._slackAddLog("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
+    window.appendTerminal("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
   }
 };
 
@@ -703,8 +709,8 @@ function triggerDownload(blob, filename) {
   if (sessionStorage.getItem('isSSOSession') === 'true') {
     console.log("[OKTA] SSO Handshake Verified via SessionContext.");
     // Optional: Show a "Welcome Aayush" toast or log
-    if (typeof window._slackAddLog === "function") {
-      window._slackAddLog(
+    if (typeof window.appendTerminal === "function") {
+      window.appendTerminal(
         "SYSTEM",
         "Enterprise SSO Session Established via Okta.",
         "SUCCESS",

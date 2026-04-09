@@ -1762,11 +1762,6 @@
                                 }
                             });
                         }
-                        // Register the telemetry sink immediately at scope-root.
-                        // logic.js may invoke _slackAddLog before any addLog call occurs
-                        // (e.g. on session-restore refresh) — early registration prevents
-                        // a null-sink race condition in the Slack telemetry engine.
-                        window._slackAddLog = addLog;
 
                         // ── Authentication Slider — Login / Register Panel Toggle ───────────────
                         toggleSignup.addEventListener('click', (e) => {
@@ -2005,6 +2000,43 @@
                             terminalFeed.appendChild(logLine);
                             terminalFeed.scrollTop = terminalFeed.scrollHeight;
                         }
+                        
+                        window.appendTerminal = function(source, text, level = 'INFO', subtext = '', isRaw = false) {
+                            if (isRaw) {
+                                // Raw display: bypasses renderLogLine to strip metadata but preserves buffer integrity
+                                const logLine = document.createElement('div');
+                                logLine.className = `log-line level-${level.toLowerCase()}`;
+                                logLine.style.marginBottom = '6px';
+                                logLine.style.fontSize = '0.875rem';
+                                logLine.style.lineHeight = '1.4';
+                                
+                                // Direct injection of styled forensic strings
+                                logLine.innerHTML = `<span class="log-text" style="font-weight: 400;">${text}</span>`;
+                                
+                                terminalFeed.appendChild(logLine);
+                                terminalFeed.scrollTop = terminalFeed.scrollHeight;
+
+                                // EXPORT COMPLIANCE: Buffer the raw line with local forensic metadata
+                                const now = new Date();
+                                const displayTime = now.toLocaleTimeString('en-GB', { hour12: false });
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const day = String(now.getDate()).padStart(2, '0');
+                                const bufferTimestamp = `${year}-${month}-${day} ${displayTime}`;
+                                
+                                const cleanMessage = text.replace(/<[^>]*>?/gm, '').trim();
+                                window.auditLogsBuffer.push({
+                                    timestamp: bufferTimestamp,
+                                    env: window.currentEnv || 'aws',
+                                    source: 'FORENSICS',
+                                    level: level.toUpperCase(),
+                                    message: cleanMessage
+                                });
+                                return;
+                            }
+                            return addLog(source, text, level, subtext);
+                        }
+                        window._slackAddLog = window.appendTerminal;
 
                         function rehydrateLogs(env) {
                             terminalFeed.innerHTML = '';
@@ -2187,7 +2219,6 @@
                             }
                         }
 
-                        window._slackAddLog = addLog;
 
                         // AUDIT LOG EXPORT — Client-Side Blob Engine
                         window.handleGoogleLogin = function (e) {
