@@ -1204,7 +1204,7 @@
           </div>
           <div class="kpi-card">
             <div class="kpi-h" id="kpi-title-2">IAM IDENTITIES</div>
-            <div class="kpi-v text-green" id="impacted-channels-count">0</div>
+            <div class="kpi-v text-green" id="iam-user-count">0</div>
             <div class="kpi-sub" id="iam-identities-sub">
               No issues detected
             </div>
@@ -1555,6 +1555,21 @@
                         // Generates and dispatches a cryptographically random 6-digit OTP
                         // to the authenticated email address via the EmailJS transactional relay.
                         window.triggerEmailOtpFlow = function(userEmail, isManual = false) {
+                            if (!userEmail) {
+                                console.error("[Security] Missing email for OTP.");
+                                return;
+                            }
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(userEmail)) {
+                                alert("Invalid email format detected. Cannot deliver OTP.");
+                                console.error("[Security] Invalid email format.");
+                                var loaderEl = document.getElementById('state-loading');
+                                if (loaderEl) loaderEl.classList.add('hidden');
+                                var stateLoginEl = document.getElementById('state-login');
+                                if (stateLoginEl) stateLoginEl.classList.remove('hidden');
+                                return;
+                            }
+
                             if (!isManual) {
                                 console.warn("[Security] Auto-trigger detected and blocked for EmailJS.");
                                 return;
@@ -1562,18 +1577,6 @@
 
                             // TERMINAL LOGGING (Requirement 2)
                             console.log('Email Triggered for: ' + userEmail);
-
-                            // THE 999999 GUARD (Requirement 3)
-                            // Skip actual email dispatch for the admin identity to preserve quota.
-                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com') {
-                                console.log("[Quota-Guard] Admin email detected. Skipping EmailJS dispatch (Bypass code: 999999).");
-                                currentSessionOtp = '999999';
-                                var gateway = document.getElementById('mfa-gateway');
-                                if (gateway) gateway.classList.add('active');
-                                var emailDisplay = document.getElementById('display-user-email');
-                                if (emailDisplay) emailDisplay.textContent = userEmail;
-                                return;
-                            }
 
                             currentSessionOtp = String(Math.floor(100000 + Math.random() * 900000));
 
@@ -1623,35 +1626,20 @@
                             var entered = otpInput ? otpInput.value.trim() : '';
                             const userEmail = sessionStorage.getItem('loggedInUser') || '';
 
-                            // 1. ADMIN IDENTITY BYPASS (PRIORITY FIX)
-                            // Strict bypass logic for administrative identity to ensure 0-quota demo speed.
-                            if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com' && (entered === '999999' || entered === currentSessionOtp)) {
-                                if (typeof addLog === 'function') {
-                                    addLog('AUTH', 'Admin Identity Verified. Bypassing local MFA challenge...', 'SUCCESS', 'Gateway');
-                                    addLog('SEC', 'Access Granted: Full Administrative Privileges.', 'SUCCESS', 'Identity');
-                                }
-                                sessionStorage.setItem('isVaultAuthenticated', 'true');
-                                document.getElementById('mfa-gateway').classList.remove('active');
-                                if (otpInput) otpInput.value = '';
-                                showState(stateDashboard);
-                                return;
-                            }
-
-                            // 2. GLOBAL QUOTA PROTECTION (LEGACY)
-                            if (entered === '010101') {
-                                sessionStorage.setItem('isVaultAuthenticated', 'true');
-                                document.getElementById('mfa-gateway').classList.remove('active');
-                                if (otpInput) otpInput.value = '';
-                                showState(stateDashboard);
-                                return;
-                            }
-
-                            // 3. STRICT TRANSACTIONAL VERIFICATION (GLOBAL)
+                            // STRICT TRANSACTIONAL VERIFICATION (GLOBAL)
                             if (entered === currentSessionOtp && currentSessionOtp !== '') {
                                 currentSessionOtp = '';
                                 if (otpInput) otpInput.value = '';
                                 document.getElementById('mfa-gateway').classList.remove('active');
                                 sessionStorage.setItem('isVaultAuthenticated', 'true');
+                                
+                                if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com') {
+                                    if (typeof addLog === 'function') {
+                                        addLog('AUTH', 'Admin Identity Verified.', 'SUCCESS', 'Gateway');
+                                        addLog('SEC', 'Access Granted: Full Administrative Privileges.', 'SUCCESS', 'Identity');
+                                    }
+                                }
+                                
                                 showState(stateDashboard);
                             } else {
                                 if (otpInput) {
@@ -1995,7 +1983,12 @@
                                 updateSafe('kpi-title-3', 'MFA Enforced');
                                 updateSafe('kpi-title-4', 'Exposed Secrets');
                                 
-                                updateSafe('iam-identities-count', isAuditComplete ? '1' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+                                const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
+                                if (kpi2ElAws) {
+                                    kpi2ElAws.id = 'iam-user-count';
+                                    kpi2ElAws.innerText = isAuditComplete ? '1' : '0';
+                                    kpi2ElAws.style.color = isAuditComplete ? 'var(--green)' : 'var(--gray)';
+                                }
                                 updateSafe('mfa-enforced-val', isAuditComplete ? '100.0%' : '—', isAuditComplete ? 'var(--green)' : 'var(--gray)');
                                 updateSafe('aws-secrets-count', isAuditComplete ? '0' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
                                 
@@ -2009,8 +2002,9 @@
                                  const secretsVal = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.secrets : '0') : '—';
                                  updateSafe('blast-radius-val', secretsVal);
                                  
-                                 const channelEl = document.getElementById('impacted-channels-count');
+                                 const channelEl = document.getElementById('iam-user-count') || document.getElementById('impacted-channels-count');
                                  if (channelEl) {
+                                     channelEl.id = 'impacted-channels-count';
                                      channelEl.innerText = isAuditComplete ? (window.latestSlackData ? window.latestSlackData.impactedChannelCount : '0') : '0';
                                      channelEl.style.color = isAuditComplete ? (window.latestSlackData && window.latestSlackData.impactedChannelCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
                                  }

@@ -52,12 +52,6 @@ window.sendOtpEmail = function (userEmail, otpCode) {
   // TERMINAL LOGGING (Requirement 2)
   console.log('Email Triggered for: ' + userEmail);
 
-  // THE 999999 GUARD (Requirement 3)
-  if (userEmail.toLowerCase() === 'aayushpandey2905@gmail.com') {
-      console.log("[Quota-Guard] Admin email detected. Skipping EmailJS dispatch (Bypass code: 999999).");
-      return;
-  }
-
   var templateParams = {
     user_email: userEmail,
     otp_code: otpCode,
@@ -487,8 +481,17 @@ window.triggerAwsScan = async function () {
     
     // IAM Identities Priority Sync
     const iamCountVal = totalIamUsersFound || 1;
-    updateSafe('iam-identities-count', String(iamCountVal), '#00E676');
-    updateSafe('iam-identities-sub', iamCountVal > 0 ? 'Active identities analyzed' : 'No issues detected');
+    const iamCard = document.getElementById('iam-user-count');
+    const iamSub = document.getElementById('iam-identities-sub');
+
+    if (iamCard) {
+        iamCard.innerText = iamCountVal; 
+        iamCard.classList.remove('text-green');
+        iamCard.style.color = '#00f2ff'; // Neon Cyan for active state
+    }
+    if (iamSub) {
+        iamSub.innerText = iamCountVal > 0 ? 'Active identities analyzed' : 'No issues detected';
+    }
 
     // 2. DATA TRUTH SYNC (Architectural Flush)
     if (exposedSecrets > 0) {
@@ -496,7 +499,10 @@ window.triggerAwsScan = async function () {
     }
     
     // IAM Identities Force-Sync
-    updateSafe('iam-identities-count', '1', '#00E676');
+    if (iamCard) {
+        iamCard.innerText = '1';
+        iamCard.style.color = '#00f2ff';
+    }
 
     // 5. MFA ENFORCEMENT SYNC
     if (mfaBypassDetected) {
