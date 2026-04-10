@@ -203,12 +203,6 @@ window.runSlackAudit = async function () {
     var uniqueLeakerCount = uniqueUsers.size || 0;
     var impactedChannelCount = impactedChannels.size || 0;
 
-    // ATTACK PATH TELEMETRY: Document the lateral movement threat model
-    if (secrets > 0 && typeof window.appendTerminal === "function") {
-        // Slack-specific: gray ↳ + lavender path, 22 &nbsp; indent, no label
-        const slackLivePath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft → Lateral Movement</span>`;
-        window.appendTerminal("SYS", slackLivePath, "INFO", "", true);
-    }
 
     var nonCompliant =
       typeof data.nonCompliant === "number" ? data.nonCompliant : 0;
@@ -308,8 +302,11 @@ window.runSlackAudit = async function () {
             tag,
             message,
             "CRITICAL",
-            subtext,
           );
+
+          // Attack path immediately after CRITICAL line
+          const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft</span>`;
+          window.appendTerminal("SYS", liveAlertPath, "INFO", "", true);
 
           // Forensic Identity Audit: Specific flagging for the non-compliant user
           const userName = parts[0];
@@ -336,7 +333,7 @@ window.runSlackAudit = async function () {
         // CRITICAL line: rendered in Alert Red via renderLogLine CRITICAL level
         window.appendTerminal(
           "SLACK",
-          "Credential pattern matched - Initial Access \u2192 Credential Theft \u2192 #exposed-secrets \u2192 User(Aayush).",
+          "Credential pattern matched — #exposed-secrets — User(Aayush).",
           "CRITICAL",
         );
 
