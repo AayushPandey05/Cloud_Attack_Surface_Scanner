@@ -2224,6 +2224,9 @@
                                      const secretCount = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : 0;
                                      exposedSecretsEl.innerText = String(secretCount);
                                      exposedSecretsEl.style.color = isAuditComplete ? (secretCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
+                                     // Card 2 subtext: dynamic based on secret count
+                                     const card2Sub = document.getElementById('iam-identities-sub');
+                                     if (card2Sub) card2Sub.innerText = isAuditComplete ? (secretCount > 0 ? 'Active secret exposure detected' : 'No issues detected') : 'Awaiting scan…';
                                  }
 
                                  updateSafe('mfa-enforced-val', isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—');
