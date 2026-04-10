@@ -59,10 +59,7 @@ window.sendOtpEmail = function (userEmail, otpCode) {
 
   console.log("[sendOtpEmail] Dispatching OTP to EmailJS for:", userEmail);
 
-  // [SMTP SUPPRESSED] External email dispatch disabled — alerts route to terminal only.
-  // Re-enable by uncommenting the emailjs.send() block below.
-  console.warn("[SMTP] Email suppressed. OTP would have been sent to:", userEmail, "| Code:", otpCode);
-  /*
+  // OTP AUTH EMAIL — restored. Audit/telemetry emails remain disabled (none exist in codebase).
   emailjs
     .send("service_mngqn1v", "template_9cva2to", templateParams)
     .then(function (response) {
@@ -75,7 +72,6 @@ window.sendOtpEmail = function (userEmail, otpCode) {
     .catch(function (error) {
       console.error("[sendOtpEmail] FAILED to send OTP:", error);
     });
-  */
 };
 
 //! GSI CREDENTIAL HANDLER — Google Identity Services JWT Verification

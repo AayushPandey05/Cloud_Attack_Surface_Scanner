@@ -1668,10 +1668,7 @@
                             
                             try {
                                 emailAlreadySent = true;
-                                // [SMTP SUPPRESSED] External email dispatch disabled — Critical alerts route to terminal only.
-                                // Re-enable by uncommenting the emailjs.send() block below.
-                                console.warn('[SMTP] Email suppressed. OTP would have been sent to:', userEmail, '| Code:', currentSessionOtp);
-                                /*
+                                // OTP AUTH EMAIL — restored. Audit/telemetry emails remain disabled (none exist in codebase).
                                 emailjs.send('service_mngqn1v', 'template_9cva2to', templateParams)
                                     .then(function(response) {
                                         console.log('SUCCESS! OTP Sent.', response.status, response.text);
@@ -1691,7 +1688,6 @@
                                         console.error('FAILED to send OTP:', error);
                                         emailAlreadySent = false; // Allow retry on raw network failure
                                     });
-                                */
                             } catch(e) {
                                 console.error('[EmailJS] Exception during send:', e);
                                 emailAlreadySent = false;
