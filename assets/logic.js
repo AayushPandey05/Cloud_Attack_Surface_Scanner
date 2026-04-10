@@ -205,8 +205,8 @@ window.runSlackAudit = async function () {
 
     // ATTACK PATH TELEMETRY: Document the lateral movement threat model
     if (secrets > 0 && typeof window.appendTerminal === "function") {
-        // Slack-specific: unified lavender #8E7DBE, no 'Attack Path:' label
-        const slackLivePath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #8E7DBE;">↳ [Initial Access] → [Credential Theft] → [Lateral Movement]</span>`;
+        // Slack-specific: gray ↳ + lavender path, 22 &nbsp; indent, no label
+        const slackLivePath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft → Lateral Movement</span>`;
         window.appendTerminal("SYS", slackLivePath, "INFO", "", true);
     }
 
@@ -340,8 +340,8 @@ window.runSlackAudit = async function () {
           "CRITICAL",
         );
 
-        // Slack attack path: unified lavender #8E7DBE, no 'Attack Path:' label
-        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #8E7DBE;">↳ [Initial Access] → [Credential Theft] → [Account Takeover]</span>`;
+        // Slack attack path: gray ↳ + lavender path, 22 &nbsp; indent, no label, no brackets
+        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft → Account Takeover</span>`;
         window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
 
         // Card 1 (Open Attack Paths) → red '1'
