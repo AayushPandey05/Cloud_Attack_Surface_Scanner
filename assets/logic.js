@@ -664,7 +664,17 @@ window.exportToCSV = function() {
   
   const csvRows = ['"Date","Time","Service","Level","Message"'];
   logsToExport.forEach((r) => {
-    const row = `"${r.date}","${r.time}","${r.source}","${r.level}","${r.message.replace(/"/g, '""')}"`;
+    // Prefer explicit date/time fields; fall back to splitting the combined timestamp
+    const datePart = r.date || (r.timestamp ? r.timestamp.split(' ')[0] : '');
+    const timePart = r.time || (r.timestamp ? r.timestamp.split(' ')[1] : '');
+    // Sanitise message: strip residual HTML entities and arrow chars
+    const cleanMsg = (r.message || '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/↳/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .replace(/"/g, '""');
+    const row = `"${datePart}","${timePart}","${r.source}","${r.level}","${cleanMsg}"`;
     csvRows.push(row);
   });
   

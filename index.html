@@ -1984,9 +1984,17 @@
                             window.vaultLogCache[env].push(logObj);
 
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
-                            const cleanMessage = text.replace(/<[^>]*>?/gm, '');
+                            // Strip HTML tags, &nbsp; entities, and ↳ arrow from export message
+                            const cleanMessage = text
+                                .replace(/<[^>]*>?/gm, '')
+                                .replace(/&nbsp;/g, ' ')
+                                .replace(/↳/g, '')
+                                .replace(/\s{2,}/g, ' ')
+                                .trim();
                             window.auditLogsBuffer.push({ 
-                                timestamp: bufferTimestamp, 
+                                timestamp: bufferTimestamp,
+                                date: `${year}-${month}-${day}`,
+                                time: displayTime,
                                 env: env, 
                                 source: source, 
                                 level: logObj.level, 
@@ -2028,9 +2036,17 @@
                                 const day = String(now.getDate()).padStart(2, '0');
                                 const bufferTimestamp = `${year}-${month}-${day} ${displayTime}`;
                                 
-                                const cleanMessage = text.replace(/<[^>]*>?/gm, '').trim();
+                                // Strip HTML tags, &nbsp; entities, and ↳ arrow from export message
+                                const cleanMessage = text
+                                    .replace(/<[^>]*>?/gm, '')
+                                    .replace(/&nbsp;/g, ' ')
+                                    .replace(/↳/g, '')
+                                    .replace(/\s{2,}/g, ' ')
+                                    .trim();
                                 window.auditLogsBuffer.push({
                                     timestamp: bufferTimestamp,
+                                    date: `${year}-${month}-${day}`,
+                                    time: displayTime,
                                     env: window.currentEnv || 'aws',
                                     source: 'FORENSICS',
                                     level: level.toUpperCase(),
