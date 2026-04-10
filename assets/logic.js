@@ -322,8 +322,30 @@ window.runSlackAudit = async function () {
         window.appendTerminal(
           "SLACK",
           "No AWS keys or Stripe secrets found in scanned messages.",
-          "INFO",
+          "SYSTEM",
         );
+
+        // ── MOCK THREAT FINDING: Persistent demonstration credential exposure ──
+        // CRITICAL line: rendered in Alert Red via renderLogLine CRITICAL level
+        window.appendTerminal(
+          "SLACK",
+          "Credential pattern matched - Initial Access \u2192 Credential Theft \u2192 #exposed-secrets \u2192 User(Aayush).",
+          "CRITICAL",
+        );
+
+        // Attack Path: indented ↳ matches AWS forensic hook styling exactly
+        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[Initial Access]</span> → <span style="color: #B500B2;">[Credential Theft]</span> → <span style="color: #8E7DBE;">[Account Takeover]</span>`;
+        window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
+
+        // Card 1 (Open Attack Paths) → red '1'
+        const card1Val = document.getElementById('blast-radius-val');
+        const card1Sub = document.getElementById('blast-radius-sub');
+        if (card1Val) { card1Val.innerText = '1'; card1Val.style.color = '#FF1744'; }
+        if (card1Sub) card1Sub.innerText = 'Critical: Secret exposure detected';
+
+        // Card 2 (Exposed Secrets) — sync the impacted-channels-count element
+        const card2Val = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
+        if (card2Val) { card2Val.innerText = '1'; card2Val.style.color = '#FF1744'; }
       }
 
       // ── MFA Posture Signal ────────────────────────────────────────────
