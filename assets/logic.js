@@ -304,8 +304,8 @@ window.runSlackAudit = async function () {
             "CRITICAL",
           );
 
-          // Attack path immediately after CRITICAL line
-          const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Attack Path: Initial Access → Credential Theft</span>`;
+          // Attack path immediately after CRITICAL line — multi-color gradient
+          const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3; Attack Path:</span> <span style="color: #9112BC;">Initial Access</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Credential Theft</span>`;
           window.appendTerminal("SYS", liveAlertPath, "INFO", "", true);
 
           // Forensic Identity Audit: Specific flagging for the non-compliant user
@@ -337,8 +337,8 @@ window.runSlackAudit = async function () {
           "CRITICAL",
         );
 
-        // Slack attack path: gray ↳ + lavender path, 22 &nbsp; indent
-        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Attack Path: Initial Access → Credential Theft → Account Takeover</span>`;
+        // Slack attack path: multi-color gradient, 22 &nbsp; indent
+        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3; Attack Path:</span> <span style="color: #9112BC;">Initial Access</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Credential Theft</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Account Takeover</span>`;
         window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
 
         // Card 1 (Open Attack Paths) → red '1'
