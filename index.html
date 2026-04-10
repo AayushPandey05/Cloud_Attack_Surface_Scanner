@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <!-- GOOGLE LOGIN -->
@@ -126,6 +126,34 @@
           text-align: center;
           letter-spacing: 0.25rem;
           font-size: 1.25rem;
+      }
+
+      /* PASSWORD TOGGLE UNIT */
+      .password-toggle-group {
+          position: relative;
+          display: flex;
+          align-items: center;
+      }
+      .password-toggle-btn {
+          position: absolute;
+          right: 0.75rem;
+          background: transparent;
+          border: none;
+          color: #4B5563;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.25rem;
+          transition: color 0.2s;
+          z-index: 10;
+          outline: none;
+      }
+      .password-toggle-btn:hover {
+          color: #818CF8;
+      }
+      .input-light.has-toggle {
+          padding-right: 2.75rem;
       }
 
       .btn-primary {
@@ -897,16 +925,19 @@
                 required
               />
             </div>
-            <div style="margin-bottom: 0.75rem;">
+            <div class="password-toggle-group" style="margin-bottom: 0.75rem;">
               <input
                 type="password"
                 id="login-password"
                 name="password"
                 autocomplete="current-password"
-                class="input-light"
+                class="input-light has-toggle"
                 placeholder="Password"
                 required
               />
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)">
+                <i data-lucide="eye" width="18" height="18"></i>
+              </button>
             </div>
             <div style="margin-bottom: 1.5rem;">
               <a href="#" class="link-purple" style="font-size: 0.9rem;"
@@ -1022,27 +1053,33 @@
                 required
               />
             </div>
-            <div style="margin-bottom: 1rem;">
+            <div class="password-toggle-group" style="margin-bottom: 1rem;">
               <input
                 type="password"
                 id="reg-password"
                 name="password"
                 autocomplete="new-password"
-                class="input-light"
+                class="input-light has-toggle"
                 placeholder="Create Password"
                 required
               />
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-password', this)">
+                <i data-lucide="eye" width="18" height="18"></i>
+              </button>
             </div>
-            <div style="margin-bottom: 1rem;">
+            <div class="password-toggle-group" style="margin-bottom: 1rem;">
               <input
                 type="password"
                 id="reg-confirm-password"
                 name="confirm-password"
                 autocomplete="new-password"
-                class="input-light"
+                class="input-light has-toggle"
                 placeholder="Confirm Password"
                 required
               />
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-confirm-password', this)">
+                <i data-lucide="eye" width="18" height="18"></i>
+              </button>
             </div>
             <div
               id="signup-error"
@@ -1412,6 +1449,29 @@
 
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
+            /**
+             * PASSWORD VISIBILITY TOGGLE ENGINE
+             * Switches input type between password and text while updating the Lucide eye icon.
+             */
+            window.togglePasswordVisibility = function(inputId, btn) {
+                const input = document.getElementById(inputId);
+                const icon = btn.querySelector('i');
+                if (!input || !icon) return;
+
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.setAttribute('data-lucide', 'eye-off');
+                } else {
+                    input.type = 'password';
+                    icon.setAttribute('data-lucide', 'eye');
+                }
+
+                // Re-init lucide for the specific button to refresh the eye icon state
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            };
+
             // CENTRAL IDENTITY REGISTRY
             const MASTER_ADMIN = 'aayushpandey2905@gmail.com';
             window.isAdmin = false;
