@@ -433,79 +433,6 @@
           font-weight: 600;
       }
 
-      .status-indicator-live {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #666;
-          font-size: 0.75rem;
-          font-weight: 500;
-          letter-spacing: 0.05em;
-      }
-      .blink-dot {
-          width: 7px;
-          height: 7px;
-          background-color: #08CB00;
-          border-radius: 50%;
-          animation: blink 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          box-shadow: 0 0 10px rgba(8, 203, 0, 0.5);
-      }
-      @keyframes blink {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.3; transform: scale(0.9); }
-      }
-
-      /* Terminal Center Spinner */
-      #terminal-spinner {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
-          z-index: 100;
-          pointer-events: none;
-      }
-      .spinner-cyan {
-          width: 28px;
-          height: 28px;
-          border: 3px solid rgba(0, 210, 255, 0.1);
-          border-top-color: #00D2FF;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-      }
-      .pulse-text {
-          color: #00D2FF;
-          font-size: 0.8rem;
-          font-family: inherit;
-          letter-spacing: 0.1em;
-          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          text-transform: uppercase;
-          font-weight: 500;
-      }
-      @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-      }
-
-      /* Button Auditing State */
-      .btn-scan-trigger:disabled {
-          background-color: #1a2333;
-          border-color: #2e3a50;
-          color: #64748b;
-          cursor: not-allowed;
-      }
-      .btn-spinner {
-          width: 14px;
-          height: 14px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          border-top-color: #ffffff;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-      }
-
       .status-badge {
           display: flex;
           align-items: center;
@@ -538,7 +465,7 @@
           top: 41px;
           left: 0;
           right: 0;
-          height: 15px;
+          height: 40px;
           background: linear-gradient(to bottom, #000000, transparent);
           pointer-events: none;
           z-index: 10;
@@ -569,7 +496,8 @@
       .dot-green { background-color: #27C93F; }
 
       .terminal-body {
-          padding: 10px 1.25rem 1.5rem 1.25rem;
+          padding: 1.5rem;
+          padding-top: 2.5rem;
           overflow-y: auto;
           flex: 1;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -1441,10 +1369,7 @@
             </div>
           </div>
           <div class="terminal-body font-mono" id="terminal-feed">
-            <div id="terminal-spinner" class="hidden">
-              <div class="spinner-cyan"></div>
-              <div class="pulse-text">Scanning...</div>
-            </div>
+            <!-- Logs -> JS -->
           </div>
         </div>
 
@@ -1837,11 +1762,6 @@
                                 }
                             });
                         }
-                        // Register the telemetry sink immediately at scope-root.
-                        // logic.js may invoke _slackAddLog before any addLog call occurs
-                        // (e.g. on session-restore refresh) — early registration prevents
-                        // a null-sink race condition in the Slack telemetry engine.
-                        window._slackAddLog = addLog;
 
                         // ── Authentication Slider — Login / Register Panel Toggle ───────────────
                         toggleSignup.addEventListener('click', (e) => {
@@ -2005,22 +1925,9 @@
                                 displayLevel = 'AUDIT';
                             }
                             
-                            // Slack Specific Tag Override: Change AUDIT: to SYSTEM:
-                            if (window.currentEnv === 'slack' && displayLevel === 'AUDIT') {
-                                displayLevel = 'SYSTEM';
-                            }
-                            
-                            // Level Tag Color: 
-                            // INFO (System) = #982598 (Navy Blue)
-                            // SYSTEM (Slack) = #1A2CA3 (Deep Blue)
-                            // AUDIT (Security Discovery) = #2FA4D7 (Bright Blue)
-                            // WARN/CRITICAL (Alerts) = #DB1A1A (Red)
-                            let levelColor = '#2FA4D7'; 
-                            if (displayLevel === 'INFO') {
-                                levelColor = '#982598'; 
-                            } else if (displayLevel === 'SYSTEM' && window.currentEnv === 'slack') {
-                                levelColor = '#1A2CA3'; 
-                            } else if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
+                            // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red (#DB1A1A)
+                            let levelColor = '#1C4D8D'; 
+                            if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
                             
@@ -2038,13 +1945,7 @@
                                 textColor = '#08CB00'; // Success Green
                             }
 
-                            logLine.innerHTML = `
-                                <span class="log-time" style="color: ${timeColor}; font-weight: 400;">[${l.time}]</span>
-                                <span class="log-source" style="color: ${tagColor}; font-weight: 500;">[${l.source || 'SYS'}]</span>
-                                <span class="log-level" style="color: ${levelColor}; font-weight: bold;">${displayLevel}:</span>
-                                <span class="log-text" style="color: ${textColor}; font-weight: 400;">${l.text}</span>
-                                ${l.subtext ? `<span class="log-sub" style="color: ${textColor}; opacity: 0.6; margin-left: 0.75rem; font-size: 0.8rem; font-weight: 400;">[${l.subtext}]</span>` : ''}
-                            `;
+                            logLine.innerHTML = `<span class="log-time" style="color: ${timeColor}; font-weight: 400;">[${l.time}]</span> <span class="log-source" style="color: ${tagColor}; font-weight: 500;">[${l.source || 'SYS'}]</span> <span class="log-level" style="color: ${levelColor}; font-weight: bold;">${displayLevel}:</span> <span class="log-text" style="color: ${textColor}; font-weight: 400;">${l.text}</span>${l.subtext ? ` <span class="log-sub" style="color: ${textColor}; opacity: 0.6; font-size: 0.8rem; font-weight: 400;">[${l.subtext}]</span>` : ''}`;
                             return logLine;
                         }
 
@@ -2073,14 +1974,9 @@
                             window.vaultLogCache[env].push(logObj);
 
                             if (!window.auditLogsBuffer) window.auditLogsBuffer = [];
-                            
-                            // EXPORT CLEANUP: Normalise message and date/time components
-                            const dateStr = now.toISOString().split('T')[0];
-                            const cleanMessage = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>?/gm, '');
-
+                            const cleanMessage = text.replace(/<[^>]*>?/gm, '');
                             window.auditLogsBuffer.push({ 
-                                date: dateStr,
-                                time: displayTime, 
+                                timestamp: bufferTimestamp, 
                                 env: env, 
                                 source: source, 
                                 level: logObj.level, 
@@ -2089,15 +1985,8 @@
 
                             const logLine = renderLogLine(logObj);
                             
-                            // AUTO-CLEANUP: Clear the central scanning spinner on first log (Requirement 2.0)
-                            const spinner = document.getElementById('terminal-spinner');
-                            if (spinner && !spinner.classList.contains('hidden')) {
-                                spinner.classList.add('hidden');
-                            }
-
                             // CRT Wake-Up Flicker (Requirement 3: one-time trigger for first log)
-                            // Note: We check if children length is 1 because of the hidden spinner div
-                            if (terminalFeed.children.length <= 1) {
+                            if (terminalFeed.children.length === 0) {
                                 terminalFeed.classList.add('flicker-text');
                                 setTimeout(() => terminalFeed.classList.remove('flicker-text'), 500);
                             }
@@ -2107,10 +1996,6 @@
                         }
                         
                         window.appendTerminal = function(source, text, level = 'INFO', subtext = '', isRaw = false) {
-                            // Identity Privacy (Strict): Remove 'Pratyush' and replace with 'Aayush'
-                            if (typeof text === 'string') text = text.replace(/Pratyush/g, 'Aayush');
-                            if (typeof subtext === 'string') subtext = subtext.replace(/Pratyush/g, 'Aayush');
-
                             if (isRaw) {
                                 // Raw display: bypasses renderLogLine to strip metadata but preserves buffer integrity
                                 const logLine = document.createElement('div');
@@ -2125,28 +2010,21 @@
                                 terminalFeed.appendChild(logLine);
                                 terminalFeed.scrollTop = terminalFeed.scrollHeight;
 
-                                // EXPORT COMPLIANCE: Buffer the raw line with normalized forensic metadata
+                                // EXPORT COMPLIANCE: Buffer the raw line with local forensic metadata
                                 const now = new Date();
                                 const displayTime = now.toLocaleTimeString('en-GB', { hour12: false });
-                                const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const day = String(now.getDate()).padStart(2, '0');
+                                const bufferTimestamp = `${year}-${month}-${day} ${displayTime}`;
                                 
-                                // Purge HTML entities and normalize indentation for plain-text exports
-                                const cleanMessage = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>?/gm, '').trim();
-
+                                const cleanMessage = text.replace(/<[^>]*>?/gm, '').trim();
                                 window.auditLogsBuffer.push({
-                                    date: dateStr,
-                                    time: displayTime,
+                                    timestamp: bufferTimestamp,
                                     env: window.currentEnv || 'aws',
                                     source: 'FORENSICS',
-                                    level: 'FORENSICS', // Requirement 3: Explicit Forensics Level
-                                    message: cleanMessage,
-                                    metadata: {
-                                        palette: {
-                                            discovery: '#2FA4D7',
-                                            theft: '#B500B2',
-                                            takeover: '#8E7DBE'
-                                        }
-                                    }
+                                    level: level.toUpperCase(),
+                                    message: cleanMessage
                                 });
                                 return;
                             }
@@ -2257,7 +2135,6 @@
                                  updateSafe('kpi-title-2', 'IAM IDENTITIES');
                                  updateSafe('kpi-title-3', 'MFA Enforced');
                                  updateSafe('kpi-title-4', 'Exposed Secrets');
-                                 updateSafe('kpi-title-5', 'S3 BUCKETS');
 
                                  const blastVal = window.isAdmin ? '95%' : '10%';
                                  const blastColor = window.isAdmin ? '#FF1744' : 'var(--green)';
@@ -2271,8 +2148,9 @@
                                      updateSafe('exposed-secrets-sub', blastSub);
                                  }
                                 
-                                const kpi2ElAws = document.getElementById('iam-user-count');
+                                const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
                                 if (kpi2ElAws) {
+                                    kpi2ElAws.id = 'iam-user-count';
                                     const iamCount = sessionStorage.getItem('vaultAwsIamCount');
                                     kpi2ElAws.innerText = isAuditComplete && iamCount !== null ? iamCount : '0';
                                     kpi2ElAws.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
@@ -2293,40 +2171,54 @@
                                 
                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
-                                 // SLACK UI RESTORATION
-                                 updateSafe('kpi-title-1', 'OPEN ATTACK PATHS');
-                                 updateSafe('kpi-title-2', 'EXPOSED SECRETS');
-                                 updateSafe('kpi-title-3', 'MFA ENFORCED');
-                                 updateSafe('kpi-title-4', 'NON-COMPLIANT USERS');
-                                 updateSafe('kpi-title-5', 'TOTAL USERS');
+                                 // SLACK TAB ONLY — ZERO INTERFERENCE with AWS side
+                                 updateSafe('kpi-title-1', 'Open Attack Paths');
+                                 updateSafe('kpi-title-2', 'Exposed Secrets');
+                                 updateSafe('kpi-title-3', 'Workspace MFA');
+                                 updateSafe('kpi-title-4', 'Non-Compliant');
+                                 updateSafe('kpi-title-5', 'Total Users');
 
-                                 if (isAuditComplete) {
-                                     updateSafe('blast-radius-val', '1', '#F04438'); // RED '1'
-                                     updateSafe('iam-user-count', '1', '#F04438');    // RED '1'
-                                     updateSafe('mfa-enforced-val', '100%', '#12B76A'); // GREEN '100%'
-                                     updateSafe('aws-secrets-count', '0', '#12B76A');   // GREEN '0'
-                                     updateSafe('s3-bucket-count', '3', '#1841FF');     // BLUE '3'
-                                     
-                                     updateSafe('blast-radius-sub', 'Critical Entry Point detected');
-                                     updateSafe('iam-identities-sub', 'Active secret exposure');
-                                     updateSafe('mfa-enforced-sub', 'All human identities compliant');
-                                     updateSafe('exposed-secrets-sub', 'No high-risk identities leaking tokens');
-                                     updateSafe('s3-bucket-sub', 'Humans audited in workspace');
-                                 } else {
-                                     // Default Slack UI (Pre-Audit)
-                                     updateSafe('blast-radius-val', '—', 'var(--gray)');
-                                     updateSafe('iam-user-count', '0', 'var(--gray)');
-                                     updateSafe('mfa-enforced-val', '—', 'var(--gray)');
-                                     updateSafe('aws-secrets-count', '0', 'var(--gray)');
-                                     updateSafe('s3-bucket-count', '0', 'var(--gray)');
+                                 // Card 1 — Open Attack Paths: integer 0 or 1, NEVER a percentage
+                                 const slackSecrets = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : null;
+                                 const attackPathVal = slackSecrets === null ? '—' : (slackSecrets > 0 ? 1 : 0);
+                                 const attackPathColor = slackSecrets === null ? 'var(--gray)' : (slackSecrets > 0 ? '#FF6B00' : 'var(--green)');
+                                 const attackPathSub = slackSecrets === null ? 'Awaiting scan…' : (slackSecrets > 0 ? 'Critical: Secret exposure detected' : 'No active paths detected');
+                                 updateSafe('blast-radius-val', String(attackPathVal), attackPathColor);
+                                 updateSafe('blast-radius-sub', attackPathSub);
 
-                                     updateSafe('blast-radius-sub', 'Calculating exposure...');
-                                     updateSafe('iam-identities-sub', 'Awaiting scan');
-                                     updateSafe('mfa-enforced-sub', 'Awaiting scan');
-                                     updateSafe('exposed-secrets-sub', 'Awaiting scan');
-                                     updateSafe('s3-bucket-sub', 'Awaiting scan');
+                                 // Card 2 — Exposed Secrets: synced directly to scan secret count
+                                 const exposedSecretsEl = document.getElementById('iam-user-count') || document.getElementById('impacted-channels-count');
+                                 if (exposedSecretsEl) {
+                                     exposedSecretsEl.id = 'impacted-channels-count';
+                                     const secretCount = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : 0;
+                                     exposedSecretsEl.innerText = String(secretCount);
+                                     exposedSecretsEl.style.color = isAuditComplete ? (secretCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
                                  }
-                                 
+
+                                 updateSafe('mfa-enforced-val', isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—');
+
+                                 // Card 4 — Non-Compliant identities
+                                 const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
+                                 const kpi4El = document.getElementById('aws-secrets-count') || document.getElementById('high-risk-count');
+                                 if (kpi4El) {
+                                     kpi4El.id = 'high-risk-count';
+                                     kpi4El.innerText = isAuditComplete ? String(uniqueSlackUsersSize) : '0';
+                                     kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
+                                 }
+                                 // Card 4 subtext
+                                 const kpi4SubEl = document.getElementById('exposed-secrets-sub');
+                                 if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize > 0 ? String(uniqueSlackUsersSize) + ' high-risk identities detected' : 'No high-risk identities leaking tokens';
+
+                                 // Card 5 — Total Users (humans audited in workspace)
+                                 const slackTotalUsers = isAuditComplete && window.latestSlackData ? window.latestSlackData.totalUsers : 0;
+                                 const kpi5El = document.getElementById('s3-bucket-count');
+                                 if (kpi5El) {
+                                     kpi5El.innerText = String(slackTotalUsers);
+                                     kpi5El.style.color = isAuditComplete ? '#3B82F6' : 'var(--gray)';
+                                 }
+                                 const kpi5SubEl = document.getElementById('s3-bucket-sub');
+                                 if (kpi5SubEl) kpi5SubEl.innerText = 'Humans audited in workspace';
+
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }
                         }
@@ -2344,7 +2236,6 @@
                             }
                         }
 
-                        window._slackAddLog = addLog;
 
                         // AUDIT LOG EXPORT — Client-Side Blob Engine
                         window.handleGoogleLogin = function (e) {

@@ -599,15 +599,18 @@ window.triggerAwsScan = async function () {
         await window.runSlackAudit();
       }
       
-      const loggedUser = sessionStorage.getItem('loggedInUser');
-      if (loggedUser === 'aayushpandey2905@gmail.com') {
-          const radiusNumber = document.getElementById('blast-radius-val');
-          const radiusText = document.getElementById('blast-radius-sub');
-          if (radiusNumber && radiusText) {
-              radiusNumber.innerText = '95%';
-              radiusNumber.style.color = '#FFA500'; 
-              radiusText.innerText = 'CRITICAL: Full Admin status detected.';
-          }
+      // Blast-radius override ONLY runs for AWS tab — Slack Card 1 uses integer logic, not percentages
+      if (currentModule === 'AWS') {
+        const loggedUser = sessionStorage.getItem('loggedInUser');
+        if (loggedUser === 'aayushpandey2905@gmail.com') {
+            const radiusNumber = document.getElementById('blast-radius-val');
+            const radiusText = document.getElementById('blast-radius-sub');
+            if (radiusNumber && radiusText) {
+                radiusNumber.innerText = '95%';
+                radiusNumber.style.color = '#FFA500'; 
+                radiusText.innerText = 'CRITICAL: Full Admin status detected.';
+            }
+        }
       }
     } catch (err) {
       console.error("[ScanTrigger] Execution failed:", err);
