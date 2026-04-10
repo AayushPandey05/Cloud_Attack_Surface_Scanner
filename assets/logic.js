@@ -200,7 +200,9 @@ window.runSlackAudit = async function () {
 
     // ATTACK PATH TELEMETRY: Document the lateral movement threat model
     if (secrets > 0 && typeof window.appendTerminal === "function") {
-        window.appendTerminal("SLACK", "↳ Attack Path: Initial Access \u2192 Credential Theft \u2192 Lateral Movement", "CRITICAL", "Threat");
+        // Slack-specific: unified lavender #8E7DBE, no 'Attack Path:' label
+        const slackLivePath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #8E7DBE;">↳ [Initial Access] → [Credential Theft] → [Lateral Movement]</span>`;
+        window.appendTerminal("SYS", slackLivePath, "INFO", "", true);
     }
 
     var nonCompliant =
@@ -333,8 +335,8 @@ window.runSlackAudit = async function () {
           "CRITICAL",
         );
 
-        // Attack Path: indented ↳ matches AWS forensic hook styling exactly
-        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[Initial Access]</span> → <span style="color: #B500B2;">[Credential Theft]</span> → <span style="color: #8E7DBE;">[Account Takeover]</span>`;
+        // Slack attack path: unified lavender #8E7DBE, no 'Attack Path:' label
+        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #8E7DBE;">↳ [Initial Access] → [Credential Theft] → [Account Takeover]</span>`;
         window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
 
         // Card 1 (Open Attack Paths) → red '1'
