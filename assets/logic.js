@@ -639,6 +639,16 @@ window.triggerAwsScan = async function () {
     triggerBtn.innerHTML = `<div class="btn-spinner"></div> AUDITING...`;
     
     try {
+      // LOG STACK PREVENTION: Clear current env's log cache and terminal display
+      // so rerunning a scan starts with a clean slate — no old entries stacking.
+      const envKey = currentModule.toLowerCase();
+      if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
+      window.vaultLogCache[envKey] = [];
+      sessionStorage.removeItem(envKey + '_audit_complete');
+      const termFeed = document.getElementById('terminal-feed');
+      if (termFeed) termFeed.innerHTML = '';
+      if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
+
       if (currentModule === "AWS") {
         await window.triggerAwsScan();
       } else if (currentModule === "SLACK") {

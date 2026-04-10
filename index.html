@@ -2137,6 +2137,28 @@
                                 window.currentEnv = view;
                                 sessionStorage.setItem('vaultActiveEnv', view);
 
+                                // STATE ISOLATION: Reset all KPI cards to neutral before
+                                // updateDashboardContext re-renders the correct env state.
+                                // Prevents metric bleed-through between AWS and Slack tabs.
+                                const tabAuditDone = sessionStorage.getItem(view + '_audit_complete') === 'true';
+                                if (!tabAuditDone) {
+                                    const resetIds = [
+                                        ['blast-radius-val', '—'], ['blast-radius-sub', 'Awaiting scan…'],
+                                        ['kpi-title-1', view === 'slack' ? 'Open Attack Paths' : 'Identity Blast Radius'],
+                                        ['iam-user-count', '—'],   ['iam-identities-sub', 'Awaiting scan…'],
+                                        ['mfa-enforced-val', '—'], ['mfa-enforced-sub', 'Awaiting scan…'],
+                                        ['aws-secrets-count', '0'], ['exposed-secrets-sub', 'Awaiting scan…'],
+                                        ['s3-bucket-count', '0'],  ['s3-bucket-sub', 'Awaiting scan…'],
+                                        // Re-map any env-renamed IDs back to neutral
+                                        ['impacted-channels-count', '—'],
+                                        ['high-risk-count', '0'],
+                                    ];
+                                    resetIds.forEach(([id, val]) => {
+                                        const el = document.getElementById(id);
+                                        if (el) { el.innerText = val; el.style.color = 'var(--gray)'; }
+                                    });
+                                }
+
                                 rehydrateLogs(view);
                                 updateDashboardContext();
 
