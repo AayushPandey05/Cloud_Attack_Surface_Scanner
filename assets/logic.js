@@ -168,8 +168,8 @@ window.runSlackAudit = async function () {
   if (typeof window.appendTerminal === "function") {
     window.appendTerminal(
       "SLACK",
-      "Initiating live workspace scan via /api/scan-slack…",
-      "INFO",
+      "Initializing Federated Identity scan for Slack Workspace...",
+      "SYSTEM",
     );
   }
 
@@ -272,6 +272,7 @@ window.runSlackAudit = async function () {
     if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
     if (typeof window.appendTerminal === "function") {
+      // Scan complete summary: SYSTEM level for standard Slack logs
       window.appendTerminal(
         "SLACK",
         "Scan complete — " +
@@ -279,7 +280,7 @@ window.runSlackAudit = async function () {
           " users, " +
           secrets +
           " secret(s) detected.",
-        "INFO",
+        "SYSTEM",
       );
       var alerts = Array.isArray(data.detailedAlerts)
         ? data.detailedAlerts
@@ -338,8 +339,11 @@ window.runSlackAudit = async function () {
         window.appendTerminal(
           "SLACK",
           "MFA and profile compliance check passed for all users.",
-          "INFO",
+          "SYSTEM",
         );
+        // Card 3 subtext sync: all identities compliant
+        const mfa3Sub = document.getElementById('mfa-enforced-sub');
+        if (mfa3Sub) mfa3Sub.innerText = 'All human identities compliant \u2713';
       }
     }
   } catch (err) {

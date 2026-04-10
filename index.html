@@ -1917,17 +1917,27 @@
                             const timeColor = '#57595B'; // Gray
                             const tagColor  = '#9B7EBD'; // Purple
                             
-                            // CONDITIONAL LEVEL TAGGING (Requirement 1 & 2)
+                            // CONDITIONAL LEVEL TAGGING
                             let displayLevel = l.level.toUpperCase();
                             const hasFound = l.text.includes('Found');
                             
-                            if (displayLevel === 'INFO' && !hasFound) {
+                            // SYSTEM level: kept as-is — used by Slack non-critical logs
+                            // INFO→AUDIT remap applies only to non-SYSTEM, non-SLACK logs
+                            if (displayLevel === 'INFO' && !hasFound && l.source !== 'SLACK') {
                                 displayLevel = 'AUDIT';
                             }
+                            if (displayLevel === 'INFO' && l.source === 'SLACK') {
+                                displayLevel = 'SYSTEM';
+                            }
                             
-                            // Level Tag Color: INFO/AUDIT is #2FA4D7, WARN/CRITICAL is Red (#DB1A1A)
-                            let levelColor = '#1C4D8D'; 
-                            if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
+                            // Level Tag Color:
+                            //   SYSTEM          → Navy Blue #1A2CA3 (Slack standard)
+                            //   WARN / CRITICAL → Alert Red #DB1A1A
+                            //   All others      → Default blue-grey #1C4D8D
+                            let levelColor = '#1C4D8D';
+                            if (displayLevel === 'SYSTEM') {
+                                levelColor = '#1A2CA3';
+                            } else if (displayLevel === 'WARN' || displayLevel === 'CRITICAL') {
                                 levelColor = '#DB1A1A';
                             }
                             
