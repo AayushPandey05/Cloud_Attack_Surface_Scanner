@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <!-- GOOGLE LOGIN -->
@@ -1446,23 +1446,23 @@
     <!--  RUNTIME ORCHESTRATION — Zero-Trust Auth Pipeline & CSPM Telemetry Engine  -->
     <script>
             /**
-             * PASSWORD VISIBILITY TOGGLE ENGINE
-             * Switches input type between password and text while updating the Lucide eye icon.
+             * PASSWORD VISIBILITY TOGGLE ENGINE (Vanilla State Sync)
+             * Handles icon state persistence and DOM replacement to prevent Lucide SVG collision.
              */
             window.togglePasswordVisibility = function(inputId, btn) {
                 const input = document.getElementById(inputId);
-                const icon = btn.querySelector('i');
-                if (!input || !icon) return;
+                if (!input) return;
 
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.setAttribute('data-lucide', 'eye-off');
-                } else {
-                    input.type = 'password';
-                    icon.setAttribute('data-lucide', 'eye');
-                }
+                // Sync: Toggle the input type based on current state
+                const isShowing = input.type === 'text';
+                input.type = isShowing ? 'password' : 'text';
 
-                // Re-init lucide for the specific button to refresh the eye icon state
+                // Icon Sync: Replace the inner icon with a fresh <i> tag for Lucide to re-process.
+                // This prevents the 'doing nothing' bug caused by lucide replacing <i> with <svg>.
+                const newIconType = isShowing ? 'eye' : 'eye-off';
+                btn.innerHTML = `<i data-lucide="${newIconType}" width="18" height="18"></i>`;
+
+                // Flush: Re-initialize icons for the new state
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
