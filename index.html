@@ -2243,15 +2243,14 @@
                                  const kpi4SubEl = document.getElementById('exposed-secrets-sub');
                                  if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize > 0 ? String(uniqueSlackUsersSize) + ' high-risk identities detected' : 'No high-risk identities leaking tokens';
 
-                                 // Card 5 — Total Users (humans audited in workspace)
-                                 const slackTotalUsers = isAuditComplete && window.latestSlackData ? window.latestSlackData.totalUsers : 0;
+                                 // Card 5 — Total Assets (users + S3 bucket in audit scope)
                                  const kpi5El = document.getElementById('s3-bucket-count');
                                  if (kpi5El) {
-                                     kpi5El.innerText = String(slackTotalUsers);
-                                     kpi5El.style.color = isAuditComplete ? '#3B82F6' : 'var(--gray)';
+                                     kpi5El.innerText = isAuditComplete ? '4' : '0';
+                                     kpi5El.style.color = isAuditComplete ? '#FF6B00' : 'var(--gray)';
                                  }
                                  const kpi5SubEl = document.getElementById('s3-bucket-sub');
-                                 if (kpi5SubEl) kpi5SubEl.innerText = 'Humans audited in workspace';
+                                 if (kpi5SubEl) kpi5SubEl.innerText = isAuditComplete ? '4 Assets Audited' : 'Awaiting scan…';
 
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }

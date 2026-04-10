@@ -329,27 +329,43 @@ window.runSlackAudit = async function () {
           "SYSTEM",
         );
 
-        // ── MOCK THREAT FINDING: Persistent demonstration credential exposure ──
-        // CRITICAL line: rendered in Alert Red via renderLogLine CRITICAL level
+        // ── MOCK THREAT #1: Credential exposure ──────────────────────────
         window.appendTerminal(
           "SLACK",
           "Credential pattern matched — #exposed-secrets — User(Aayush).",
           "CRITICAL",
         );
 
-        // Slack attack path: multi-color gradient, 22 &nbsp; indent
+        // Attack Path #1: Credential chain
         const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3; Attack Path:</span> <span style="color: #9112BC;">Initial Access</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Credential Theft</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Account Takeover</span>`;
         window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
 
-        // Card 1 (Open Attack Paths) → red '1'
+        // ── MOCK THREAT #2: S3 public bucket exposure ─────────────────────
+        window.appendTerminal(
+          "S3",
+          "Publicly Accessible Bucket discovered: [aayush-securevault-logs]",
+          "CRITICAL",
+        );
+
+        // Attack Path #2: External discovery chain
+        const s3AttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3; Attack Path:</span> <span style="color: #9112BC;">External Discovery</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Data Exfiltration</span>`;
+        window.appendTerminal("SYS", s3AttackPath, "INFO", "", true);
+
+        // Card 1 (Open Attack Paths) → red '2' — Threat Deduplication: 2 distinct attack vectors
         const card1Val = document.getElementById('blast-radius-val');
         const card1Sub = document.getElementById('blast-radius-sub');
-        if (card1Val) { card1Val.innerText = '1'; card1Val.style.color = '#FF1744'; }
-        if (card1Sub) card1Sub.innerText = 'Critical: Secret exposure detected';
+        if (card1Val) { card1Val.innerText = '2'; card1Val.style.color = '#FF1744'; }
+        if (card1Sub) card1Sub.innerText = '2 Critical Paths Detected';
 
         // Card 2 (Exposed Secrets) — sync the impacted-channels-count element
         const card2Val = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
         if (card2Val) { card2Val.innerText = '1'; card2Val.style.color = '#FF1744'; }
+
+        // Card 5 (Total Assets) — users + S3 bucket included in audit scope
+        const card5Val = document.getElementById('s3-bucket-count');
+        const card5Sub = document.getElementById('s3-bucket-sub');
+        if (card5Val) { card5Val.innerText = '4'; card5Val.style.color = '#FF6B00'; }
+        if (card5Sub) card5Sub.innerText = '4 Assets Audited';
       }
 
       // ── MFA Posture Signal ────────────────────────────────────────────
