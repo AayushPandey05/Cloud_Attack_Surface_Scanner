@@ -305,7 +305,7 @@ window.runSlackAudit = async function () {
           );
 
           // Attack path immediately after CRITICAL line
-          const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft</span>`;
+          const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Attack Path: Initial Access → Credential Theft</span>`;
           window.appendTerminal("SYS", liveAlertPath, "INFO", "", true);
 
           // Forensic Identity Audit: Specific flagging for the non-compliant user
@@ -337,8 +337,8 @@ window.runSlackAudit = async function () {
           "CRITICAL",
         );
 
-        // Slack attack path: gray ↳ + lavender path, 22 &nbsp; indent, no label, no brackets
-        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Initial Access → Credential Theft → Account Takeover</span>`;
+        // Slack attack path: gray ↳ + lavender path, 22 &nbsp; indent
+        const slackAttackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3;</span> <span style="color: #8E7DBE;">Attack Path: Initial Access → Credential Theft → Account Takeover</span>`;
         window.appendTerminal("SYS", slackAttackPath, "INFO", "", true);
 
         // Card 1 (Open Attack Paths) → red '1'
