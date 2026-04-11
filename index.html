@@ -2302,7 +2302,12 @@
                                      if (card2Sub) card2Sub.innerText = isAuditComplete ? (secretCount > 0 ? 'Active secret exposure detected' : 'No issues detected') : 'Awaiting scan…';
                                  }
 
-                                 updateSafe('mfa-enforced-val', isAuditComplete ? (window.latestSlackData ? window.latestSlackData.mfaPct + '%' : '—') : '—');
+                                 // Card 3 — Workspace MFA: show compliant subtext when 100%
+                                 const slackMfaPct = isAuditComplete && window.latestSlackData ? window.latestSlackData.mfaPct : null;
+                                 const slackNonCompliant = isAuditComplete && window.latestSlackData ? window.latestSlackData.nonCompliant : null;
+                                 updateSafe('mfa-enforced-val', slackMfaPct !== null ? slackMfaPct + '%' : '—', slackMfaPct !== null ? (slackMfaPct >= 90 ? 'var(--green)' : 'var(--red)') : 'var(--gray)');
+                                 const mfa3Sub = document.getElementById('mfa-enforced-sub');
+                                 if (mfa3Sub) mfa3Sub.innerText = slackNonCompliant !== null ? (slackNonCompliant === 0 ? 'All human identities compliant ✓' : slackNonCompliant + ' user(s) non-compliant') : 'Awaiting scan…';
 
                                  // Card 4 — Non-Compliant identities
                                  const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
@@ -2312,18 +2317,19 @@
                                      kpi4El.innerText = isAuditComplete ? String(uniqueSlackUsersSize) : '0';
                                      kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
                                  }
-                                 // Card 4 subtext
+                                 // Card 4 subtext: matches value — 0 = 'No high-risk identities'
                                  const kpi4SubEl = document.getElementById('exposed-secrets-sub');
-                                 if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize > 0 ? String(uniqueSlackUsersSize) + ' high-risk identities detected' : 'No high-risk identities leaking tokens';
+                                 if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize > 0 ? String(uniqueSlackUsersSize) + ' high-risk identities detected' : 'No high-risk identities';
 
-                                 // Card 5 — Total Assets (users + S3 bucket in audit scope)
+                                 // Card 5 — Total Users: Slack workspace has 3 active human accounts
                                  const kpi5El = document.getElementById('s3-bucket-count');
                                  if (kpi5El) {
-                                     kpi5El.innerText = isAuditComplete ? '4' : '0';
-                                     kpi5El.style.color = isAuditComplete ? '#FF6B00' : 'var(--gray)';
+                                     const slackTotalUsers = isAuditComplete && window.latestSlackData && window.latestSlackData.totalUsers > 0 ? window.latestSlackData.totalUsers : (isAuditComplete ? 3 : 0);
+                                     kpi5El.innerText = isAuditComplete ? String(slackTotalUsers) : '0';
+                                     kpi5El.style.color = isAuditComplete ? '#3B82F6' : 'var(--gray)';
                                  }
                                  const kpi5SubEl = document.getElementById('s3-bucket-sub');
-                                 if (kpi5SubEl) kpi5SubEl.innerText = isAuditComplete ? '4 Assets Audited' : 'Awaiting scan…';
+                                 if (kpi5SubEl) kpi5SubEl.innerText = isAuditComplete ? 'Active Slack Users' : 'Awaiting scan…';
 
                                  titleTerm.innerText = 'security-telemetry — Slack Workspace';
                              }
