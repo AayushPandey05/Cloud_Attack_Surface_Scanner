@@ -2188,27 +2188,26 @@
                                 window.currentEnv = view;
                                 sessionStorage.setItem('vaultActiveEnv', view);
 
-                                // STATE ISOLATION: Reset all KPI cards to neutral before
-                                // updateDashboardContext re-renders the correct env state.
-                                // Prevents metric bleed-through between AWS and Slack tabs.
-                                const tabAuditDone = sessionStorage.getItem(view + '_audit_complete') === 'true';
-                                if (!tabAuditDone) {
-                                    const resetIds = [
-                                        ['blast-radius-val', '—'], ['blast-radius-sub', 'Awaiting scan…'],
-                                        ['kpi-title-1', view === 'slack' ? 'Open Attack Paths' : 'Identity Blast Radius'],
-                                        ['iam-user-count', '—'],   ['iam-identities-sub', 'Awaiting scan…'],
-                                        ['mfa-enforced-val', '—'], ['mfa-enforced-sub', 'Awaiting scan…'],
-                                        ['aws-secrets-count', '0'], ['exposed-secrets-sub', 'Awaiting scan…'],
-                                        ['s3-bucket-count', '0'],  ['s3-bucket-sub', 'Awaiting scan…'],
-                                        // Re-map any env-renamed IDs back to neutral
-                                        ['impacted-channels-count', '—'],
-                                        ['high-risk-count', '0'],
-                                    ];
-                                    resetIds.forEach(([id, val]) => {
-                                        const el = document.getElementById(id);
-                                        if (el) { el.innerText = val; el.style.color = 'var(--gray)'; }
-                                    });
-                                }
+                                // STATE ISOLATION: UNCONDITIONALLY reset all KPI cards to neutral
+                                // before updateDashboardContext re-renders the correct env state.
+                                // Must run always — not gated on audit state — to prevent stale
+                                // colors and broken ID references from bleeding across tabs.
+                                const _resetIds = [
+                                    ['blast-radius-val', '—'], ['blast-radius-sub', 'Awaiting scan…'],
+                                    ['kpi-title-1', view === 'slack' ? 'Open Attack Paths' : 'Identity Blast Radius'],
+                                    ['kpi-title-2', view === 'slack' ? 'Exposed Secrets' : 'IAM IDENTITIES'],
+                                    ['kpi-title-3', view === 'slack' ? 'Workspace MFA' : 'MFA Enforced'],
+                                    ['kpi-title-4', view === 'slack' ? 'Non-Compliant' : 'Exposed Secrets'],
+                                    ['kpi-title-5', view === 'slack' ? 'Total Users' : 'S3 BUCKETS'],
+                                    ['iam-user-count', '—'],   ['iam-identities-sub', 'Awaiting scan…'],
+                                    ['mfa-enforced-val', '—'], ['mfa-enforced-sub', 'Awaiting scan…'],
+                                    ['aws-secrets-count', '0'], ['exposed-secrets-sub', 'Awaiting scan…'],
+                                    ['s3-bucket-count', '0'],  ['s3-bucket-sub', 'Awaiting scan…'],
+                                ];
+                                _resetIds.forEach(([id, val]) => {
+                                    const el = document.getElementById(id);
+                                    if (el) { el.innerText = val; el.style.color = 'var(--gray)'; }
+                                });
 
                                 rehydrateLogs(view);
                                 updateDashboardContext();
@@ -2235,72 +2234,84 @@
                             };
 
                             if (env === 'aws') {
+                                 // AWS card headers — always enforce correct labels
                                  updateSafe('kpi-title-1', 'Identity Blast Radius');
                                  updateSafe('kpi-title-2', 'IAM IDENTITIES');
                                  updateSafe('kpi-title-3', 'MFA Enforced');
                                  updateSafe('kpi-title-4', 'Exposed Secrets');
+                                 updateSafe('kpi-title-5', 'S3 BUCKETS');
 
                                  const blastVal = window.isAdmin ? '95%' : '10%';
                                  const blastColor = window.isAdmin ? '#FF1744' : 'var(--green)';
                                  const blastSub = window.isAdmin ? 'CRITICAL: Full Admin status detected.' : 'Unauthorized: Admin access required to view live telemetry.';
                                  updateSafe('blast-radius-val', blastVal, blastColor);
                                  updateSafe('blast-radius-sub', blastSub);
-                                 
+
                                  if (!window.isAdmin) {
                                      updateSafe('iam-identities-sub', blastSub);
                                      updateSafe('mfa-enforced-sub', blastSub);
                                      updateSafe('exposed-secrets-sub', blastSub);
                                  }
-                                
-                                const kpi2ElAws = document.getElementById('impacted-channels-count') || document.getElementById('iam-user-count');
-                                if (kpi2ElAws) {
-                                    kpi2ElAws.id = 'iam-user-count';
-                                    const iamCount = sessionStorage.getItem('vaultAwsIamCount');
-                                    kpi2ElAws.innerText = isAuditComplete && iamCount !== null ? iamCount : '0';
-                                    kpi2ElAws.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
-                                }
-                                updateSafe('mfa-enforced-val', isAuditComplete ? '100.0%' : '—', isAuditComplete ? 'var(--green)' : 'var(--gray)');
-                                updateSafe('aws-secrets-count', isAuditComplete ? '0' : '0', isAuditComplete ? 'var(--green)' : 'var(--gray)');
 
-                                const s3CountCard = document.getElementById('s3-bucket-count');
-                                if (s3CountCard) {
-                                    const s3Count = sessionStorage.getItem('vaultAwsS3Count');
-                                    s3CountCard.innerText = isAuditComplete && s3Count !== null ? s3Count : '0';
-                                    s3CountCard.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
-                                }
-                                const s3Sub = document.getElementById('s3-bucket-sub');
-                                if (s3Sub) {
-                                    s3Sub.innerText = isAuditComplete ? 'Global assets discovered' : 'Awaiting scan';
-                                }
-                                
-                                titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
+                                 // Card 2 — IAM IDENTITIES: always read by fixed HTML id, never remap
+                                 const kpi2ElAws = document.getElementById('iam-user-count');
+                                 if (kpi2ElAws) {
+                                     const iamCount = sessionStorage.getItem('vaultAwsIamCount');
+                                     kpi2ElAws.innerText = isAuditComplete && iamCount !== null ? iamCount : '0';
+                                     kpi2ElAws.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
+                                 }
+
+                                 updateSafe('mfa-enforced-val', isAuditComplete ? '100.0%' : '—', isAuditComplete ? 'var(--green)' : 'var(--gray)');
+
+                                 // Card 4 — Exposed Secrets: strict tri-state color
+                                 // scanning → var(--gray) | 0 → var(--green) | >0 → #FF1744
+                                 const awsSecretCount = parseInt(sessionStorage.getItem('vaultAwsSecretCount') || '0', 10);
+                                 if (!isAuditComplete) {
+                                     updateSafe('aws-secrets-count', '0', 'var(--gray)');
+                                     updateSafe('exposed-secrets-sub', 'Awaiting scan…');
+                                 } else if (awsSecretCount > 0) {
+                                     updateSafe('aws-secrets-count', String(awsSecretCount), '#FF1744');
+                                     updateSafe('exposed-secrets-sub', awsSecretCount + ' Leaked Credentials Found');
+                                 } else {
+                                     updateSafe('aws-secrets-count', '0', 'var(--green)');
+                                     updateSafe('exposed-secrets-sub', 'No credentials exposed');
+                                 }
+
+                                 // Card 5 — S3 BUCKETS
+                                 const s3CountCard = document.getElementById('s3-bucket-count');
+                                 if (s3CountCard) {
+                                     const s3Count = sessionStorage.getItem('vaultAwsS3Count');
+                                     s3CountCard.innerText = isAuditComplete && s3Count !== null ? s3Count : '0';
+                                     s3CountCard.style.color = isAuditComplete ? '#00f2ff' : 'var(--gray)';
+                                 }
+                                 const s3Sub = document.getElementById('s3-bucket-sub');
+                                 if (s3Sub) {
+                                     s3Sub.innerText = isAuditComplete ? 'Global assets discovered' : 'Awaiting scan';
+                                 }
+
+                                 titleTerm.innerText = 'security-telemetry — AWS Infrastructure';
                              } else {
                                  // SLACK TAB ONLY — ZERO INTERFERENCE with AWS side
-                                 updateSafe('kpi-title-1', 'Open Attack Paths');
-                                 updateSafe('kpi-title-2', 'Exposed Secrets');
-                                 updateSafe('kpi-title-3', 'Workspace MFA');
-                                 updateSafe('kpi-title-4', 'Non-Compliant');
-                                 updateSafe('kpi-title-5', 'Total Users');
+                                 // Card headers are already set by the unconditional reset above.
 
                                  // Card 1 — Open Attack Paths: integer 0 or 1, NEVER a percentage
                                  const slackSecrets = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : null;
                                  const attackPathVal = slackSecrets === null ? '—' : (slackSecrets > 0 ? 1 : 0);
                                  const attackPathColor = slackSecrets === null ? 'var(--gray)' : (slackSecrets > 0 ? '#FF6B00' : 'var(--green)');
-                                 const attackPathSub = slackSecrets === null ? 'Awaiting scan…' : (slackSecrets > 0 ? 'Critical: Secret exposure detected' : 'No active paths detected');
+                                 const attackPathSub = slackSecrets === null ? 'Awaiting scan…' : (slackSecrets > 0 ? 'Critical: Secret exposure detected' : 'No paths detected');
                                  updateSafe('blast-radius-val', String(attackPathVal), attackPathColor);
                                  updateSafe('blast-radius-sub', attackPathSub);
 
-                                 // Card 2 — Exposed Secrets: synced directly to scan secret count
-                                 const exposedSecretsEl = document.getElementById('iam-user-count') || document.getElementById('impacted-channels-count');
-                                 if (exposedSecretsEl) {
-                                     exposedSecretsEl.id = 'impacted-channels-count';
-                                     const secretCount = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : 0;
-                                     exposedSecretsEl.innerText = String(secretCount);
-                                     exposedSecretsEl.style.color = isAuditComplete ? (secretCount > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
-                                     // Card 2 subtext: dynamic based on secret count
-                                     const card2Sub = document.getElementById('iam-identities-sub');
-                                     if (card2Sub) card2Sub.innerText = isAuditComplete ? (secretCount > 0 ? 'Active secret exposure detected' : 'No issues detected') : 'Awaiting scan…';
+                                 // Card 2 — Exposed Secrets: use fixed id 'iam-user-count' — NO id mutation
+                                 // Color: scanning → var(--gray) | 0 → var(--green) | >0 → #FF1744
+                                 const slackSecretCount = isAuditComplete && window.latestSlackData ? window.latestSlackData.secrets : null;
+                                 const card2El = document.getElementById('iam-user-count');
+                                 if (card2El) {
+                                     card2El.innerText = slackSecretCount !== null ? String(slackSecretCount) : '—';
+                                     card2El.style.color = slackSecretCount === null ? 'var(--gray)' : (slackSecretCount > 0 ? '#FF1744' : 'var(--green)');
                                  }
+                                 const card2Sub = document.getElementById('iam-identities-sub');
+                                 if (card2Sub) card2Sub.innerText = slackSecretCount === null ? 'Awaiting scan…' : (slackSecretCount > 0 ? 'Active secret exposure detected' : 'No issues detected');
 
                                  // Card 3 — Workspace MFA: show compliant subtext when 100%
                                  const slackMfaPct = isAuditComplete && window.latestSlackData ? window.latestSlackData.mfaPct : null;
@@ -2309,17 +2320,17 @@
                                  const mfa3Sub = document.getElementById('mfa-enforced-sub');
                                  if (mfa3Sub) mfa3Sub.innerText = slackNonCompliant !== null ? (slackNonCompliant === 0 ? 'All human identities compliant ✓' : slackNonCompliant + ' user(s) non-compliant') : 'Awaiting scan…';
 
-                                 // Card 4 — Non-Compliant identities
-                                 const uniqueSlackUsersSize = (window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0;
-                                 const kpi4El = document.getElementById('aws-secrets-count') || document.getElementById('high-risk-count');
+                                 // Card 4 — Non-Compliant: use fixed id 'aws-secrets-count' — NO id mutation
+                                 // Color: scanning → var(--gray) | 0 → var(--green) | >0 → #FF1744
+                                 const uniqueSlackUsersSize = isAuditComplete ? ((window.latestSlackData && window.latestSlackData.uniqueLeakerCount) || 0) : null;
+                                 const kpi4El = document.getElementById('aws-secrets-count');
                                  if (kpi4El) {
-                                     kpi4El.id = 'high-risk-count';
-                                     kpi4El.innerText = isAuditComplete ? String(uniqueSlackUsersSize) : '0';
-                                     kpi4El.style.color = isAuditComplete ? (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)') : 'var(--gray)';
+                                     kpi4El.innerText = uniqueSlackUsersSize !== null ? String(uniqueSlackUsersSize) : '—';
+                                     kpi4El.style.color = uniqueSlackUsersSize === null ? 'var(--gray)' : (uniqueSlackUsersSize > 0 ? '#FF1744' : 'var(--green)');
                                  }
-                                 // Card 4 subtext: matches value — 0 = 'No high-risk identities'
+                                 // Card 4 subtext: matches value exactly
                                  const kpi4SubEl = document.getElementById('exposed-secrets-sub');
-                                 if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize > 0 ? String(uniqueSlackUsersSize) + ' high-risk identities detected' : 'No high-risk identities';
+                                 if (kpi4SubEl) kpi4SubEl.innerText = uniqueSlackUsersSize === null ? 'Awaiting scan…' : (uniqueSlackUsersSize > 0 ? uniqueSlackUsersSize + ' high-risk identities detected' : 'No high-risk identities');
 
                                  // Card 5 — Total Users: Slack workspace has 3 active human accounts
                                  const kpi5El = document.getElementById('s3-bucket-count');

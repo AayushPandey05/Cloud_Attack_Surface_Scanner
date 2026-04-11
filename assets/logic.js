@@ -535,14 +535,15 @@ window.triggerAwsScan = async function () {
     };
     
     // 2. DATA TRUTH SYNC (Architectural Flush)
-    // ONLY increment Exposed Secrets card for leaked credentials (Requirement Refined)
+    // Persist secret count so updateDashboardContext can apply the correct tri-state color.
     const secretSum = data.exposedSecrets || 0;
+    sessionStorage.setItem('vaultAwsSecretCount', secretSum);
     if (secretSum > 0) {
-        updateSafe('aws-secrets-count', String(secretSum), '#FF4C4C');
-        updateSafe('exposed-secrets-sub', `${secretSum} Leaked Credentials Found`, '#FF4C4C');
+        updateSafe('aws-secrets-count', String(secretSum), '#FF1744');
+        updateSafe('exposed-secrets-sub', `${secretSum} Leaked Credentials Found`);
     } else {
-        updateSafe('aws-secrets-count', '0', '#08CB00');
-        updateSafe('exposed-secrets-sub', 'No credentials exposed', '#08CB00');
+        updateSafe('aws-secrets-count', '0', 'var(--green)');
+        updateSafe('exposed-secrets-sub', 'No credentials exposed');
     }
 
     // 5. MFA ENFORCEMENT SYNC
@@ -625,6 +626,12 @@ window.triggerAwsScan = async function () {
       if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
 
       if (currentModule === "AWS") {
+        // PRE-SCAN RESET: Force Exposed Secrets to neutral before any fetch
+        // Prevents stale red/yellow from a previous scan bleeding into the scanning state.
+        const _awsSecEl = document.getElementById('aws-secrets-count');
+        const _awsSubEl = document.getElementById('exposed-secrets-sub');
+        if (_awsSecEl) { _awsSecEl.innerText = '0'; _awsSecEl.style.color = 'var(--gray)'; }
+        if (_awsSubEl) { _awsSubEl.innerText = 'Scanning…'; }
         await window.triggerAwsScan();
       } else if (currentModule === "SLACK") {
         await window.runSlackAudit();
