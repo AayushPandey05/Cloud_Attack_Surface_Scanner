@@ -50,7 +50,7 @@ window.sendOtpEmail = function (userEmail, otpCode) {
   }
 
   // TERMINAL LOGGING (Requirement 2)
-  console.log('Email Triggered for: ' + userEmail);
+  console.log("Email Triggered for: " + userEmail);
 
   var templateParams = {
     user_email: userEmail,
@@ -61,7 +61,7 @@ window.sendOtpEmail = function (userEmail, otpCode) {
 
   // OTP AUTH EMAIL — restored. Audit/telemetry emails remain disabled (none exist in codebase).
   emailjs
-    .send("service_mngqn1v", "template_9cva2to", templateParams)
+    .send("service_27hr8pc", "template_jatfuyn", templateParams)
     .then(function (response) {
       console.log(
         "[sendOtpEmail] SUCCESS — OTP sent.",
@@ -186,19 +186,18 @@ window.runSlackAudit = async function () {
 
     var data = await res.json();
     var secrets = typeof data.secrets === "number" ? data.secrets : 0;
-    
+
     // Identity Deduplication: Identify unique users responsible for findings
     var uniqueUsers = new Set();
     var impactedChannels = new Set();
     var alerts = Array.isArray(data.detailedAlerts) ? data.detailedAlerts : [];
-    alerts.forEach(function(a) {
-        var parts = a.split(" | ");
-        if (parts[0]) uniqueUsers.add(parts[0]);
-        if (parts[2]) impactedChannels.add(parts[2]);
+    alerts.forEach(function (a) {
+      var parts = a.split(" | ");
+      if (parts[0]) uniqueUsers.add(parts[0]);
+      if (parts[2]) impactedChannels.add(parts[2]);
     });
     var uniqueLeakerCount = uniqueUsers.size || 0;
     var impactedChannelCount = impactedChannels.size || 0;
-
 
     var nonCompliant =
       typeof data.nonCompliant === "number" ? data.nonCompliant : 0;
@@ -240,7 +239,9 @@ window.runSlackAudit = async function () {
     setKpi(
       4,
       String(uniqueLeakerCount),
-      uniqueLeakerCount > 0 ? "High-risk identities detected" : "Identity health optimal ✓",
+      uniqueLeakerCount > 0
+        ? "High-risk identities detected"
+        : "Identity health optimal ✓",
       uniqueLeakerCount > 0 ? "var(--red)" : "var(--green)",
     );
 
@@ -261,12 +262,13 @@ window.runSlackAudit = async function () {
     };
 
     // STRICT DOM SYNC: Impacted Channels Metric
-    const channelsEl = document.getElementById('impacted-channels-count');
+    const channelsEl = document.getElementById("impacted-channels-count");
     if (channelsEl) channelsEl.innerText = String(impactedChannelCount);
 
     // Flag session as audited to transition from Clean Slate to Active view
-    sessionStorage.setItem('slack_audit_complete', 'true');
-    if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
+    sessionStorage.setItem("slack_audit_complete", "true");
+    if (typeof window.updateDashboardContext === "function")
+      window.updateDashboardContext();
 
     if (typeof window.appendTerminal === "function") {
       // Scan complete summary: SYSTEM level for standard Slack logs
@@ -294,11 +296,7 @@ window.runSlackAudit = async function () {
             ? window.currentEnv.toUpperCase()
             : "SLACK";
 
-          window.appendTerminal(
-            tag,
-            message,
-            "CRITICAL",
-          );
+          window.appendTerminal(tag, message, "CRITICAL");
 
           // Attack path immediately after CRITICAL line — multi-color gradient
           const liveAlertPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">&#x21B3; Attack Path:</span> <span style="color: #9112BC;">Initial Access</span> <span style="color: #FFFFFF;">&#x2192;</span> <span style="color: #4D2FB2;">Credential Theft</span>`;
@@ -307,7 +305,11 @@ window.runSlackAudit = async function () {
           // Forensic Identity Audit: Specific flagging for the non-compliant user
           const userName = parts[0];
           if (userName && typeof window.appendTerminal === "function") {
-             window.appendTerminal("IAM", `User(${userName}) flagged for non-compliance (Secret Exposure).`, "WARN");
+            window.appendTerminal(
+              "IAM",
+              `User(${userName}) flagged for non-compliance (Secret Exposure).`,
+              "WARN",
+            );
           }
         });
       } else if (secrets > 0) {
@@ -333,14 +335,20 @@ window.runSlackAudit = async function () {
 
         // ── HARDCODED CLEAN METRIC CARD SYNC ─────────────────────────────
         // Card 1 — Open Attack Paths: 0
-        const card1Val = document.getElementById('blast-radius-val');
-        const card1Sub = document.getElementById('blast-radius-sub');
-        if (card1Val) { card1Val.innerText = '0'; card1Val.style.color = 'var(--green)'; }
-        if (card1Sub) card1Sub.innerText = 'No paths detected';
+        const card1Val = document.getElementById("blast-radius-val");
+        const card1Sub = document.getElementById("blast-radius-sub");
+        if (card1Val) {
+          card1Val.innerText = "0";
+          card1Val.style.color = "var(--green)";
+        }
+        if (card1Sub) card1Sub.innerText = "No paths detected";
 
         // Card 2 — Exposed Secrets: 0 (impacted-channels-count or kpi-2-val)
-        const card2Val = document.getElementById('impacted-channels-count');
-        if (card2Val) { card2Val.innerText = '0'; card2Val.style.color = 'var(--green)'; }
+        const card2Val = document.getElementById("impacted-channels-count");
+        if (card2Val) {
+          card2Val.innerText = "0";
+          card2Val.style.color = "var(--green)";
+        }
       }
 
       // ── MFA Posture Signal ────────────────────────────────────────────
@@ -359,8 +367,9 @@ window.runSlackAudit = async function () {
           "SYSTEM",
         );
         // Card 3 subtext sync: all identities compliant
-        const mfa3Sub = document.getElementById('mfa-enforced-sub');
-        if (mfa3Sub) mfa3Sub.innerText = 'All human identities compliant \u2713';
+        const mfa3Sub = document.getElementById("mfa-enforced-sub");
+        if (mfa3Sub)
+          mfa3Sub.innerText = "All human identities compliant \u2713";
       }
     }
   } catch (err) {
@@ -420,29 +429,34 @@ window.triggerAwsScan = async function () {
   window.clearTerminal();
 
   try {
-    const currentUser = sessionStorage.getItem('loggedInUser') || 'Not Available';
-    const isAdmin = currentUser === 'aayushpandey2905@gmail.com';
+    const currentUser =
+      sessionStorage.getItem("loggedInUser") || "Not Available";
+    const isAdmin = currentUser === "aayushpandey2905@gmail.com";
 
     const res = await fetch("/api/scan-aws");
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
 
-    const totalUsers = typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
-    const mfaEnabledUsers = typeof data.mfaEnabledUsers === "number" ? data.mfaEnabledUsers : 0;
+    const totalUsers =
+      typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
+    const mfaEnabledUsers =
+      typeof data.mfaEnabledUsers === "number" ? data.mfaEnabledUsers : 0;
 
-    const iamCard = document.getElementById('iam-user-count');
-    const iamSub = document.getElementById('iam-identities-sub');
-    const totalIamUsers = typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
+    const iamCard = document.getElementById("iam-user-count");
+    const iamSub = document.getElementById("iam-identities-sub");
+    const totalIamUsers =
+      typeof data.totalUsers === "number" ? data.totalUsers : data.summary;
 
-    sessionStorage.setItem('vaultAwsIamCount', totalIamUsers);
+    sessionStorage.setItem("vaultAwsIamCount", totalIamUsers);
 
     if (iamCard) {
-        iamCard.innerText = totalIamUsers; 
-        iamCard.classList.remove('text-green');
-        iamCard.style.color = '#00D2FF'; // Neon Cyan for active state
+      iamCard.innerText = totalIamUsers;
+      iamCard.classList.remove("text-green");
+      iamCard.style.color = "#00D2FF"; // Neon Cyan for active state
     }
     if (iamSub) {
-        iamSub.innerText = totalIamUsers > 0 ? 'Active identities analyzed' : 'No issues detected';
+      iamSub.innerText =
+        totalIamUsers > 0 ? "Active identities analyzed" : "No issues detected";
     }
 
     let openAttackPaths = 0;
@@ -451,34 +465,46 @@ window.triggerAwsScan = async function () {
     let publicBuckets = 0;
     let totalBucketsFound = 0;
 
-        if (Array.isArray(data.terminalLogs)) {
-          const isNewUser = sessionStorage.getItem('vaultAccountType') === 'new';
-          
-          data.terminalLogs.forEach((entry) => {
-            let processedEntry = entry;
-            if (isNewUser) {
-               processedEntry = processedEntry.replace(/aayush-publicexposure-test/g, 'testuser-private-storage');
-            }
+    if (Array.isArray(data.terminalLogs)) {
+      const isNewUser = sessionStorage.getItem("vaultAccountType") === "new";
 
-            if (processedEntry.includes("missing MFA")) {
-                mfaBypassDetected = true;
-                window.appendTerminal("IAM", "User [Vault-Scanner-Service] missing MFA device.", "WARN");
-                return; 
-            }
+      data.terminalLogs.forEach((entry) => {
+        let processedEntry = entry;
+        if (isNewUser) {
+          processedEntry = processedEntry.replace(
+            /aayush-publicexposure-test/g,
+            "testuser-private-storage",
+          );
+        }
 
-        if (processedEntry.includes("Global S3 Buckets identified") && processedEntry.includes("multiple regions")) {
-            const match = processedEntry.match(/(\d+) Global S3 Buckets identified/);
-            if (match) {
-                totalBucketsFound = parseInt(match[1]);
-                sessionStorage.setItem('vaultAwsS3Count', totalBucketsFound);
-                const s3Card = document.getElementById('s3-bucket-count');
-                if (s3Card) {
-                    s3Card.innerText = totalBucketsFound;
-                    s3Card.style.color = '#00D2FF';
-                }
-                const s3Sub = document.getElementById('s3-bucket-sub');
-                if (s3Sub) s3Sub.innerText = 'Global assets discovered';
+        if (processedEntry.includes("missing MFA")) {
+          mfaBypassDetected = true;
+          window.appendTerminal(
+            "IAM",
+            "User [Vault-Scanner-Service] missing MFA device.",
+            "WARN",
+          );
+          return;
+        }
+
+        if (
+          processedEntry.includes("Global S3 Buckets identified") &&
+          processedEntry.includes("multiple regions")
+        ) {
+          const match = processedEntry.match(
+            /(\d+) Global S3 Buckets identified/,
+          );
+          if (match) {
+            totalBucketsFound = parseInt(match[1]);
+            sessionStorage.setItem("vaultAwsS3Count", totalBucketsFound);
+            const s3Card = document.getElementById("s3-bucket-count");
+            if (s3Card) {
+              s3Card.innerText = totalBucketsFound;
+              s3Card.style.color = "#00D2FF";
             }
+            const s3Sub = document.getElementById("s3-bucket-sub");
+            if (s3Sub) s3Sub.innerText = "Global assets discovered";
+          }
         }
 
         // Sync counts from data payload (Source of Truth)
@@ -489,96 +515,115 @@ window.triggerAwsScan = async function () {
         let clean = processedEntry
           .replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, "")
           .replace(/^\[AWS\]\s+/, "");
-          
+
         let parsedLevel = "INFO";
         let parsedMessage = clean;
         let service = "AWS";
 
         const colonIdx = clean.indexOf(":");
         if (colonIdx !== -1) {
-            parsedLevel = clean.substring(0, colonIdx).trim().toUpperCase();
-            parsedMessage = clean.substring(colonIdx + 1).trim();
-            
-            // REDUNDANCY PATCH: Strip service tags from level string to avoid [S3] [S3] display
-            parsedLevel = parsedLevel.replace(/^\[(S3|AWS)\]\s*/i, "").trim();
+          parsedLevel = clean.substring(0, colonIdx).trim().toUpperCase();
+          parsedMessage = clean.substring(colonIdx + 1).trim();
 
-            // Map legacy levels to semantic ones
-            if (parsedLevel === "SYSTEM" || parsedLevel === "SUCCESS") parsedLevel = "INFO";
+          // REDUNDANCY PATCH: Strip service tags from level string to avoid [S3] [S3] display
+          parsedLevel = parsedLevel.replace(/^\[(S3|AWS)\]\s*/i, "").trim();
+
+          // Map legacy levels to semantic ones
+          if (parsedLevel === "SYSTEM" || parsedLevel === "SUCCESS")
+            parsedLevel = "INFO";
         }
 
-        if (clean.includes("S3 Bucket") || clean.includes("Key") || clean.includes("Bucket")) {
-            service = "S3";
-        } else if (clean.includes("User [") || clean.includes("IAM") || clean.includes("MFA")) {
-            service = "IAM";
+        if (
+          clean.includes("S3 Bucket") ||
+          clean.includes("Key") ||
+          clean.includes("Bucket")
+        ) {
+          service = "S3";
+        } else if (
+          clean.includes("User [") ||
+          clean.includes("IAM") ||
+          clean.includes("MFA")
+        ) {
+          service = "IAM";
         }
 
         window.appendTerminal(service, parsedMessage, parsedLevel);
 
         // STICKY FORENSIC HOOK: If Leaked Key detected, trigger Attack Path visualization (Requirement 4.0)
         if (parsedMessage.includes("Leaked Key")) {
-            // Indentation optimized for vertical alignment under message body (index 21-22)
-            const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #B500B2;">[Credential Theft]</span> → <span style="color: #8E7DBE;">[Identity Takeover]</span>`;
-            window.appendTerminal("SYS", attackPath, "INFO", "", true); 
+          // Indentation optimized for vertical alignment under message body (index 21-22)
+          const attackPath = `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #57595B;">↳ Attack Path:</span> <span style="color: #2FA4D7;">[S3 Discovery]</span> → <span style="color: #B500B2;">[Credential Theft]</span> → <span style="color: #8E7DBE;">[Identity Takeover]</span>`;
+          window.appendTerminal("SYS", attackPath, "INFO", "", true);
         }
       });
     }
 
-    sessionStorage.setItem('aws_audit_complete', 'true');
-    if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
+    sessionStorage.setItem("aws_audit_complete", "true");
+    if (typeof window.updateDashboardContext === "function")
+      window.updateDashboardContext();
 
     const updateSafe = (id, text, color = null) => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (text !== null) el.innerText = text;
-            if (color) el.style.color = color;
-        }
+      const el = document.getElementById(id);
+      if (el) {
+        if (text !== null) el.innerText = text;
+        if (color) el.style.color = color;
+      }
     };
-    
+
     // 2. DATA TRUTH SYNC (Architectural Flush)
     // Persist secret count so updateDashboardContext can apply the correct tri-state color.
     const secretSum = data.exposedSecrets || 0;
-    sessionStorage.setItem('vaultAwsSecretCount', secretSum);
+    sessionStorage.setItem("vaultAwsSecretCount", secretSum);
     if (secretSum > 0) {
-        updateSafe('aws-secrets-count', String(secretSum), '#FF1744');
-        updateSafe('exposed-secrets-sub', `${secretSum} Leaked Credentials Found`);
+      updateSafe("aws-secrets-count", String(secretSum), "#FF1744");
+      updateSafe(
+        "exposed-secrets-sub",
+        `${secretSum} Leaked Credentials Found`,
+      );
     } else {
-        updateSafe('aws-secrets-count', '0', 'var(--green)');
-        updateSafe('exposed-secrets-sub', 'No credentials exposed');
+      updateSafe("aws-secrets-count", "0", "var(--green)");
+      updateSafe("exposed-secrets-sub", "No credentials exposed");
     }
 
     // 5. MFA ENFORCEMENT SYNC
-    const finalPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
-    
+    const finalPercentage =
+      totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
+
     if (finalPercentage === 100) {
-        updateSafe('mfa-enforced-val', '100%', '#2ECC71');
-        updateSafe('mfa-enforced-sub', 'All devices compliant.');
+      updateSafe("mfa-enforced-val", "100%", "#2ECC71");
+      updateSafe("mfa-enforced-sub", "All devices compliant.");
     } else if (finalPercentage >= 50 && finalPercentage < 100) {
-        const failures = totalUsers - mfaEnabledUsers;
-        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FFA500');
-        updateSafe('mfa-enforced-sub', `WARNING: MFA bypass detected for ${failures} users.`);
+      const failures = totalUsers - mfaEnabledUsers;
+      updateSafe("mfa-enforced-val", `${finalPercentage}%`, "#FFA500");
+      updateSafe(
+        "mfa-enforced-sub",
+        `WARNING: MFA bypass detected for ${failures} users.`,
+      );
     } else {
-        const failures = totalUsers - mfaEnabledUsers;
-        updateSafe('mfa-enforced-val', `${finalPercentage}%`, '#FF4C4C');
-        updateSafe('mfa-enforced-sub', `CRITICAL: MFA bypass detected for ${failures} users.`);
+      const failures = totalUsers - mfaEnabledUsers;
+      updateSafe("mfa-enforced-val", `${finalPercentage}%`, "#FF4C4C");
+      updateSafe(
+        "mfa-enforced-sub",
+        `CRITICAL: MFA bypass detected for ${failures} users.`,
+      );
     }
 
     if (openAttackPaths > 0) {
-        const radiusNum = document.getElementById('blast-radius-val');
-        const radiusDesc = document.getElementById('blast-radius-sub');
-        if (radiusNum && radiusDesc) {
-            const user = sessionStorage.getItem('loggedInUser');
-            if (user === 'aayushpandey2905@gmail.com') {
-                radiusNum.innerText = '95%';
-                radiusNum.style.color = '#FFA500'; 
-                radiusDesc.innerText = 'CRITICAL: Full Administrative Access.';
-            } else {
-                radiusNum.innerText = '85%';
-                radiusNum.style.color = '#FFA500'; 
-                radiusDesc.innerText = 'CRITICAL: Public S3 Data Exposure detected.';
-            }
+      const radiusNum = document.getElementById("blast-radius-val");
+      const radiusDesc = document.getElementById("blast-radius-sub");
+      if (radiusNum && radiusDesc) {
+        const user = sessionStorage.getItem("loggedInUser");
+        if (user === "aayushpandey2905@gmail.com") {
+          radiusNum.innerText = "95%";
+          radiusNum.style.color = "#FFA500";
+          radiusDesc.innerText = "CRITICAL: Full Administrative Access.";
+        } else {
+          radiusNum.innerText = "85%";
+          radiusNum.style.color = "#FFA500";
+          radiusDesc.innerText = "CRITICAL: Public S3 Data Exposure detected.";
         }
+      }
     }
-
   } catch (err) {
     window.appendTerminal("AWS", `Audit Failed — ${err.message}`, "CRITICAL");
   }
@@ -594,60 +639,68 @@ window.triggerAwsScan = async function () {
   triggerBtn.addEventListener("click", async () => {
     // 1. Audit Reset: Purge prior scan telemetry and show terminal loading state
     window.auditLogsBuffer = [];
-    const termSpinner = document.getElementById('terminal-spinner');
-    if (termSpinner) termSpinner.classList.remove('hidden');
+    const termSpinner = document.getElementById("terminal-spinner");
+    if (termSpinner) termSpinner.classList.remove("hidden");
 
     const currentModule = (window.currentEnv || "AWS").toUpperCase();
-    const currentUser = sessionStorage.getItem('loggedInUser') || '';
-    const isAdmin = currentUser.toLowerCase() === 'aayushpandey2905@gmail.com';
+    const currentUser = sessionStorage.getItem("loggedInUser") || "";
+    const isAdmin = currentUser.toLowerCase() === "aayushpandey2905@gmail.com";
 
     // Zero Trust Security Enforcement: Lock audit triggers to Admin only
     if (!isAdmin) {
-       console.error("[ZeroTrust] Audit blocked: Unauthorized identity.");
-       alert("⚠ Security Access Denied: Your account does not have an active AWS connection. Please click 'Connect Your Cloud' to begin.");
-       if (termSpinner) termSpinner.classList.add('hidden');
-       return;
+      console.error("[ZeroTrust] Audit blocked: Unauthorized identity.");
+      alert(
+        "⚠ Security Access Denied: Your account does not have an active AWS connection. Please click 'Connect Your Cloud' to begin.",
+      );
+      if (termSpinner) termSpinner.classList.add("hidden");
+      return;
     }
 
     // 2. UI TRANSFORMATION: Auditing State (Requirement 1)
     triggerBtn.disabled = true;
     const originalContent = triggerBtn.innerHTML;
     triggerBtn.innerHTML = `<div class="btn-spinner"></div> AUDITING...`;
-    
+
     try {
       // LOG STACK PREVENTION: Clear current env's log cache and terminal display
       // so rerunning a scan starts with a clean slate — no old entries stacking.
       const envKey = currentModule.toLowerCase();
       if (!window.vaultLogCache) window.vaultLogCache = { aws: [], slack: [] };
       window.vaultLogCache[envKey] = [];
-      sessionStorage.removeItem(envKey + '_audit_complete');
-      const termFeed = document.getElementById('terminal-feed');
-      if (termFeed) termFeed.innerHTML = '';
-      if (typeof window.updateDashboardContext === 'function') window.updateDashboardContext();
+      sessionStorage.removeItem(envKey + "_audit_complete");
+      const termFeed = document.getElementById("terminal-feed");
+      if (termFeed) termFeed.innerHTML = "";
+      if (typeof window.updateDashboardContext === "function")
+        window.updateDashboardContext();
 
       if (currentModule === "AWS") {
         // PRE-SCAN RESET: Force Exposed Secrets to neutral before any fetch
         // Prevents stale red/yellow from a previous scan bleeding into the scanning state.
-        const _awsSecEl = document.getElementById('aws-secrets-count');
-        const _awsSubEl = document.getElementById('exposed-secrets-sub');
-        if (_awsSecEl) { _awsSecEl.innerText = '0'; _awsSecEl.style.color = 'var(--gray)'; }
-        if (_awsSubEl) { _awsSubEl.innerText = 'Scanning…'; }
+        const _awsSecEl = document.getElementById("aws-secrets-count");
+        const _awsSubEl = document.getElementById("exposed-secrets-sub");
+        if (_awsSecEl) {
+          _awsSecEl.innerText = "0";
+          _awsSecEl.style.color = "var(--gray)";
+        }
+        if (_awsSubEl) {
+          _awsSubEl.innerText = "Scanning…";
+        }
         await window.triggerAwsScan();
       } else if (currentModule === "SLACK") {
         await window.runSlackAudit();
       }
-      
+
       // Blast-radius override ONLY runs for AWS tab — Slack Card 1 uses integer logic, not percentages
-      if (currentModule === 'AWS') {
-        const loggedUser = sessionStorage.getItem('loggedInUser');
-        if (loggedUser === 'aayushpandey2905@gmail.com') {
-            const radiusNumber = document.getElementById('blast-radius-val');
-            const radiusText = document.getElementById('blast-radius-sub');
-            if (radiusNumber && radiusText) {
-                radiusNumber.innerText = '95%';
-                radiusNumber.style.color = '#FFA500'; 
-                radiusText.innerText = 'CRITICAL: Full Admin status detected.';
-            }
+      if (currentModule === "AWS") {
+        const loggedUser = sessionStorage.getItem("loggedInUser");
+        if (loggedUser === "aayushpandey2905@gmail.com") {
+          const radiusNumber = document.getElementById("blast-radius-val");
+          const radiusText = document.getElementById("blast-radius-sub");
+          if (radiusNumber && radiusText) {
+            radiusNumber.innerText = "95%";
+            radiusNumber.style.color = "#FFA500";
+            radiusText.innerText = "CRITICAL: Full Admin status detected.";
+          }
         }
       }
     } catch (err) {
@@ -662,51 +715,59 @@ window.triggerAwsScan = async function () {
 })();
 
 // FORENSIC EXPORT ENGINE — Global CSV/JSON Dispatcher
-window.exportToCSV = function() {
+window.exportToCSV = function () {
   const env = (window.currentEnv || "AWS").toUpperCase();
   const buffer = window.auditLogsBuffer || [];
-  
+
   if (buffer.length === 0) {
-    alert("No audit logs available for export. Please run a security scan first.");
+    alert(
+      "No audit logs available for export. Please run a security scan first.",
+    );
     return;
   }
 
   // Filter logs for the active environment (AWS/SLACK)
-  const logsToExport = buffer.filter(log => (log.env || "AWS").toUpperCase() === env);
-  
+  const logsToExport = buffer.filter(
+    (log) => (log.env || "AWS").toUpperCase() === env,
+  );
+
   const csvRows = ['"Date","Time","Service","Level","Message"'];
   logsToExport.forEach((r) => {
     // Prefer explicit date/time fields; fall back to splitting the combined timestamp
-    const datePart = r.date || (r.timestamp ? r.timestamp.split(' ')[0] : '');
-    const timePart = r.time || (r.timestamp ? r.timestamp.split(' ')[1] : '');
+    const datePart = r.date || (r.timestamp ? r.timestamp.split(" ")[0] : "");
+    const timePart = r.time || (r.timestamp ? r.timestamp.split(" ")[1] : "");
     // Sanitise message: strip residual HTML entities and arrow chars
-    const cleanMsg = (r.message || '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/↳/g, '')
-      .replace(/\s{2,}/g, ' ')
+    const cleanMsg = (r.message || "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/↳/g, "")
+      .replace(/\s{2,}/g, " ")
       .trim()
       .replace(/"/g, '""');
     const row = `"${datePart}","${timePart}","${r.source}","${r.level}","${cleanMsg}"`;
     csvRows.push(row);
   });
-  
+
   const content = "\uFEFF" + csvRows.join("\n");
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
   triggerDownload(blob, `${env.toLowerCase()}_audit_logs.csv`);
 };
 
-window.exportToJSON = function() {
+window.exportToJSON = function () {
   const env = (window.currentEnv || "AWS").toUpperCase();
   const buffer = window.auditLogsBuffer || [];
-  
+
   if (buffer.length === 0) {
-    alert("No audit logs available for export. Please run a security scan first.");
+    alert(
+      "No audit logs available for export. Please run a security scan first.",
+    );
     return;
   }
 
   // Filter logs for the active environment (AWS/SLACK)
-  const logsToExport = buffer.filter(log => (log.env || "AWS").toUpperCase() === env);
-  
+  const logsToExport = buffer.filter(
+    (log) => (log.env || "AWS").toUpperCase() === env,
+  );
+
   // Requirement: JSON.stringify(buffer, null, 2)
   const content = JSON.stringify(logsToExport, null, 2);
   const blob = new Blob([content], { type: "application/json" });
@@ -758,7 +819,7 @@ function triggerDownload(blob, filename) {
   });
 
   // Check if we just returned from a successful SSO login
-  if (sessionStorage.getItem('isSSOSession') === 'true') {
+  if (sessionStorage.getItem("isSSOSession") === "true") {
     console.log("[OKTA] SSO Handshake Verified via SessionContext.");
     // Optional: Show a "Welcome Aayush" toast or log
     if (typeof window.appendTerminal === "function") {
