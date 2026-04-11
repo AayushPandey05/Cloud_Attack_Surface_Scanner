@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <!-- GOOGLE LOGIN -->
@@ -1724,9 +1724,12 @@
                             try {
                                 emailAlreadySent = true;
                                 // OTP AUTH EMAIL — restored. Audit/telemetry emails remain disabled (none exist in codebase).
+                                // PRE-DISPATCH VERIFICATION: Confirm all three EmailJS parameters before the network request fires.
+                                console.log('[EmailJS] Pre-dispatch check — Service ID: service_27hr8pc | Template ID: template_jatfuyn | Public Key: kV3OHv9DlRxP9vedH');
+                                console.log('[EmailJS] templateParams:', templateParams);
                                 emailjs.send('service_27hr8pc', 'template_jatfuyn', templateParams)
                                     .then(function(response) {
-                                        console.log('SUCCESS! OTP Sent.', response.status, response.text);
+                                        console.log('EmailJS Success:', response);
                                         
                                         // Disable logic to prevent redundant interaction spam
                                         var submitBtn = document.querySelector('.login-btn');
@@ -1740,7 +1743,7 @@
                                         }
                                     })
                                     .catch(function(error) {
-                                        console.error('FAILED to send OTP:', error);
+                                        console.error('EmailJS Error:', error);
                                         emailAlreadySent = false; // Allow retry on raw network failure
                                     });
                             } catch(e) {
