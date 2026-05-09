@@ -1,0 +1,39 @@
+# This file tells Kubernetes how to run our scanner app
+# kubectl apply -f deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scanner-app
+spec:
+  replicas: 2        # run 2 copies of the app
+  selector:
+    matchLabels:
+      app: scanner
+  template:
+    metadata:
+      labels:
+        app: scanner
+    spec:
+      containers:
+        - name: scanner
+          image: node:20-alpine
+          ports:
+            - containerPort: 3000
+          env:
+            - name: AWS_REGION
+              value: "ap-south-1"
+
+---
+# This part makes the app accessible inside the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: scanner-service
+spec:
+  selector:
+    app: scanner
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP
