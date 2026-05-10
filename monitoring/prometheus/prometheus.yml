@@ -1,0 +1,17 @@
+# prometheus.yml - tells Prometheus what to monitor
+# Prometheus will collect data from these targets every 15 seconds
+
+global:
+  scrape_interval: 15s     # collect data every 15 seconds
+
+scrape_configs:
+
+  # Monitor Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Monitor our scanner app
+  - job_name: "scanner-app"
+    static_configs:
+      - targets: ["localhost:3001"]    # our app sends metrics on port 3001

@@ -1,0 +1,37 @@
+# This playbook sets up a server to run our scanner
+# Run it with: ansible-playbook -i hosts.ini setup.yml
+
+- name: Setup Scanner Server
+  hosts: all
+  become: true      # run as admin (sudo)
+
+  tasks:
+
+    - name: Update the server packages
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install npm
+      apt:
+        name: npm
+        state: present
+
+    - name: Show setup is done
+      debug:
+        msg: "Server is ready! Docker and Node.js are installed."
