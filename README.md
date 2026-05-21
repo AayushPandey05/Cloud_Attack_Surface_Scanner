@@ -1,53 +1,58 @@
 # Cloud Attack Surface Scanner 🛡️⚡
 
 **Developed by:** Aayush Pandey  
-**Focus:** Cloud Security • Attack Surface Management • Identity Threat Detection  
+**Focus:** Cloud Security • DevSecOps • Identity Threat Detection • Infrastructure as Code  
 **🔴 Live Dashboard:** https://vault.heyitsaayush.me/login
 
 ---
 
 ## 📌 Project Overview
 
-The **Cloud Attack Surface Scanner** is an enterprise-grade, serverless security tool designed to proactively discover and neutralize cloud misconfigurations before they can be exploited by threat actors.
+The **Cloud Attack Surface Scanner (CASS)** is an enterprise-grade DevSecOps security tool designed to proactively discover and neutralize cloud misconfigurations before they can be exploited by threat actors.
 
-In the modern threat landscape, identity is the new perimeter. This tool automates the detection of high-risk IAM vulnerabilities, shadow admins, and exposed infrastructure, shifting cloud security from reactive logging to proactive threat containment.
+In the modern threat landscape, identity and infrastructure configurations are the new perimeter. This tool automates the detection of high-risk IAM vulnerabilities, public storage exposure, and shadow admins. It shifts cloud security from reactive logging to proactive threat containment using modern Infrastructure as Code (IaC) and containerized workflows.
 
 ---
 
 ## 🚀 Core Capabilities & Threat Detection
 
+- **Infrastructure as Code (IaC) Security:** Automated AWS provisioning via Terraform with built-in Principle of Least Privilege (PoLP) validation.
+- **Enterprise CI/CD Pipelines:** Features a complete Jenkins pipeline architecture with a mandatory "DevSecOps Gate" to block vulnerable container deployments.
+- **High-Availability Scanning Engine:** Dockerized Node.js security scanners orchestrated via Kubernetes (K8s) to ensure zero-downtime threat hunting.
+- **Real-Time Observability:** Integrated Prometheus and Grafana stack for live monitoring of the scanner engine's health and target compliance status.
 - **Identity Exploitation Prevention:** Enforces strict Role-Based Access Control (RBAC) and mandatory MFA to neutralize credential stuffing and privilege escalation vectors.
-- **Automated Threat Hunting:** Continuous monitoring pipelines identify potential vulnerabilities (like over-permissive identities and public S3 buckets) in real-time.
-- **Immutable Telemetry:** AWS CloudTrail + S3 establishes tamper-proof logs for incident response, preventing attackers from executing defense evasion techniques.
-- **Automated Threat Containment:** Event-driven architecture (AWS Lambda + SNS Alerts) triggers real-time notifications to disrupt attack chains instantly.
+- **Automated Threat Hunting:** Continuous monitoring pipelines identify potential vulnerabilities (e.g., over-permissive identities and public S3 buckets) in real-time.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-Built entirely on a **zero-dollar, serverless AWS architecture**, maximizing security without infrastructure overhead:
+Built on a modern DevSecOps stack, maximizing security, scalability, and automation without infrastructure overhead:
 
+- **The Builder (Terraform):** Provisions the target AWS infrastructure (S3 buckets, IAM roles) using immutable infrastructure principles.
+- **The Engine (Docker & K8s):** The core scanning engine is fully containerized and orchestrated by Kubernetes for automatic self-healing.
+- **The Pipeline (Jenkins & Vercel):** Rapid serverless frontend deployment via Vercel, backed by an enterprise Jenkins pipeline demonstrating automated security scanning stages.
+- **The Telemetry (Prometheus & Grafana):** A localized observability stack tracking the metrics, uptime, and operational status of the scanning operations.
 - **The Identity Gateway:** A custom B2B-styled SSO frontend interface utilizing robust session management and MFA challenge logic.
-- **The Detection Engine:** Python/Node.js based automation that actively scans the cloud environment for critical access violations and public storage exposure.
-- **The Telemetry Vault:** S3 buckets configured for immutable log storage to ensure complete visibility during security incidents.
-- **The Response Matrix:** Cloud infrastructure ready to execute automated containment workflows and alert security teams.
 
 ---
 
 ## 📂 Repository Structure
 
 - `/assets` - Core frontend logic, UI styling, and AWS SDK configurations.
-- `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors
-- (`vulnerability_vectors.md`) and sample threat telemetry.
+- `/terraform` - Terraform configurations (`main.tf`) for automated AWS infrastructure provisioning.
+- `/kubernetes` - K8s deployment and service manifests for container orchestration.
+- `/monitoring` - Docker Compose, Prometheus, and Grafana configurations for the observability stack.
+- `Jenkinsfile` - Enterprise CI/CD pipeline code featuring a dedicated DevSecOps scanning gate.
+- `/attack_path_simulations` - Documentation mapping vulnerabilities to threat vectors and sample threat telemetry.
 - `/backend-functions` - Threat-hunting scripts, secret scanners, and automated cloud auditors.
 - `/iam-policies` - Hardened JSON policies enforcing the principle of "Least Privilege".
-- `/infrastructure` - Setup files and YAML templates for rapid, secure deployment.
 
 ---
 
 ## 🎯 Why I Built This
 
-This project demonstrates a deep, practical understanding of **Cloud Security Posture Management (CSPM)** and **AppSec engineering**. By building the tools to automatically detect and contain cloud attack paths, this project proves the ability to defend enterprise perimeters and reduce blast radius at scale.
+This project demonstrates a deep, practical understanding of **Cloud Security Posture Management (CSPM)**, **DevSecOps pipelines**, and **Infrastructure as Code (IaC)**. By engineering an automated pipeline that builds infrastructure, containerizes the scanning engine, and actively hunts for misconfigurations, this project proves the ability to defend enterprise perimeters and execute secure cloud operations at scale.
 
 ---
 
