@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       `[AWS] INFO: Found [${Users.length}] IAM Users in account.`,
     );
 
-    // ── MFA AUDIT LAYER ────────────────────────────────────────────────
+    // ── MFA AUDIT LAYER ────
     for (const user of Users) {
       totalUsers++;
       const created = new Date(user.CreateDate).toLocaleDateString();
@@ -73,7 +73,10 @@ export default async function handler(req, res) {
           );
         }
       } catch (mfaErr) {
-        console.error("MFA Check failed for user", user.UserName);
+        totalVulnerabilities++;
+        terminalLogs.push(
+          `[AWS] WARN: User [${user.UserName}] MFA check error — ${mfaErr.message}`,
+        );
       }
     }
 
