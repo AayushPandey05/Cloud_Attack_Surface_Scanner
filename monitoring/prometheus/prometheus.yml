@@ -1,0 +1,15 @@
+# prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Monitor Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Monitor the CASS backend
+  - job_name: "scanner-app"
+    metrics_path: "/api/metrics" # Points directly to your Vercel serverless function
+    static_configs:
+      - targets: ["host.docker.internal:3000"] # This magic keyword lets Docker talk to your computer

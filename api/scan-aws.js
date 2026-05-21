@@ -5,12 +5,12 @@ import {
   ListUsersCommand,
 } from "@aws-sdk/client-iam";
 import {
+  GetBucketLocationCommand,
   GetObjectCommand,
   GetPublicAccessBlockCommand,
   ListBucketsCommand,
   ListObjectsV2Command,
   S3Client,
-  GetBucketLocationCommand,
 } from "@aws-sdk/client-s3";
 
 // Get current timestamp in local 24-hour format
@@ -77,13 +77,18 @@ export default async function handler(req, res) {
       }
     }
 
-    const finalMfaPercentage = totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
+    const finalMfaPercentage =
+      totalUsers > 0 ? Math.round((mfaEnabledUsers / totalUsers) * 100) : 0;
     terminalLogs.push(
-      `[AWS] INFO: Final MFA Compliance: ${finalMfaPercentage}% MFA across ${totalUsers} identities.`
+      `[AWS] INFO: Final MFA Compliance: ${finalMfaPercentage}% MFA across ${totalUsers} identities.`,
     );
 
     // ── MODULE 3: S3 STORAGE AUDIT & CONTENT INSPECTION ────────────────
-    const s3Client = new S3Client({ region, credentials, useAccelerateEndpoint: false });
+    const s3Client = new S3Client({
+      region,
+      credentials,
+      useAccelerateEndpoint: false,
+    });
     terminalLogs.push(
       `[${getTimestamp()}] [AWS] SYSTEM: S3 Storage Audit initiated.`,
     );
@@ -96,16 +101,23 @@ export default async function handler(req, res) {
 
       for (const bucket of Buckets) {
         try {
-          const locRes = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucket.Name }));
+          const locRes = await s3Client.send(
+            new GetBucketLocationCommand({ Bucket: bucket.Name }),
+          );
           let bucketRegion = locRes.LocationConstraint;
           if (!bucketRegion) bucketRegion = region;
           if (bucketRegion === "EU") bucketRegion = "eu-west-1";
-          
-          const regionalS3Client = new S3Client({ region: bucketRegion, credentials, useAccelerateEndpoint: false });
 
-          const { PublicAccessBlockConfiguration } = await regionalS3Client.send(
-            new GetPublicAccessBlockCommand({ Bucket: bucket.Name }),
-          );
+          const regionalS3Client = new S3Client({
+            region: bucketRegion,
+            credentials,
+            useAccelerateEndpoint: false,
+          });
+
+          const { PublicAccessBlockConfiguration } =
+            await regionalS3Client.send(
+              new GetPublicAccessBlockCommand({ Bucket: bucket.Name }),
+            );
 
           if (
             PublicAccessBlockConfiguration &&
@@ -177,7 +189,8 @@ export default async function handler(req, res) {
     let controlsPassing = 0;
     if (publicBuckets === 0) controlsPassing++; // Check 1: Bucket Security
     if (exposedSecrets === 0) controlsPassing++; // Check 2: Secret Cleanliness
-    if (mfaEnabledUsers > 0 && mfaEnabledUsers === totalUsers) controlsPassing++; // Check 3: Identity MFA
+    if (mfaEnabledUsers > 0 && mfaEnabledUsers === totalUsers)
+      controlsPassing++; // Check 3: Identity MFA
 
     // Return unified compliance telemetry payload
     return res.status(200).json({
