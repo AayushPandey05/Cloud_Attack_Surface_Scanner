@@ -479,12 +479,6 @@ window.triggerAwsScan = async function () {
 
         if (processedEntry.includes("missing MFA")) {
           mfaBypassDetected = true;
-          window.appendTerminal(
-            "IAM",
-            "User [Vault-Scanner-Service] missing MFA device.",
-            "WARN",
-          );
-          return;
         }
 
         if (
