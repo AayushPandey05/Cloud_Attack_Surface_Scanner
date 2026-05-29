@@ -18,6 +18,7 @@ spec:
       containers:
         - name: scanner
           image: node:20-alpine
+          command: ["sleep", "3600"] # FIX: Keeps the container awake
           ports:
             - containerPort: 3000
           env:

@@ -1,11 +1,4 @@
 # docker-compose.yml
-# This starts Prometheus + Grafana with one command:
-#   docker compose up
-#
-# Then open:
-#   Prometheus: http://localhost:9090
-#   Grafana:    http://localhost:3000  (login: admin / admin)
-
 version: "3"
 
 services:
