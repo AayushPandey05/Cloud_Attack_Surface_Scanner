@@ -1,8 +1,13 @@
-export default async function handler(req, res) {
+import express from "express";
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// API Gateway Route for Okta Callback
+app.get("/api/auth/callback", (req, res) => {
   const { code, email, idToken, accessToken } = req.query;
 
-  // 1. Identity Extraction (Simulated for Demo Lifecycle)
-  // In a real flow, the 'code' would be exchanged server-side.
+  // 1. Identity Extraction
   const userEmail = email || idToken || accessToken || "Not Available";
 
   // 2. Map identity to role
@@ -10,9 +15,8 @@ export default async function handler(req, res) {
   const userName = isAdmin ? "Lead Security Architect" : "Guest Analyst";
 
   // 3. SECURE BRIDGE: Return a script that hydrates sessionStorage and redirects
-  // This achieves "Clean URLs" by never exposing identity tokens in the URL bar.
   res.setHeader("Content-Type", "text/html");
-  res.end(`
+  res.send(`
     <script>
       // SLEDGEHAMMER IDENTITY FALLBACK: Force admin identity if SSO fails to pass claims
       const rawEmail = '${userEmail}';
@@ -33,4 +37,8 @@ export default async function handler(req, res) {
       window.location.href = '/dashboard';
     </script>
   `);
-}
+});
+
+app.listen(PORT, () => {
+  console.log(`API Gateway Service listening on port ${PORT}`);
+});

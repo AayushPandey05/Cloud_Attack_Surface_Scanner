@@ -175,7 +175,7 @@ window.runSlackAudit = async function () {
   }
 
   try {
-    var res = await fetch("/api/scan-slack");
+    var res = await fetch("http://localhost:3002/api/scan-slack");
 
     if (!res.ok) {
       var errBody = await res.json().catch(function () {
@@ -433,7 +433,7 @@ window.triggerAwsScan = async function () {
       sessionStorage.getItem("loggedInUser") || "Not Available";
     const isAdmin = currentUser === "aayushpandey2905@gmail.com";
 
-    const res = await fetch("/api/scan-aws");
+    const res = await fetch("http://localhost:3001/api/scan-aws");
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
 
@@ -795,7 +795,7 @@ function triggerDownload(blob, filename) {
     // 1. Credentials (Match your Okta screenshot)
     const oktaDomain = "integrator-7685471.okta.com";
     const clientId = "0oa11oc1k0aHp6xAa698";
-    const redirectUri = window.location.origin + "/api/auth/callback";
+    const redirectUri = "http://localhost:3000/api/auth/callback";
 
     // 2. Build the "Teleport" URL
     const authUrl =

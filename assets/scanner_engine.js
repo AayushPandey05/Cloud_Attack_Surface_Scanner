@@ -1,9 +1,3 @@
-// assets/scanner_engine.js
-
-/**
- * IAM Security Auditor
- * Checks for high-risk configurations like missing MFA or wildcard (*) policies
- */
 const ScannerEngine = {
   async runIAMAudit() {
     console.log("🚀 Starting IAM Attack Surface Scan...");

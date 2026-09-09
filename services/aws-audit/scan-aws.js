@@ -12,15 +12,17 @@ import {
   ListObjectsV2Command,
   S3Client,
 } from "@aws-sdk/client-s3";
+import cors from "cors";
+import express from "express";
+const app = express();
+app.use(cors());
+const PORT = process.env.PORT || 3001;
 
 // Get current timestamp in local 24-hour format
 const getTimestamp = () =>
   new Date().toLocaleTimeString("en-GB", { hour12: false });
 
-export default async function handler(req, res) {
-  if (req.method !== "GET")
-    return res.status(405).json({ error: "Method not allowed" });
-
+app.get("/api/scan-aws", async (req, res) => {
   // Terminal log storage for front-end dashboard
   const terminalLogs = [];
   let exposedSecrets = 0;
@@ -190,12 +192,11 @@ export default async function handler(req, res) {
 
     // ── COMPLIANCE SCOREBOARD CALCULATION ──────────────────────────────
     let controlsPassing = 0;
-    if (publicBuckets === 0) controlsPassing++; // Check 1: Bucket Security
-    if (exposedSecrets === 0) controlsPassing++; // Check 2: Secret Cleanliness
+    if (publicBuckets === 0) controlsPassing++;
+    if (exposedSecrets === 0) controlsPassing++;
     if (mfaEnabledUsers > 0 && mfaEnabledUsers === totalUsers)
-      controlsPassing++; // Check 3: Identity MFA
+      controlsPassing++;
 
-    // Return unified compliance telemetry payload
     return res.status(200).json({
       summary: Users.length,
       totalUsers: totalUsers,
@@ -219,4 +220,8 @@ export default async function handler(req, res) {
       totalVulnerabilities: 0,
     });
   }
-}
+});
+
+app.listen(PORT, () => {
+  console.log(`AWS Audit Service listening on port ${PORT}`);
+});

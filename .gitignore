@@ -14,3 +14,6 @@ package-lock.json
 
 .terraform/
 *.tfstate
+
+node_modules/
+.env
