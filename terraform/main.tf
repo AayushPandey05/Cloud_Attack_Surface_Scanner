@@ -38,3 +38,18 @@ output "safe_bucket_name" {
 output "unsafe_bucket_name" {
   value = aws_s3_bucket.unsafe_bucket.bucket
 }
+
+# EC2 Instance - Free Tier Eligible (Using K3s for lightweight Kubernetes)
+resource "aws_instance" "k8s_node" {
+  ami           = "ami-0287a05f0ef0e9d9a" # Ubuntu 22.04 LTS (ap-south-1)
+  instance_type = "t2.micro"              # 100% AWS Free Tier Eligible
+  
+  tags = {
+    Name        = "CASS-K8s-Server-Free"
+    Environment = "DevSecOps-Project"
+  }
+}
+
+output "k8s_server_ip" {
+  value = aws_instance.k8s_node.public_ip
+}

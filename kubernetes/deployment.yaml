@@ -1,12 +1,10 @@
-# This file tells Kubernetes how to run our scanner app
-# kubectl apply -f deployment.yaml
-
+# 1. The Deployment (Updated with CPU metrics)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: scanner-app
 spec:
-  replicas: 2 # run 2 copies of the app
+  # Notice: 'replicas: 2' is removed! The HPA controls this now.
   selector:
     matchLabels:
       app: scanner
@@ -18,15 +16,23 @@ spec:
       containers:
         - name: scanner
           image: node:20-alpine
-          command: ["sleep", "3600"] # FIX: Keeps the container awake
+          command: ["sleep", "3600"]
           ports:
             - containerPort: 3000
           env:
             - name: AWS_REGION
               value: "ap-south-1"
+          # NEW: CPU and Memory baselines required for HPA to work
+          resources:
+            requests:
+              cpu: "100m" # 10% of a CPU core
+              memory: "128Mi"
+            limits:
+              cpu: "250m" # Max 25% of a CPU core
+              memory: "256Mi"
 
 ---
-# This part makes the app accessible inside the cluster
+# 2. The Service (Unchanged)
 apiVersion: v1
 kind: Service
 metadata:
@@ -38,3 +44,24 @@ spec:
     - port: 80
       targetPort: 3000
   type: ClusterIP
+
+---
+# 3. NEW: The Horizontal Pod Autoscaler (Whiteboard Point 2)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: scanner-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: scanner-app
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
