@@ -3,7 +3,7 @@ services:
     build:
       context: ./services/api-gateway
     ports:
-      - "3000:3000"
+      - "5000:3000"
     env_file:
       - .env
 
@@ -11,7 +11,7 @@ services:
     build:
       context: ./services/aws-audit
     ports:
-      - "3001:3001"
+      - "5001:3001"
     env_file:
       - .env
 
@@ -19,6 +19,6 @@ services:
     build:
       context: ./services/slack-bot
     ports:
-      - "3002:3002"
+      - "5002:3002"
     env_file:
       - .env

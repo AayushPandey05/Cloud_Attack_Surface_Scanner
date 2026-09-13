@@ -8,8 +8,8 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # Monitor the CASS backend
+  # Monitor the CASS backend across 3 pod replicas
   - job_name: "scanner-app"
-    metrics_path: "/api/metrics" # Points directly to your Vercel serverless function
+    metrics_path: "/api/metrics"
     static_configs:
-      - targets: ["host.docker.internal:3000"] # This magic keyword lets Docker talk to your computer
+      - targets: ["host.docker.internal:3000"]
