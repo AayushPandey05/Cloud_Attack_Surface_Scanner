@@ -1,5 +1,5 @@
 import express from "express";
-
+import client from "prom-client";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -37,6 +37,16 @@ app.get("/api/auth/callback", (req, res) => {
       window.location.href = '/dashboard';
     </script>
   `);
+});
+
+// Enable default Node.js metrics (CPU, Memory, Event Loop)
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ register: client.register });
+
+// Expose the metrics endpoint for Prometheus
+app.get("/api/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(PORT, () => {
