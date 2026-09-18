@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 3000
 
 # 8. The command to turn the scanner on
-CMD ["sh", "-c", "vercel dev --token $VERCEL_TOKEN --yes"]
+CMD ["sh", "-c", "vercel dev --listen 0.0.0.0:3000 --token $VERCEL_TOKEN --yes"]

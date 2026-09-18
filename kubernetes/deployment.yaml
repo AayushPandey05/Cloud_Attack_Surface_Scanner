@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: scanner
-          image: aayushpandey29/scanner-api:latest
+          image: aayushpandey29/frontend:latest
           ports:
             - containerPort: 3000
           env:
